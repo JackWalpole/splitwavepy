@@ -7,24 +7,24 @@ import matplotlib.pyplot as plt
 import math
 from scipy import signal
 
-def shift(pair,shift):
-    """shift t1 shift/2 samples to the left and
-       shift t2 shift/2 samples to the right,
-       shift must be even number of samples
+def shift(pair,nsamps):
+    """shift t1 nsamps/2 samples to the left and
+       shift t2 nsamps/2 samples to the right,
+       nsamps must be even
        this process truncates trace length"""
-    if shift == 0:
+    if nsamps == 0:
         return pair
-    elif shift%2 != 0:
-        raise Exception('shift must be even number of samples')
+    elif nsamps%2 != 0:
+        raise Exception('nsamps must be even')
     
-    if shift > 0:
+    if nsamps > 0:
         t1 = pair[0,:]
         t2 = pair[1,:]
     else:
         t1 = pair[1,0]
         t2 = pair[0,:]
 
-    return np.vstack((t1[math.ceil(shift/2):-math.floor(shift/2)], t2[:-shift]))
+    return np.vstack((t1[int(nsamps/2):-int(nsamps/2)], t2[:-int(nsamps)]))
         
 
 
@@ -37,13 +37,13 @@ def rotate(pair,degrees):
     return np.dot(rot,pair)
 
 def rotate_and_shift(pair,degrees,shift):
-    return shift(_rotate(pair,degrees), shift)
+    return shift(rotate(pair,degrees), shift)
 
-def split(pair,degrees,shift):
-    return rotate(_shift(_rotate(pair,degrees), shift),-degrees)
+def split(pair,degrees,nsamps):
+    return rotate(shift(rotate(pair,degrees), nsamps), -degrees)
 
-def unsplit(pair,degrees,shift):
-    return split(pair,degrees+90,shift)
+def unsplit(pair,degrees,nsamps):
+    return split(pair,degrees,-nsamps)
     
 def taper(pair,width,centre=None):
     """Apply Hanning window about c0 sample
@@ -73,7 +73,7 @@ def grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
     
     # set some defaults
     if stepshift is None:
-        stepshift = int(np.max([1,maxshift/40]))
+        stepshift = 2 * int(np.max([1,maxshift/40]))
     if stepang is None:
         stepang = 2
     if window is None:
@@ -81,7 +81,7 @@ def grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
         # half trace length or 10 * max shift
         window = int(np.min([pair.shape[1] * 0.5,maxshift * 10]))
     
-    deg, shift = np.meshgrid(np.arange(0,180,stepang),
+    deg, lag = np.meshgrid(np.arange(0,180,stepang),
                              np.arange(0,maxshift,stepshift).astype(int))
     
     shape = deg.shape
@@ -90,10 +90,10 @@ def grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
     for ii in np.arange(shape[1]):
         temp = rotate(pair,deg[0,ii]+90)
         for jj in np.arange(shape[0]):
-            temp2 = shift(temp,shift[jj,ii])
+            temp2 = shift(temp,lag[jj,ii])
             temp3 = taper(temp2,window)
             lam2[jj,ii], lam1[jj,ii] = eigcov(temp3)
-    return deg, shift, lam1, lam2
+    return deg, lag, lam1, lam2
 
 def xcorr(pair):
     return np.correlate(pair[0,:],pair[1,:])[0]
