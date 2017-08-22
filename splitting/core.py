@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 """
 Low level routines for dealing with traces in numpy arrays.
 Works on arrays sample by sample and need not know 
@@ -14,15 +12,60 @@ import numpy as np
 import math
 from scipy import signal
 
-def synthpair(noise=True):
+from . import plotting as p
+
+# Classes
+
+class Pair:
+    """
+    The Pair is the two traces on which analysis is performed
+    it doesn't need to be used but supports methods which may
+    make the syntax easier to use
+    """
+    def __init__(self,x=None,y=None):
+        """x and y are traces in the form of numpy arrays"""
+        
+        if x is None or y is None:
+            
+            self.data = synth()
+        
+        else:
+            
+            # some checks
+            if x.ndim != 1:
+                raise Exception('traces must be one dimensional')
+            if x.shape != y.shape:
+                raise Exception('x and y must be the same shape')
+            if x.shape[0]%2 == 0:
+                raise Exception('traces must have odd number of samples')
+            # combine data into pair
+            self.data = np.vstack((x,y))
+        
+    # methods
+    def plot(self):
+        self.plot = p.plot_pair(self.data)
+    
+    def split(self,degrees,nsamps):
+        self.data = split(self.data,degrees,nsamps)
+    
+    def unsplit(self,degrees,nsamps):
+        self.data = unsplit(self.data,degrees,nsamps)
+        
+    def rotate(self,degrees):
+        self.data = rotate(self.data,degrees)
+        
+    def lag(self,nsamps):
+        self.data = lag(self.data,nsamps)
+        
+
+def synth(noise=True,fast=0,lag=0):
     """return ricker wavelet synthetic data"""
     ricker = signal.ricker(501, 16.0)
     pair = np.vstack((ricker,np.zeros(ricker.shape)))
     if noise is True:
         noise = np.random.normal(0,.005,pair.shape)
-        return pair + noise
-    else:
-        return pair
+        pair = pair + noise
+    return split(pair,fast,lag)
 
 def lag(pair,nsamps):
     """
@@ -62,12 +105,12 @@ def rotate_and_lag(pair,degrees,nsamps):
     return lag(rotate(pair,degrees), nsamps)
 
 def split(pair,degrees,nsamps):
-    """Apply splitting and rotate back"""
+    """Apply forward splitting and rotate back"""
     return rotate( rotate_and_lag(pair,degrees,nsamps), -degrees)
 
 def unsplit(pair,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
-    return split(pair,degrees,-nsamps)
+    return rotate( rotate_and_lag(pair,degrees,-nsamps), -degrees)
     
 def window(pair,width):
     """Window traces about centre sample

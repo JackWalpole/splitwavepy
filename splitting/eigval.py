@@ -1,12 +1,32 @@
-#!/usr/bin/env python
-
 """
 The eigenvalue method of Silver and Chan (1991)
 """
 
 from . import core as c
+from . import plotting as p
 import numpy as np
 
+class Measurement:
+    
+    def __init__(self,degs,lags,lam1,lam2):
+        self.method = 'Eigenvalue'
+        self.degs = degs
+        self.lags = lags
+        self.lam1 = lam1
+        self.lam2 = lam2
+        
+    # def summary():
+    #     """
+    #     Print useful info about the measurement
+    #     """
+    #     print()
+    
+    # methods
+    def plot(self):
+        self.plot = p.plot_surf(self.lags,self.degs,self.lam1,self.lam2)
+        
+        
+    
 def eigcov(pair):
     """get eigenvalues of covariance matrix"""
     return np.sort(np.linalg.eigvals(np.cov(pair,rowvar=True)))
@@ -21,7 +41,10 @@ def grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
     if window is None:
         # by default whatevers smaller,
         # half trace length or 10 * max shift
+        # ensure window is odd length
         window = int(np.min([pair.shape[1] * 0.5,maxshift * 10]))
+        if window%2 == 0:
+            window = window + 1
 
     deg, lag = np.meshgrid(np.arange(0,180,stepang),
                              np.arange(0,maxshift,stepshift).astype(int))

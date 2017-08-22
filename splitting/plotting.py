@@ -15,6 +15,7 @@ def plot_pair(pair):
     plt.axis('equal')
     plt.show()
     
-# def plt_surf(surf):
-#     from matplotlib import colors, ticker, cm
-#     plt.contourf(surf.lag,surf.deg,surf.l2/(surf.l1+surf.l2),locator=ticker.LogLocator(),cmap='viridis_r')
+def plot_surf(lags,degs,lam1,lam2):
+    from matplotlib import colors, ticker, cm
+    plt.contourf(lags,degs,lam2/(lam1+lam2),locator=ticker.LogLocator(),cmap='viridis_r')
+    plt.show()
