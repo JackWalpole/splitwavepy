@@ -4,7 +4,8 @@
 The eigenvalue method of Silver and Chan (1991)
 """
 
-import core as c
+from . import core as c
+import numpy as np
 
 def eigcov(pair):
     """get eigenvalues of covariance matrix"""
@@ -29,9 +30,10 @@ def grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
     lam1 = np.zeros(shape)
     lam2 = np.zeros(shape)
     for ii in np.arange(shape[1]):
-        temp = rotate(pair,deg[0,ii]+90)
+        temp = c.rotate(pair,deg[0,ii])
         for jj in np.arange(shape[0]):
-            temp2 = shift(temp,lag[jj,ii])
-            temp3 = taper(temp2,window)
+            # remove splitting so use inverse operator (negative lag)
+            temp2 = c.lag(temp,-lag[jj,ii])
+            temp3 = c.window(temp2,window)
             lam2[jj,ii], lam1[jj,ii] = eigcov(temp3)
     return deg, lag, lam1, lam2
