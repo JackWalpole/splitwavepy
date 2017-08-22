@@ -31,11 +31,14 @@ def eigcov(pair):
     """get eigenvalues of covariance matrix"""
     return np.sort(np.linalg.eigvals(np.cov(pair,rowvar=True)))
     
-def grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
+def grideigcov(pair, maxshift=None, window=None, stepang=None, stepshift=None):
 
     # set some defaults
+    if maxshift is None:
+        maxshift = int(pair[0].size / 10)
+        maxshift = maxshift if maxshift%2==0 else maxshift + 1
     if stepshift is None:
-        stepshift = 2 * int(np.max([1,maxshift/40]))
+        stepshift = 2 * int(np.max([1,maxshift/20]))
     if stepang is None:
         stepang = 2
     if window is None:
@@ -43,8 +46,8 @@ def grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
         # half trace length or 10 * max shift
         # ensure window is odd length
         window = int(np.min([pair.shape[1] * 0.5,maxshift * 10]))
-        if window%2 == 0:
-            window = window + 1
+        window = window if window%2==1 else window + 1
+
 
     deg, lag = np.meshgrid(np.arange(0,180,stepang),
                              np.arange(0,maxshift,stepshift).astype(int))
@@ -59,4 +62,5 @@ def grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
             temp2 = c.lag(temp,-lag[jj,ii])
             temp3 = c.window(temp2,window)
             lam2[jj,ii], lam1[jj,ii] = eigcov(temp3)
-    return deg, lag, lam1, lam2
+            
+    return Measurement(deg,lag,lam1,lam2)

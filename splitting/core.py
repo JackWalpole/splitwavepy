@@ -13,6 +13,7 @@ import math
 from scipy import signal
 
 from . import plotting as p
+from . import eigval
 
 # Classes
 
@@ -56,6 +57,9 @@ class Pair:
         
     def lag(self,nsamps):
         self.data = lag(self.data,nsamps)
+        
+    def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
+        return eigval.grideigcov(self.data)
         
 
 def synth(noise=True,fast=0,lag=0):
