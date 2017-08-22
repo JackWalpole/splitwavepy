@@ -11,7 +11,6 @@ Trace must have odd number of samples so there is a definite centre.
 from __future__ import print_function
 
 import numpy as np
-# import matplotlib.pyplot as plt
 import math
 from scipy import signal
 
@@ -27,12 +26,13 @@ def synthpair(noise=True):
 
 def lag(pair,nsamps):
     """
-    lag t1 nsamps/2 samples to the left and
-    lag t2 nsamps/2 samples to the right,
-    nsamps must be even,
-    if nsamps is negative t1 shifted to the right and t2 to the left
-    this process truncates trace length
-    therefore windowing must be used after this process to ensure even trace lengths
+    Lag t1 nsamps/2 to the left and
+    lag t2 nsamps/2 to the right.
+    nsamps must be even.
+    If nsamps is negative t1 shifted to the right and t2 to the left.
+    This process truncates trace length by nsamps and preserves centrality.
+    Therefore windowing must be used after this process 
+    to ensure even trace lengths when measuring splitting.
     """
     if nsamps == 0:
         return pair
@@ -44,16 +44,14 @@ def lag(pair,nsamps):
     
     if nsamps > 0:
         # positive shift
-        return np.vstack((t1[nsamps:-nsamps], t2[:-2*nsamps]))
+        return np.vstack((t1[nsamps:], t2[:-nsamps]))
     else:
         # negative shift
-        nsamps=-nsamps
-        return np.vstack((t1[:-2*nsamps], t2[nsamps:-nsamps]))
+        return np.vstack((t1[:nsamps], t2[-nsamps:]))
 
         
-
 def rotate(pair,degrees):
-    """t1 is x-axis and t2 is y-axis,
+    """row 0 is x-axis and row 1 is y-axis,
        rotates clockwise"""
     ang = np.deg2rad(degrees)
     rot = np.array([[np.cos(ang),-np.sin(ang)],
@@ -69,23 +67,19 @@ def split(pair,degrees,nsamps):
 
 def unsplit(pair,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
-    return rotate( split(pair,degrees,-nsamps), degrees)
+    return split(pair,degrees,-nsamps)
     
-# def window(pair,width,centre=None):
-#     """Window traces about centre sample
-#        width must be odd"""
-#
-#     if
+def window(pair,width):
+    """Window traces about centre sample
+       width must be odd to maintain definite centre"""
     
-def taper(pair,width,centre=None):
-    """Apply Hanning window about c0 sample
-       of width number of samples, truncates traces"""
-        
-    if centre is None:
-        centre = math.floor(pair.shape[1]/2)
+    if width%2 != 1:
+        raise Exception('width must be odd')
+    
+    centre = math.floor(pair.shape[1]/2)
         
     if width > pair.shape[1]:
-        raise Exception('taper width is greater than trace length')
+        raise Exception('window width is greater than trace length')
         
     t0 = centre - math.floor(width/2)
     t1 = centre + math.ceil(width/2)
@@ -95,7 +89,13 @@ def taper(pair,width,centre=None):
     elif t1 > pair.shape[1]:
         raise Exception('window ends after trace data')
         
-    return np.hanning(width) * pair[:,t0:t1]
+    return pair[:,t0:t1]
+    
+# def hann_window(pair,width):
+#     """Apply Hanning taper
+#        of width number of samples, truncates traces"""
+#     data = window(pair,width)
+#     return np.hanning(width) * data
 
 # def eigcov(pair):
 #     return np.sort(np.linalg.eigvals(np.cov(pair,rowvar=True)))
