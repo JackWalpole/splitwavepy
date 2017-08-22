@@ -2,25 +2,33 @@
 
 from __future__ import print_function
 
+import numpy as np
+import matplotlib.pyplot as plt
+import math
+from scipy import signal
 
-
-def _shift(pair,shift):
+def shift(pair,shift):
     """shift t1 shift/2 samples to the left and
        shift t2 shift/2 samples to the right,
-       if shift is odd move t1 the extra sample
+       shift must be even number of samples
        this process truncates trace length"""
     if shift == 0:
         return pair
-    elif shift == 1:
+    elif shift%2 != 0:
+        raise Exception('shift must be even number of samples')
+    
+    if shift > 0:
         t1 = pair[0,:]
         t2 = pair[1,:]
-        return np.vstack((t1[math.ceil(shift/2):], t2[:-shift]))
     else:
-        t1 = pair[0,:]
-        t2 = pair[1,:]
-        return np.vstack((t1[math.ceil(shift/2):-math.floor(shift/2)], t2[:-shift]))
+        t1 = pair[1,0]
+        t2 = pair[0,:]
 
-def _rotate(pair,degrees):
+    return np.vstack((t1[math.ceil(shift/2):-math.floor(shift/2)], t2[:-shift]))
+        
+
+
+def rotate(pair,degrees):
     """t1 is x-axis and t2 is y-axis,
        rotates clockwise"""
     ang = np.deg2rad(degrees)
@@ -28,16 +36,16 @@ def _rotate(pair,degrees):
                     [np.sin(ang), np.cos(ang)]])
     return np.dot(rot,pair)
 
-def _rotate_and_shift(pair,degrees,shift):
-    return _shift(_rotate(pair,degrees), shift)
+def rotate_and_shift(pair,degrees,shift):
+    return shift(_rotate(pair,degrees), shift)
 
-def _split(pair,degrees,shift):
-    return _rotate(_shift(_rotate(pair,degrees), shift),-degrees)
+def split(pair,degrees,shift):
+    return rotate(_shift(_rotate(pair,degrees), shift),-degrees)
 
-def _unsplit(pair,degrees,shift):
-    return _split(pair,degrees+90,shift)
+def unsplit(pair,degrees,shift):
+    return split(pair,degrees+90,shift)
     
-def _taper(pair,width,centre=None):
+def taper(pair,width,centre=None):
     """Apply Hanning window about c0 sample
        of width number of samples, truncates traces"""
     
@@ -57,11 +65,11 @@ def _taper(pair,width,centre=None):
         
     return np.hanning(width) * pair[:,t0:t1]
 
-def _eigcov(pair):
+def eigcov(pair):
     return np.sort(np.linalg.eigvals(np.cov(pair,rowvar=True)))
 #     return np.sort(np.linalg.eigvals(np.cov(pair)))
 
-def _grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
+def grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
     
     # set some defaults
     if stepshift is None:
@@ -80,17 +88,17 @@ def _grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
     lam1 = np.zeros(shape)
     lam2 = np.zeros(shape)
     for ii in np.arange(shape[1]):
-        temp = _rotate(pair,deg[0,ii]+90)
+        temp = rotate(pair,deg[0,ii]+90)
         for jj in np.arange(shape[0]):
-            temp2 = _shift(temp,shift[jj,ii])
-            temp3 = _taper(temp2,window)
-            lam2[jj,ii], lam1[jj,ii] = _eigcov(temp3)
+            temp2 = shift(temp,shift[jj,ii])
+            temp3 = taper(temp2,window)
+            lam2[jj,ii], lam1[jj,ii] = eigcov(temp3)
     return deg, shift, lam1, lam2
 
-def _xcorr(pair):
+def xcorr(pair):
     return np.correlate(pair[0,:],pair[1,:])[0]
 
-def _gridxcorr(pair,maxshift,window=None, stepang=None,stepshift=None):
+def gridxcorr(pair,maxshift,window=None, stepang=None,stepshift=None):
     
     # set some defaults
     if stepshift is None:
@@ -108,10 +116,10 @@ def _gridxcorr(pair,maxshift,window=None, stepang=None,stepshift=None):
     shape = deg.shape
     xc = np.zeros(shape)
     for ii in np.arange(shape[1]):
-        temp = _rotate(pair,deg[0,ii]+90)
+        temp = rotate(pair,deg[0,ii]+90)
         for jj in np.arange(shape[0]):
-            temp2 = _shift(temp,shift[jj,ii])
-            temp3 = _taper(temp2,window)
-            xc[jj,ii] = _xcorr(temp3)
+            temp2 = shift(temp,shift[jj,ii])
+            temp3 = taper(temp2,window)
+            xc[jj,ii] = xcorr(temp3)
     return deg, shift, xc  
     
