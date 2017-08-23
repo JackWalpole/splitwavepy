@@ -58,6 +58,9 @@ class Pair:
     def lag(self,nsamps):
         self.data = lag(self.data,nsamps)
         
+    def window(self,width):
+        self.data = window(slef.data,width)
+        
     def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
         return eigval.grideigcov(self.data)
         

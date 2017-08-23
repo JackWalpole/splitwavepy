@@ -64,3 +64,35 @@ def grideigcov(pair, maxshift=None, window=None, stepang=None, stepshift=None):
             lam2[jj,ii], lam1[jj,ii] = eigcov(temp3)
             
     return Measurement(deg,lag,lam1,lam2)
+
+
+def ndf(y,taper=True,detrend=True,):
+    """
+    Uses the improvement found by Walsh et al (2013).
+    By default will detrend data and taper the edges.
+    """
+
+    if taper is True:
+        # taper edges to reduce transform artefacts
+        y = y * signal.tukey(y.size,0.05)
+        
+    if detrend is True:
+        # ensure no trend on the noise trace
+        y = signal.detrend(y)
+
+  
+    Y = np.fft.fft(y)
+    amp = np.absolute(Y)
+    
+    # estimate E2 and E4 following Walsh et al (2013)
+    # note we do not scale the first and last samples by half before summing
+    # as is done by Walsh following Silver and Chan.
+    # this is because in practice we use a discrete fourier transform, 
+    # and not a continuous transform for which the former approach would be correct.
+    E2 = np.sum(amp**2)
+    E4 = 4/3 * np.sum(amp**4)
+    
+    ndf = 2 * ( 2 * E2**2 / E4 - 1 )
+    
+    return int(round(ndf))
+    
