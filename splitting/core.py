@@ -23,12 +23,12 @@ class Pair:
     it doesn't need to be used but supports methods which may
     make the syntax easier to use
     """
-    def __init__(self,x=None,y=None):
+    def __init__(self,x=None,y=None,noise=0.005):
         """x and y are traces in the form of numpy arrays"""
         
         if x is None or y is None:
             
-            self.data = synth()
+            self.data = synth(noise)
         
         else:
             
@@ -62,16 +62,14 @@ class Pair:
         self.data = window(slef.data,width)
         
     def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
-        return eigval.grideigcov(self.data)
+        return eigval.grideigvalcov(self.data)
         
 
-def synth(noise=True,fast=0,lag=0):
+def synth(fast=0,lag=0,noise=0.005):
     """return ricker wavelet synthetic data"""
     ricker = signal.ricker(501, 16.0)
     pair = np.vstack((ricker,np.zeros(ricker.shape)))
-    if noise is True:
-        noise = np.random.normal(0,.005,pair.shape)
-        pair = pair + noise
+    pair = pair + np.random.normal(0,noise,pair.shape)
     return split(pair,fast,lag)
 
 def lag(pair,nsamps):

@@ -5,6 +5,7 @@ The eigenvalue method of Silver and Chan (1991)
 from . import core as c
 from . import plotting as p
 import numpy as np
+import matplotlib.pyplot as plt
 
 class Measurement:
     
@@ -14,24 +15,48 @@ class Measurement:
         self.lags = lags
         self.lam1 = lam1
         self.lam2 = lam2
+        self.phi = np.argmin()
+        self.lag = np.argmin()        
         
-    # def summary():
+    # def print_summary():
     #     """
     #     Print useful info about the measurement
     #     """
     #     print()
     
     # methods
-    def plot(self):
-        self.plot = p.plot_surf(self.lags,self.degs,self.lam1,self.lam2)
+    def plot_val(self,vals=self.lam1/self.lam2):
+        """
+        plot a surface
+        """
+        plt.contourf(lags,degs,vals,cmap='viridis')
+        plt.show()
+        
+    def min_idx(self,vals):
+        return np.unravel_index(np.argmin(vals),vals.shape)
+        
+    def max_idx(self,vals):
+        return np.unravel_index(np.argmax(vals),vals.shape)
+    
+
         
         
+    
+def eigvalcov(pair):
+    """
+    return sorted eigenvalues of covariance matrix
+    lambda1 first, lambda2 second
+    """
+    return np.sort(np.linalg.eigvals(np.cov(pair)))
     
 def eigcov(pair):
-    """get eigenvalues of covariance matrix"""
-    return np.sort(np.linalg.eigvals(np.cov(pair,rowvar=True)))
+    """
+    return eigenvalues and eigenvectors of covariance matrix
+    """
+    vals,vecs = np.linalg.eig(np.cov(pair))
     
-def grideigcov(pair, maxshift=None, window=None, stepang=None, stepshift=None):
+    
+def grideigvalcov(pair, maxshift=None, window=None, stepang=None, stepshift=None):
 
     # set some defaults
     if maxshift is None:
@@ -61,19 +86,22 @@ def grideigcov(pair, maxshift=None, window=None, stepang=None, stepshift=None):
             # remove splitting so use inverse operator (negative lag)
             temp2 = c.lag(temp,-lag[jj,ii])
             temp3 = c.window(temp2,window)
-            lam2[jj,ii], lam1[jj,ii] = eigcov(temp3)
+            lam2[jj,ii], lam1[jj,ii] = eigvalcov(temp3)
             
     return Measurement(deg,lag,lam1,lam2)
 
 
-def ndf(y,taper=True,detrend=True,):
+
+
+def ndf(y,taper=True,detrend=True):
     """
+    Estimates number of degrees of freedom using noise trace y.
     Uses the improvement found by Walsh et al (2013).
-    By default will detrend data and taper the edges.
+    By default will detrend data to ensure zero mean
+    and will taper edges using a Tukey filter affecting amplitudes of data at edges (extreme 5%)
     """
 
     if taper is True:
-        # taper edges to reduce transform artefacts
         y = y * signal.tukey(y.size,0.05)
         
     if detrend is True:
@@ -85,14 +113,25 @@ def ndf(y,taper=True,detrend=True,):
     amp = np.absolute(Y)
     
     # estimate E2 and E4 following Walsh et al (2013)
-    # note we do not scale the first and last samples by half before summing
-    # as is done by Walsh following Silver and Chan.
-    # this is because in practice we use a discrete fourier transform, 
-    # and not a continuous transform for which the former approach would be correct.
-    E2 = np.sum(amp**2)
-    E4 = 4/3 * np.sum(amp**4)
+    a = np.ones(Y.size)
+    a[0] = a[-1] = 0.5
+    E2 = np.sum( a * amp**2)
+    E4 = (np.sum( (4 * a**2 / 3) * amp**4))
     
     ndf = 2 * ( 2 * E2**2 / E4 - 1 )
     
-    return int(round(ndf))
+    return ndf
+    
+def Ftest(M,ndf,alpha=0.05):
+    """
+    returns lambda2 value at 100(1-alpha)% confidence interval
+    by default alpha=0.05 yielding the value of lambda2 at 95% confidence interval
+    """
+    lam2min = M.lam2.min()
+    k = 2
+    R = ((M.lam2 - lam2min)/k) /  (lam2min/(ndf-k))
+    F = stats.f.ppf(1-alpha,k,ndf)
+    lam2alpha = lam2min * ( 1 + (k/(ndf-k)) * F)
+    return lam2alpha
+    
     

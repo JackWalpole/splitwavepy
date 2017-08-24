@@ -92,9 +92,20 @@ def trans_theta(point,ray,theta):
     """
     return vector at point p, transverse to ray, and at angle theta degrees clockwise from  "up"
     useful angles include: up (0), horizontal (+/-90), polarisation, fast, slow
+    if ray is "up"
     """
 
 
     
 
 
+# vector basics
+def vunit():
+    """
+    return unit vector in direction v
+    """
+    
+def vreject(a,b):
+    
+
+def 
