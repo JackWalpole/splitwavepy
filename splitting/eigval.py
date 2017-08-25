@@ -15,8 +15,8 @@ class Measurement:
         self.lags = lags
         self.lam1 = lam1
         self.lam2 = lam2
-        self.phi = np.argmin()
-        self.lag = np.argmin()        
+        # self.phi = np.argmin()
+        # self.lag = np.argmin()    
         
     # def print_summary():
     #     """
@@ -24,13 +24,14 @@ class Measurement:
     #     """
     #     print()
     
-    # methods
-    def plot_val(self,vals=self.lam1/self.lam2):
-        """
-        plot a surface
-        """
-        plt.contourf(lags,degs,vals,cmap='viridis')
-        plt.show()
+    #
+    # # methods
+    # def plot_val(self,vals=self.lam1/self.lam2):
+    #     """
+    #     plot a surface
+    #     """
+    #     plt.contourf(lags,degs,vals,cmap='viridis')
+    #     plt.show()
         
     def min_idx(self,vals):
         return np.unravel_index(np.argmin(vals),vals.shape)

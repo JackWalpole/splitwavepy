@@ -4,6 +4,9 @@ Some plotting routines
 
 import matplotlib.pyplot as plt
 
+# facilitate multiple occurances of plot
+plt.ion()
+
 def plot_pair(pair):
     from matplotlib import gridspec
     fig = plt.figure(figsize=(12, 3)) 

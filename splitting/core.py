@@ -17,16 +17,16 @@ from . import eigval
 
 class Pair:
     """
-    The Pair is the two traces on which analysis is performed
-    it doesn't need to be used but supports methods which may
-    make the syntax easier to use
+    The Pair is a convenience class in which to store two traces x and y.
+    Methods are included to facilitate analysis on this Pair of traces.
+    If x and y data not provided will generate a ricker wavelet with noise.
     """
-    def __init__(self,x=None,y=None,noise=0.005):
+    def __init__(self,x=None,y=None):
         """x and y are traces in the form of numpy arrays"""
         
         if x is None or y is None:
             
-            self.data = synth(noise)
+            self.data = synth()
         
         else:
             
@@ -42,7 +42,7 @@ class Pair:
         
     # methods
     def plot(self):
-        self.plot = p.plot_pair(self.data)
+        p.plot_pair(self.data)
     
     def split(self,degrees,nsamps):
         self.data = split(self.data,degrees,nsamps)
@@ -63,9 +63,9 @@ class Pair:
         return eigval.grideigvalcov(self.data)
         
 
-def synth(fast=0,lag=0,noise=0.005):
+def synth(fast=0,lag=0,noise=0.005,nsamps=501,width=16.0):
     """return ricker wavelet synthetic data"""
-    ricker = signal.ricker(501, 16.0)
+    ricker = signal.ricker(int(nsamps), width)
     pair = np.vstack((ricker,np.zeros(ricker.shape)))
     pair = pair + np.random.normal(0,noise,pair.shape)
     return split(pair,fast,lag)
@@ -136,68 +136,3 @@ def window(pair,width):
         raise Exception('window ends after trace data')
         
     return pair[:,t0:t1]
-    
-# def hann_window(pair,width):
-#     """Apply Hanning taper
-#        of width number of samples, truncates traces"""
-#     data = window(pair,width)
-#     return np.hanning(width) * data
-
-# def eigcov(pair):
-#     return np.sort(np.linalg.eigvals(np.cov(pair,rowvar=True)))
-# #     return np.sort(np.linalg.eigvals(np.cov(pair)))
-#
-# def grideigcov(pair,maxshift,window=None, stepang=None,stepshift=None):
-#
-#     # set some defaults
-#     if stepshift is None:
-#         stepshift = 2 * int(np.max([1,maxshift/40]))
-#     if stepang is None:
-#         stepang = 2
-#     if window is None:
-#         # by default whatevers smaller,
-#         # half trace length or 10 * max shift
-#         window = int(np.min([pair.shape[1] * 0.5,maxshift * 10]))
-#
-#     deg, lag = np.meshgrid(np.arange(0,180,stepang),
-#                              np.arange(0,maxshift,stepshift).astype(int))
-#
-#     shape = deg.shape
-#     lam1 = np.zeros(shape)
-#     lam2 = np.zeros(shape)
-#     for ii in np.arange(shape[1]):
-#         temp = rotate(pair,deg[0,ii]+90)
-#         for jj in np.arange(shape[0]):
-#             temp2 = shift(temp,lag[jj,ii])
-#             temp3 = taper(temp2,window)
-#             lam2[jj,ii], lam1[jj,ii] = eigcov(temp3)
-#     return deg, lag, lam1, lam2
-#
-# def xcorr(pair):
-#     return np.correlate(pair[0,:],pair[1,:])[0]
-#
-# def gridxcorr(pair,maxshift,window=None, stepang=None,stepshift=None):
-#
-#     # set some defaults
-#     if stepshift is None:
-#         stepshift = int(np.max([1,maxshift/40]))
-#     if stepang is None:
-#         stepang = 2
-#     if window is None:
-#         # by default whatevers smaller,
-#         # half trace length or 10 * max shift
-#         window = int(np.min([pair.shape[1] * 0.5,maxshift * 10]))
-#
-#     deg, shift = np.meshgrid(np.arange(0,180,stepang),
-#                              np.arange(0,maxshift,stepshift).astype(int))
-#
-#     shape = deg.shape
-#     xc = np.zeros(shape)
-#     for ii in np.arange(shape[1]):
-#         temp = rotate(pair,deg[0,ii]+90)
-#         for jj in np.arange(shape[0]):
-#             temp2 = shift(temp,shift[jj,ii])
-#             temp3 = taper(temp2,window)
-#             xc[jj,ii] = xcorr(temp3)
-#     return deg, shift, xc
-    
