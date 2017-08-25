@@ -148,7 +148,25 @@ def pca(data):
     w,v = np.linalg.eig(np.cov(data))
     m = np.argmax(w)
     return np.rad2deg(np.arctan2(v[1,m],v[0,m]))
-
+    
+def snr(data):
+    """
+    Returns signal to noise ratio assuming signal on trace1 and noise on trace2
+    Calculates on each trace by sum of squares and then takes the ratio
+    """
+    signal = np.sum(data[0,:]**2)
+    noise = np.sum(data[1,:]**2)
+    return signal / noise
+    
+def snr_RH(data):
+    """
+    Returns signal to noise ratio assuming signal on trace1 and noise on trace2
+    Uses the method of Restivo and Helffrich (1999):
+    peak amplitude on trace1 / 2*std trace2
+    """
+    signal = np.max(data[0,:])
+    noise = 2 * np.std(data[1,:])
+    return signal / noise
 
 # Useful bits and pieces
 

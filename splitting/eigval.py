@@ -13,18 +13,13 @@ class Measurement:
         
         self.method = 'Eigenvalue'
         
-        if data is None:
-            
+        if data is None:           
             # generate synthetic
-            self.data, self.degs, self.lags, self.lam1, self.lam2, self.window = _synthM()
-        
-        elif data is not None and (degs is None or lags is None or lam1 is None or lam2 is None or window is None):
-                                               
+            self.data, self.degs, self.lags, self.lam1, self.lam2, self.window = _synthM()      
+        elif data is not None and (degs is None or lags is None or lam1 is None or lam2 is None or window is None):                                              
             # generate measurement using defaults
-            self.data,self.degs, self.lags, self.lam1, self.lam2, self.window = _grideigval(data)
-            
-        else:
-            
+            self.data,self.degs, self.lags, self.lam1, self.lam2, self.window = _grideigval(data)           
+        else:           
             # everything provided
             self.data = data
             self.degs = degs
@@ -33,7 +28,6 @@ class Measurement:
             self.lam2 = lam2
             self.window = window
             
-
         # ensure data is a Pair for convenience functions
         if not isinstance(self.data,c.Pair):
             self.data = c.Pair(self.data)
@@ -44,11 +38,25 @@ class Measurement:
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
         
-        # get some useful attributes
-        self.unsplitdata = c.Pair(c.unsplit(self.data.data,self.fast,self.lag))
-        # self.srcpol =
-       
-
+        # get some useful stuff
+        self.data_corrected = c.unsplit(self.data.data,self.fast,self.lag)
+        self.srcpol = c.pca(self.data_corrected)
+        self.srcpoldata = c.rotate(self.data,-self.srcpol)
+        self.srcpoldata_corrected = c.rotate(self.data_corrected,-self.srcpol)
+        
+        #
+        # # signal to noise ratio
+        # self.snr
+        # # number degrees of freedom
+        # self.ndf
+        # # value of lam2 at 95% confidence contour
+        # self.lam2_95
+        # #
+        #
+        # # convert to Pair class for convenience
+        # self.unsplitdata = c.Pair(self.unsplitdata)
+        # self.origsrcpoldata = c.Pair
+        # self.unsplitsrcpoldata =
         
 
     def plot(self,vals=None,cmap='magma'):
@@ -112,15 +120,6 @@ def _grideigval(data, maxlag=None, window=None, stepang=None, steplag=None):
 def grideigval(data, maxlag=None, window=None, stepang=None, steplag=None):
     data,degs,lags,lam1,lam2,window = _grideigval(data)
     return Measurement(data=data,degs=degs,lags=lags,lam1=lam1,lam2=lam2,window=window)
-    
-def _get_noise_trace(data,Measurement):
-    """
-    Gets the noise trace given data and Measurement
-    """
-    data = c.unsplit()
-    
-
-    
     
 
 def ndf(y,taper=True,detrend=True):
