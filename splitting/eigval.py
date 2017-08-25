@@ -75,12 +75,6 @@ def eigvalcov(data):
     """
     return np.sort(np.linalg.eigvals(np.cov(data)))
     
-def eigcov(data):
-    """
-    return eigenvalues and eigenvectors of covariance matrix
-    """
-    vals,vecs = np.linalg.eig(np.cov(data))
-    
     
 def _grideigval(data, maxlag=None, window=None, stepang=None, steplag=None):
 
@@ -125,11 +119,8 @@ def _get_noise_trace(data,Measurement):
     """
     data = c.unsplit()
     
-# def srcpol(data,fast,lag):
-#     """
-#     Calculate source polarisation from data
-#     """
-#     data = c.unsplit(self.data,self.deg,self.lag)
+
+    
     
 
 def ndf(y,taper=True,detrend=True):

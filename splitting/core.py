@@ -140,7 +140,14 @@ def window(data,width):
         
     return data[:,t0:t1]
     
-    
+def pca(data):
+    """
+    Principal component analysis
+    Returns direction of strongest component in degrees anti-clockwise from x
+    """
+    w,v = np.linalg.eig(np.cov(data))
+    m = np.argmax(w)
+    return np.rad2deg(np.arctan2(v[1,m],v[0,m]))
 
 
 # Useful bits and pieces
