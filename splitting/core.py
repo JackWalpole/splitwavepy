@@ -136,3 +136,17 @@ def window(pair,width):
         raise Exception('window ends after trace data')
         
     return pair[:,t0:t1]
+
+# Useful bits and pieces
+    
+def min_idx(vals):
+    """
+    return indices of min value in vals grid
+    """
+    return np.unravel_index(np.argmin(vals),vals.shape)
+    
+def max_idx(vals):
+    """
+    return indice of max value in vals grid
+    """
+    return np.unravel_index(np.argmax(vals),vals.shape)

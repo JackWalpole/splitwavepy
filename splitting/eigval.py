@@ -9,33 +9,46 @@ import matplotlib.pyplot as plt
 
 class Measurement:
     
-    def __init__(self,degs=None,lags=None,lam1=None,lam2=None):
+    def __init__(self,data=None,degs=None,lags=None,lam1=None,lam2=None,window=None):
         
         self.method = 'Eigenvalue'
         
-        if degs is None or lags is None or lam1 is None or lam2 is None:
+        if data is not None and (degs is None or lags is None or lam1 is None or lam2 is None or window is None):
+                                               
+            # generate measurement using defaults
+            self.data = data
+            self.degs, self.lags, self.lam1, self.lam2, self.window = _grideigvalcov(data)
+        
+        if data is None:
+            
             # generate synthetic
-            self.degs, self.lags, self.lam1, self.lam2 = _synthM()     
+            self.data, self.degs, self.lags, self.lam1, self.lam2, self.window = _synthM()     
+            
         else:
+            
+            # everything provided
+            self.data = data
             self.degs = degs
             self.lags = lags
             self.lam1 = lam1
             self.lam2 = lam2
+            self.window = window
             
-
+        # get some measurement attributes
+        # uses ratio lam1/lam2 to find optimal fast and lag parameters
+        maxloc = c.max_idx(self.lam1/self.lam2)
+        self.fast = self.degs[maxloc]
+        self.lag  = self.lags[maxloc]
+        # self.sourcepol = srcpol(self)
         
-    def min_idx(self,vals):
-        """
-        return indices of min value in vals grid
-        """
-        return np.unravel_index(np.argmin(vals),vals.shape)
         
-    def max_idx(self,vals):
-        """
-        return indice of max value in vals grid
-        """
-        return np.unravel_index(np.argmax(vals),vals.shape)
-    
+    # def srcpol(self):
+    #     """
+    #     Calculate source polarisation from data
+    #     """
+    #     data = c.unsplit(self.data,self.deg,self.lag)
+        
+        
 
     def plot(self,vals=None,cmap='magma'):
         """
@@ -47,8 +60,6 @@ class Measurement:
             
         p.plot_surf(self.lags,self.degs,vals,cmap=cmap)        
 
-        
-        
     
 def eigvalcov(data):
     """
@@ -64,25 +75,25 @@ def eigcov(data):
     vals,vecs = np.linalg.eig(np.cov(data))
     
     
-def _grideigvalcov(data, maxshift=None, window=None, stepang=None, stepshift=None):
+def _grideigvalcov(data, maxlag=None, window=None, stepang=None, steplag=None):
 
     # set some defaults
-    if maxshift is None:
-        maxshift = int(data[0].size / 10)
-        maxshift = maxshift if maxshift%2==0 else maxshift + 1
-    if stepshift is None:
-        stepshift = 2 * int(np.max([1,maxshift/20]))
+    if maxlag is None:
+        maxlag = int(data[0].size / 10)
+        maxlag = maxlag if maxlag%2==0 else maxlag + 1
+    if steplag is None:
+        steplag = 2 * int(np.max([1,maxlag/80]))
     if stepang is None:
         stepang = 2
     if window is None:
         # by default whatevers smaller,
         # half trace length or 10 * max shift
         # ensure window is odd length
-        window = int(np.min([data.shape[1] * 0.5,maxshift * 10]))
+        window = int(np.min([data.shape[1] * 0.5,maxlag * 10]))
         window = window if window%2==1 else window + 1
 
     degs, lags = np.meshgrid(np.arange(0,180,stepang),
-                             np.arange(0,maxshift,stepshift).astype(int))
+                             np.arange(0,maxlag,steplag).astype(int))
 
     shape = degs.shape
     lam1 = np.zeros(shape)
@@ -95,11 +106,20 @@ def _grideigvalcov(data, maxshift=None, window=None, stepang=None, stepshift=Non
             temp3 = c.window(temp2,window)
             lam2[jj,ii], lam1[jj,ii] = eigvalcov(temp3)
             
-    return degs,lags,lam1,lam2
+    return data,degs,lags,lam1,lam2,window
 
-def grideigvalcov(data, maxshift=None, window=None, stepang=None, stepshift=None):
-    degs,lags,lam1,lam2 = _grideigvalcov()
-    return Measurement(degs=degs,lags=lags,lam1=lam1,lam2=lam2)
+def grideigvalcov(data, maxlag=None, window=None, stepang=None, steplag=None):
+    degs,lags,lam1,lam2,window = _grideigvalcov(data)
+    return Measurement(data=data,degs=degs,lags=lags,lam1=lam1,lam2=lam2,window=window)
+    
+def _get_noise_trace(data,Measurement):
+    """
+    Gets the noise trace given data and Measurement
+    """
+    data = c.unsplit()
+    
+    
+    
 
 def ndf(y,taper=True,detrend=True):
     """
@@ -136,7 +156,7 @@ def Ftest(M,ndf,alpha=0.05):
     by default alpha=0.05 yielding the value of lambda2 at 95% confidence interval
     """
     lam2min = M.lam2.min()
-    k = 2
+    k = 2 # two parameters, phi and dt.
     R = ((M.lam2 - lam2min)/k) /  (lam2min/(ndf-k))
     F = stats.f.ppf(1-alpha,k,ndf)
     lam2alpha = lam2min * ( 1 + (k/(ndf-k)) * F)
@@ -146,4 +166,6 @@ def _synthM(deg=25,lag=10):
     P = c.Pair()
     P.split(deg,lag)
     return _grideigvalcov(P.data)
+    
+
      
