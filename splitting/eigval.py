@@ -13,16 +13,15 @@ class Measurement:
         
         self.method = 'Eigenvalue'
         
-        if data is not None and (degs is None or lags is None or lam1 is None or lam2 is None or window is None):
-                                               
-            # generate measurement using defaults
-            self.data = data
-            self.degs, self.lags, self.lam1, self.lam2, self.window = _grideigvalcov(data)
-        
         if data is None:
             
             # generate synthetic
-            self.data, self.degs, self.lags, self.lam1, self.lam2, self.window = _synthM()     
+            self.data, self.degs, self.lags, self.lam1, self.lam2, self.window = _synthM()
+        
+        elif data is not None and (degs is None or lags is None or lam1 is None or lam2 is None or window is None):
+                                               
+            # generate measurement using defaults
+            self.data,self.degs, self.lags, self.lam1, self.lam2, self.window = _grideigval(data)
             
         else:
             
@@ -34,20 +33,22 @@ class Measurement:
             self.lam2 = lam2
             self.window = window
             
+
+        # ensure data is a Pair for convenience functions
+        if not isinstance(self.data,c.Pair):
+            self.data = c.Pair(self.data)
+        
         # get some measurement attributes
         # uses ratio lam1/lam2 to find optimal fast and lag parameters
         maxloc = c.max_idx(self.lam1/self.lam2)
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
-        # self.sourcepol = srcpol(self)
         
-        
-    # def srcpol(self):
-    #     """
-    #     Calculate source polarisation from data
-    #     """
-    #     data = c.unsplit(self.data,self.deg,self.lag)
-        
+        # get some useful attributes
+        self.unsplitdata = c.Pair(c.unsplit(self.data.data,self.fast,self.lag))
+        # self.srcpol =
+       
+
         
 
     def plot(self,vals=None,cmap='magma'):
@@ -58,8 +59,14 @@ class Measurement:
         if vals is None:
             vals = self.lam1 / self.lam2
             
-        p.plot_surf(self.lags,self.degs,vals,cmap=cmap)        
+        p.plot_surf(self.lags,self.degs,vals,cmap=cmap)
+        
 
+    # def save():
+    #     """
+    #     Save Measurement for future referral
+    #     """
+        
     
 def eigvalcov(data):
     """
@@ -75,7 +82,7 @@ def eigcov(data):
     vals,vecs = np.linalg.eig(np.cov(data))
     
     
-def _grideigvalcov(data, maxlag=None, window=None, stepang=None, steplag=None):
+def _grideigval(data, maxlag=None, window=None, stepang=None, steplag=None):
 
     # set some defaults
     if maxlag is None:
@@ -108,8 +115,8 @@ def _grideigvalcov(data, maxlag=None, window=None, stepang=None, steplag=None):
             
     return data,degs,lags,lam1,lam2,window
 
-def grideigvalcov(data, maxlag=None, window=None, stepang=None, steplag=None):
-    degs,lags,lam1,lam2,window = _grideigvalcov(data)
+def grideigval(data, maxlag=None, window=None, stepang=None, steplag=None):
+    data,degs,lags,lam1,lam2,window = _grideigval(data)
     return Measurement(data=data,degs=degs,lags=lags,lam1=lam1,lam2=lam2,window=window)
     
 def _get_noise_trace(data,Measurement):
@@ -118,7 +125,11 @@ def _get_noise_trace(data,Measurement):
     """
     data = c.unsplit()
     
-    
+# def srcpol(data,fast,lag):
+#     """
+#     Calculate source polarisation from data
+#     """
+#     data = c.unsplit(self.data,self.deg,self.lag)
     
 
 def ndf(y,taper=True,detrend=True):

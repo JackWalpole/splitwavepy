@@ -19,30 +19,35 @@ class Pair:
     """
     The Pair is a convenience class in which to store two traces x and y.
     Methods are included to facilitate analysis on this Pair of traces.
-    If x and y data not provided will generate a ricker wavelet with noise.
+    If data not provided will generate a ricker wavelet with noise.
+    Usage: Pair()     => create Pair of synthetic data
+           Pair(data) => creates Pair from two traces stored as rows in numpy array data
+           Pair(x,y) => creates Pair from two traces stored in numpy arrays x and y.
     """
-    def __init__(self,x=None,y=None):
+    def __init__(self,*args):
         """x and y are traces in the form of numpy arrays"""
         
-        if x is None or y is None:
-            
-            self.data = synth()
-        
-        else:
-            
-            # some checks
-            if x.ndim != 1:
-                raise Exception('traces must be one dimensional')
-            if x.shape != y.shape:
-                raise Exception('x and y must be the same shape')
-            if x.shape[0]%2 == 0:
-                raise Exception('traces must have odd number of samples')
-            # combine data into pair
-            self.data = np.vstack((x,y))
+        if len(args) == 0:                      
+            self.data = synth()            
+        elif len(args) == 1:            
+            self.data = args[0]       
+        elif len(args) == 2:            
+            self.data = np.vstack((args[0],args[1]))     
+        else: 
+            raise Exception('Unexpected number of arguments')
+                    
+        # some checks
+        if self.data.ndim != 2:
+            raise Exception('data must be two dimensional')
+        if self.data.shape[0] != 2:
+            raise Exception('data must contain two traces in two rows')
+        if self.data.shape[1]%2 == 0:
+            raise Exception('traces must have odd number of samples')
+
         
     # methods
     def plot(self):
-        p.plot_pair(self.data)
+        p.plot_data(self.data)
     
     def split(self,degrees,nsamps):
         self.data = split(self.data,degrees,nsamps)
@@ -57,18 +62,13 @@ class Pair:
         self.data = lag(self.data,nsamps)
         
     def window(self,width):
-        self.data = window(slef.data,width)
+        self.data = window(self.data,width)
         
     def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
-        return eigval.grideigvalcov(self.data)
+        return eigval.grideigval(self.data)
         
 
-def synth(fast=0,lag=0,noise=0.005,nsamps=501,width=16.0):
-    """return ricker wavelet synthetic data"""
-    ricker = signal.ricker(int(nsamps), width)
-    pair = np.vstack((ricker,np.zeros(ricker.shape)))
-    pair = pair + np.random.normal(0,noise,pair.shape)
-    return split(pair,fast,lag)
+
 
 def lag(pair,nsamps):
     """
@@ -98,7 +98,7 @@ def lag(pair,nsamps):
         
 def rotate(pair,degrees):
     """row 0 is x-axis and row 1 is y-axis,
-       rotates clockwise"""
+       rotates from x to y axis"""
     ang = np.deg2rad(degrees)
     rot = np.array([[np.cos(ang),-np.sin(ang)],
                     [np.sin(ang), np.cos(ang)]])
@@ -136,8 +136,19 @@ def window(pair,width):
         raise Exception('window ends after trace data')
         
     return pair[:,t0:t1]
+    
+    
+
 
 # Useful bits and pieces
+
+def synth(srcpol=0,fast=0,lag=0,noise=0.005,nsamps=501,width=16.0):
+    """return ricker wavelet synthetic data"""
+    ricker = signal.ricker(int(nsamps), width)
+    pair = np.vstack((ricker,np.zeros(ricker.shape)))
+    pair = pair + np.random.normal(0,noise,pair.shape)
+    pair = rotate(pair,srcpol)
+    return split(pair,fast,lag)
     
 def min_idx(vals):
     """
