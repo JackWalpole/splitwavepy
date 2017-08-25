@@ -4,9 +4,6 @@ Some plotting routines
 
 import matplotlib.pyplot as plt
 
-# facilitate multiple occurances of plot
-plt.ion()
-
 def plot_pair(pair):
     from matplotlib import gridspec
     fig = plt.figure(figsize=(12, 3)) 
@@ -18,8 +15,6 @@ def plot_pair(pair):
     plt.axis('equal')
     plt.show()
     
-def plot_surf(lags,degs,vals):
-    # from matplotlib import colors, ticker, cm
-    # plt.contourf(lags,degs,vals,locator=ticker.LogLocator(),cmap='viridis_r')
-    plt.contourf(lags,degs,vals,cmap='viridis')
+def plot_surf(X,Y,Z,cmap='viridis'):
+    plt.contourf(X,Y,Z,cmap=cmap)
     plt.show()
