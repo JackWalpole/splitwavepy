@@ -6,6 +6,7 @@ from . import core as c
 from . import plotting as p
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import signal, stats
 
 class Measurement:
     
@@ -39,36 +40,41 @@ class Measurement:
         self.lag  = self.lags[maxloc]
         
         # get some useful stuff
-        self.data_corrected = c.unsplit(self.data.data,self.fast,self.lag)
-        self.srcpol = c.pca(self.data_corrected)
-        self.srcpoldata = c.rotate(self.data,-self.srcpol)
-        self.srcpoldata_corrected = c.rotate(self.data_corrected,-self.srcpol)
+        self.data_corr = c.unsplit(self.data.data,self.fast,self.lag)
+        self.srcpol = c.pca(self.data_corr)
+        self.srcpoldata = c.rotate(self.data.data,-self.srcpol)
+        self.srcpoldata_corr = c.rotate(self.data_corr,-self.srcpol)
         
-        #
-        # # signal to noise ratio
-        # self.snr
-        # # number degrees of freedom
-        # self.ndf
-        # # value of lam2 at 95% confidence contour
-        # self.lam2_95
-        # #
-        #
-        # # convert to Pair class for convenience
-        # self.unsplitdata = c.Pair(self.unsplitdata)
-        # self.origsrcpoldata = c.Pair
-        # self.unsplitsrcpoldata =
+        # signal to noise ratio estimates
+        # self.snr = c.snr(c.window(self.srcpoldata_corr,self.window))
+        # self.snrRH = c.snrRH(c.window(self.srcpoldata_corr,self.window))
+        self.snr = np.max(self.lam1/self.lam2) 
+
+        # number degrees of freedom
+        self.ndf = ndf(c.window(self.srcpoldata_corr[1,:],self.window))
+        # value of lam2 at 95% confidence contour
+        self.lam2_95 = Ftest(self.lam2,self.ndf,alpha=0.05)
+
+        # convert traces to Pair class for convenience
+        self.data_corr = c.Pair(self.data_corr)
+        self.srcpoldata = c.Pair(self.srcpoldata)
+        self.srcpoldata_corr = c.Pair(self.srcpoldata_corr)
         
 
-    def plot(self,vals=None,cmap='magma'):
+    def plot(self,vals=None,cmap='magma',lam2_95=True):
         """
         plot the measurement.
-        by default plots lam1/lam2
+        by default plots lam1/lam2 with the lambda2 95% confidence interval overlaid
         """
         if vals is None:
             vals = self.lam1 / self.lam2
             
-        p.plot_surf(self.lags,self.degs,vals,cmap=cmap)
+        plt.contourf(self.lags,self.degs,vals,cmap=cmap)
         
+        if lam2_95 is True:
+            plt.contour(self.lags,self.degs,self.lam2,levels=[self.lam2_95])
+        
+        plt.show()
 
     # def save():
     #     """
@@ -122,7 +128,7 @@ def grideigval(data, maxlag=None, window=None, stepang=None, steplag=None):
     return Measurement(data=data,degs=degs,lags=lags,lam1=lam1,lam2=lam2,window=window)
     
 
-def ndf(y,taper=True,detrend=True):
+def ndf(y,taper=False,detrend=True):
     """
     Estimates number of degrees of freedom using noise trace y.
     Uses the improvement found by Walsh et al (2013).
@@ -151,14 +157,14 @@ def ndf(y,taper=True,detrend=True):
     
     return ndf
     
-def Ftest(M,ndf,alpha=0.05):
+def Ftest(lam2,ndf,alpha=0.05):
     """
     returns lambda2 value at 100(1-alpha)% confidence interval
     by default alpha=0.05 yielding the value of lambda2 at 95% confidence interval
     """
-    lam2min = M.lam2.min()
+    lam2min = lam2.min()
     k = 2 # two parameters, phi and dt.
-    R = ((M.lam2 - lam2min)/k) /  (lam2min/(ndf-k))
+    R = ((lam2 - lam2min)/k) /  (lam2min/(ndf-k))
     F = stats.f.ppf(1-alpha,k,ndf)
     lam2alpha = lam2min * ( 1 + (k/(ndf-k)) * F)
     return lam2alpha

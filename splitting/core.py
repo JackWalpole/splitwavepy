@@ -119,15 +119,20 @@ def unsplit(data,degrees,nsamps):
     return rotate( rotate_and_lag(data,degrees,-nsamps), -degrees)
     
 def window(data,width):
-    """Window traces about centre sample
+    """Window trace, or traces, about centre sample
        width must be odd to maintain definite centre"""
+    
+    if data.ndim == 1:
+        length = data.shape[0]
+    else:
+        length = data.shape[1]
     
     if width%2 != 1:
         raise Exception('width must be odd')
     
-    centre = math.floor(data.shape[1]/2)
+    centre = math.floor(length/2)
         
-    if width > data.shape[1]:
+    if width > length:
         raise Exception('window width is greater than trace length')
         
     t0 = centre - math.floor(width/2)
@@ -135,10 +140,13 @@ def window(data,width):
     
     if t0 < 0:
         raise Exception('window starts before trace data')
-    elif t1 > data.shape[1]:
+    elif t1 > length:
         raise Exception('window ends after trace data')
-        
-    return data[:,t0:t1]
+     
+    if data.ndim == 1:
+        return data[t0:t1]
+    else: 
+        return data[:,t0:t1]
     
 def pca(data):
     """
@@ -158,7 +166,7 @@ def snr(data):
     noise = np.sum(data[1,:]**2)
     return signal / noise
     
-def snr_RH(data):
+def snrRH(data):
     """
     Returns signal to noise ratio assuming signal on trace1 and noise on trace2
     Uses the method of Restivo and Helffrich (1999):
