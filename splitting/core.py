@@ -17,15 +17,14 @@ from . import eigval
 
 class Pair:
     """
-    The Pair is a convenience class in which to store two traces x and y.
+    The Pair is a class to store two traces in the x and y directions.
     Methods are included to facilitate analysis on this Pair of traces.
-    If data not provided will generate a ricker wavelet with noise.
+    If data is not provided on initiation will return a ricker wavelet with noise.
     Usage: Pair()     => create Pair of synthetic data
            Pair(data) => creates Pair from two traces stored as rows in numpy array data
            Pair(x,y) => creates Pair from two traces stored in numpy arrays x and y.
     """
     def __init__(self,*args):
-        """x and y are traces in the form of numpy arrays"""
         
         if len(args) == 0:                      
             self.data = synth()            
@@ -36,7 +35,7 @@ class Pair:
         else: 
             raise Exception('Unexpected number of arguments')
                     
-        # some checks
+        # some sanity checks
         if self.data.ndim != 2:
             raise Exception('data must be two dimensional')
         if self.data.shape[0] != 2:
@@ -51,22 +50,26 @@ class Pair:
     
     def split(self,degrees,nsamps):
         self.data = split(self.data,degrees,nsamps)
+        return self
     
     def unsplit(self,degrees,nsamps):
         self.data = unsplit(self.data,degrees,nsamps)
+        return self
         
     def rotate(self,degrees):
         self.data = rotate(self.data,degrees)
+        return self
         
     def lag(self,nsamps):
         self.data = lag(self.data,nsamps)
+        return self
         
     def window(self,width):
         self.data = window(self.data,width)
+        return self
         
     def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
         return eigval.grideigval(self.data)
-        
 
 
 
@@ -96,35 +99,35 @@ def lag(pair,nsamps):
         return np.vstack((t1[:nsamps], t2[-nsamps:]))
 
         
-def rotate(pair,degrees):
+def rotate(data,degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis"""
     ang = np.deg2rad(degrees)
     rot = np.array([[np.cos(ang),-np.sin(ang)],
                     [np.sin(ang), np.cos(ang)]])
-    return np.dot(rot,pair)
+    return np.dot(rot,data)
 
-def rotate_and_lag(pair,degrees,nsamps):
-    return lag(rotate(pair,degrees), nsamps)
+def rotate_and_lag(data,degrees,nsamps):
+    return lag(rotate(data,degrees), nsamps)
 
-def split(pair,degrees,nsamps):
+def split(data,degrees,nsamps):
     """Apply forward splitting and rotate back"""
-    return rotate( rotate_and_lag(pair,degrees,nsamps), -degrees)
+    return rotate( rotate_and_lag(data,degrees,nsamps), -degrees)
 
-def unsplit(pair,degrees,nsamps):
+def unsplit(data,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
-    return rotate( rotate_and_lag(pair,degrees,-nsamps), -degrees)
+    return rotate( rotate_and_lag(data,degrees,-nsamps), -degrees)
     
-def window(pair,width):
+def window(data,width):
     """Window traces about centre sample
        width must be odd to maintain definite centre"""
     
     if width%2 != 1:
         raise Exception('width must be odd')
     
-    centre = math.floor(pair.shape[1]/2)
+    centre = math.floor(data.shape[1]/2)
         
-    if width > pair.shape[1]:
+    if width > data.shape[1]:
         raise Exception('window width is greater than trace length')
         
     t0 = centre - math.floor(width/2)
@@ -132,10 +135,10 @@ def window(pair,width):
     
     if t0 < 0:
         raise Exception('window starts before trace data')
-    elif t1 > pair.shape[1]:
+    elif t1 > data.shape[1]:
         raise Exception('window ends after trace data')
         
-    return pair[:,t0:t1]
+    return data[:,t0:t1]
     
     
 
@@ -145,10 +148,10 @@ def window(pair,width):
 def synth(srcpol=0,fast=0,lag=0,noise=0.005,nsamps=501,width=16.0):
     """return ricker wavelet synthetic data"""
     ricker = signal.ricker(int(nsamps), width)
-    pair = np.vstack((ricker,np.zeros(ricker.shape)))
-    pair = pair + np.random.normal(0,noise,pair.shape)
-    pair = rotate(pair,srcpol)
-    return split(pair,fast,lag)
+    data = np.vstack((ricker,np.zeros(ricker.shape)))
+    data = data + np.random.normal(0,noise,data.shape)
+    data = rotate(data,srcpol)
+    return split(data,fast,lag)
     
 def min_idx(vals):
     """
