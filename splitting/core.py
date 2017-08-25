@@ -73,7 +73,7 @@ class Pair:
 
 
 
-def lag(pair,nsamps):
+def lag(data,nsamps):
     """
     Lag t1 nsamps/2 to the left and
     lag t2 nsamps/2 to the right.
@@ -84,12 +84,12 @@ def lag(pair,nsamps):
     to ensure even trace lengths when measuring splitting.
     """
     if nsamps == 0:
-        return pair
+        return data
     elif nsamps%2 != 0:
         raise Exception('nsamps must be even')
     
-    t1 = pair[0,:]
-    t2 = pair[1,:]
+    t1 = data[0,:]
+    t2 = data[1,:]
     
     if nsamps > 0:
         # positive shift
