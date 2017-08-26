@@ -26,15 +26,28 @@ class Point:
 
 # useful co-ordinate transforms
 
-def cart2geo(x,y,z,reverse=False):
-    """
-    convert from x,y,z to lat,lon,r
-    convention:
-    x =>   0 E,  0 N 
-    y =>  90 E,  0 N
-    z => NaN E, 90 N
-    for reverse transform use reverse=True and give lat,lon,r in place of x,y,z
-    """
+def cart2geo(x, y, z):
+    """convert x y z cartesian coordinates to latitude longitude radius
+       xyz is a numpy array, a right handed co-ordinate system is assumed with 
+       -- x-axis going through the equator at 0 degrees longitude
+       -- y-axis going through the equator at 90 degrees longitude 
+       -- z-axis going through the north pole."""
+    r = np.sqrt(x**2 + y**2 + z**2)
+    lon = np.rad2deg(np.arctan2(y,x))
+    lat = np.rad2deg(np.arcsin(z/r))
+    return lat, lon, r
+
+def geo2cart(lat, lon, r):
+    """convert latitude longitude radius to x y z cartesian coordinates
+       xyz is a numpy array, a right handed co-ordinate system is assumed with 
+       -- x-axis going through the equator at 0 degrees longitude
+       -- y-axis going through the equator at 90 degrees longitude 
+       -- z-axis going through the north pole."""    
+    x = r * np.cos(lon) * np.cos(lat)
+    y = r * np.sin(lon) * np.cos(lat)
+    z = r * np.sin(lat)
+    return x, y, z
+
 
 def xyz2azinc(x,y,z,reverse=False):
     """
@@ -42,7 +55,7 @@ def xyz2azinc(x,y,z,reverse=False):
     azimuth mesured clockwise from local North, incidence angle measured from vertical down direction
     for reverse transform use reverse=True and give az,inc,Point in place of x,y,z
     """
-
+    
 def ray2xyz(v,reverse=False):
     """
     conversion of vector v from ray co-ordinates to x,y,z
