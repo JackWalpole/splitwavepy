@@ -1,14 +1,14 @@
 from setuptools import setup
 
 setup(
-    name = 'splitting',
+    name = 'splitwavepy',
     version = '',
     description = "Shearwave splitting measurement tools",
     author = 'Jack Walpole',
     author_email = 'j.walpole@gmail.com',
     license = 'MIT',
-    url = 'https://github.com/JackWalpole/splitting',
-    packages = ['splitting'],
+    url = 'https://github.com/JackWalpole/splitwavepy',
+    packages = ['splitwavepy'],
     install_requires = [
         'matplotlib >= 1.1',
         'numpy >= 1.1',
