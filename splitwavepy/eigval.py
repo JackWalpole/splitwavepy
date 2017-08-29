@@ -2,7 +2,7 @@
 The eigenvalue method of Silver and Chan (1991)
 """
 
-from . import core as c
+#from . import core as c
 from . import plotting as p
 import numpy as np
 import matplotlib.pyplot as plt
