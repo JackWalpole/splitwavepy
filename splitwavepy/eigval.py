@@ -2,7 +2,8 @@
 The eigenvalue method of Silver and Chan (1991)
 """
 
-import core as c
+# import core as c
+from . import core as c
 from . import plotting as p
 import numpy as np
 import matplotlib.pyplot as plt
@@ -48,7 +49,12 @@ class Measurement:
         # signal to noise ratio estimates
         # self.snr = c.snr(c.window(self.srcpoldata_corr,self.window))
         # self.snrRH = c.snrRH(c.window(self.srcpoldata_corr,self.window))
-        self.snr = np.max(self.lam1/self.lam2) 
+        # self.snr = np.max(self.lam1/self.lam2)
+        ### if total energy = signal + noise = lam1 + lam2
+        ### lam1 = signal + 1/2 noise
+        ### lam2 = 1/2 noise
+        ### then signal / noise = 
+        self.snr = np.max((self.lam1-self.lam2)/(2*self.lam2))
 
         # number degrees of freedom
         self.ndf = ndf(c.window(self.srcpoldata_corr[1,:],self.window))
@@ -172,7 +178,7 @@ def Ftest(lam2,ndf,alpha=0.05):
 def _synthM(deg=25,lag=10):
     P = c.Pair()
     P.split(deg,lag)
-    return _grideigvalcov(P.data)
+    return _grideigval(P.data)
     
 
      
