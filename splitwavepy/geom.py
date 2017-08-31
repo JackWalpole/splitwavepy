@@ -2,6 +2,10 @@
 Ray geometry stuff
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 # import taup from obsp for ray calculation
 import numpy as np
 import math
@@ -52,14 +56,11 @@ def geo2cart(lat, lon, r):
     return x, y, z
 
 
-# def xyz2azinc(x,y,z,reverse=False):
-
     
 def sph2cart(r,az,inc):
     """
-    convert from global x,y,z to azimuth, and incidence angle at Point
-    azimuth mesured clockwise from local North, incidence angle measured from vertical down direction
-    for reverse transform use reverse=True and give az,inc,Point in place of x,y,z
+    convert from global x,y,z to azimuth, incidence angle, and radius
+    azimuth measured clockwise from local North, incidence angle measured from vertical down direction
     """
     # input: r, az, inc in radians
     # output: x, y, z
@@ -239,7 +240,6 @@ def phiray2phigeo(phi,lat,lon,az,inc):
     """
     
     if inc == 0:
-        # raise Warning('inc exactly zero, returning phi + az')
         return phi + az
     
     up = vup(lat,lon)
@@ -247,7 +247,7 @@ def phiray2phigeo(phi,lat,lon,az,inc):
     ray = vray(lat,lon,az,inc)
     transup = vunit(vrejection(up,ray))
     
-    phi = -np.deg2rad(phi)
+    phi = np.deg2rad(phi)
     fast = np.dot(rotation_matrix(ray,phi),transup)
     ffloor = vrejection(fast,up)
     # measure angle
@@ -259,7 +259,6 @@ def phigeo2phiray(phi,lat,lon,az,inc):
     """
     
     if inc == 0:
-        # raise Warning('inc exactly zero, returning phi + az')
         return phi + az
     
     up = vup(lat,lon)
@@ -267,8 +266,8 @@ def phigeo2phiray(phi,lat,lon,az,inc):
     ray = vray(lat,lon,az,inc)
     transup = vunit(vrejection(up,ray))
     
-    phi = -np.deg2rad(phi)
-    ffloor = np.dot(rotation_matrix(up,phi),north)
+    phi = np.deg2rad(phi)
+    ffloor = np.dot(rotation_matrix(up,-phi),north)
     fast = vrejection(ffloor,ray)
     # measure angle
     return (np.rad2deg(-vangle(transup,fast))+3690)%180-90    

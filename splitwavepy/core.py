@@ -6,6 +6,10 @@ Assumes data of interest is at the centre of the array.
 Trace must have odd number of samples so there is a definite centre.
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 import math
 from scipy import signal

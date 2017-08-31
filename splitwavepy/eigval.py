@@ -2,6 +2,10 @@
 The eigenvalue method of Silver and Chan (1991)
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 # import core as c
 from . import core as c
 from . import plotting as p
