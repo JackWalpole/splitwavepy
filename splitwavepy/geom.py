@@ -57,25 +57,27 @@ def geo2cart(lat, lon, r):
 
 
     
-def sph2cart(r,az,inc):
-    """
-    convert from global x,y,z to azimuth, incidence angle, and radius
-    azimuth measured clockwise from local North, incidence angle measured from vertical down direction
-    """
-    # input: r, az, inc in radians
-    # output: x, y, z
-    x = r * np.cos(az) * np.sin(inc)
-    y = r * np.sin(az) * np.sin(inc)
-    z = r * np.cos(inc)
-    return x, y, z
-  
-
-def cart2sph(x,y,z):
-    XsqPlusYsq = x**2 + y**2
-    r = np.sqrt(XsqPlusYsq + z**2)       
-    az = np.arctan2(y,x)                    
-    inc = np.arctan2(np.sqrt(XsqPlusYsq),z) 
-    return r, az, inc
+# def sph2cart(r,az,inc):
+#     """
+#     convert from r,az,inc to local x,y,z
+#     azimuth measured clockwise from local North, incidence angle measured from vertical down direction
+#     """
+#     az = np.deg2rad(az)
+#     inc = np.deg2rad(inc)
+#     x = r * np.cos(az) * np.sin(inc)
+#     y = r * np.sin(az) * np.sin(inc)
+#     z = r * np.cos(inc)
+#     return x, y, z
+#
+#
+# def cart2sph(x,y,z):
+#     XsqPlusYsq = x**2 + y**2
+#     r = np.sqrt(XsqPlusYsq + z**2)
+#     az = np.arctan2(y,x)
+#     inc = np.arctan2(np.sqrt(XsqPlusYsq),z)
+#     az = np.rad2deg(az)
+#     inc = np.rad2deg(inc)
+#     return r, az, inc
     
 # def ray2xyz(v,reverse=False):
 #     """
@@ -102,6 +104,37 @@ def cart2sph(x,y,z):
 #     """
 #
 
+
+#
+
+def local_enu2psv(az,inc):
+    """return matrix to convert local ENU coordinates to PSV coordinates
+       given local azimuth and inclination of ray"""
+    az = np.deg2rad(az)
+    saz = np.sin(az)
+    caz = np.cos(az)
+    inc = np.deg2rad(inc)
+    sinc = np.sin(inc)
+    cinc = np.cos(inc)
+
+    m = np.array([[sinc*saz, -caz, -cinc*saz],
+                  [sinc*caz,  saz, -cinc*caz],
+                  [    cinc,    0,      sinc]])
+    return m.T
+
+def local_psv2enu(az,inc):
+    """return matrix to convert PSV coordinates to local ENU coordinates 
+       given local azimuth and inclination of ray"""
+    az = np.deg2rad(az)
+    inc = np.deg2rad(inc)
+    sinc = np.sin(inc)
+    cinc = np.cos(inc)
+    saz = np.sin(az)
+    caz = np.cos(az)
+    m = np.array([[sinc*saz, -caz, -cinc*saz],
+                  [sinc*caz,  saz, -cinc*caz],
+                  [    cinc,    0,      sinc]])
+    return m
 
 # useful directions in xyz
 
@@ -188,6 +221,7 @@ def rotation_matrix(axis, theta):
     """
     Return the rotation matrix associated with counterclockwise rotation about
     the given axis by theta radians.
+    x rotated pi/2 radians about the z axis points in the +ve y-axis direction (right handed system)
     downloaded from: https://stackoverflow.com/questions/6802577/python-rotation-of-3d-vector
     """
     axis = np.asarray(axis)
@@ -216,7 +250,7 @@ def vangle(v1, v2):
             0.0
             >>> angle_between((1, 0, 0), (-1, 0, 0))
             3.141592653589793
-    
+
         Downloaded from:https://stackoverflow.com/questions/2827393/angles-between-two-n-dimensional-vectors-in-python/13849249#13849249
     """
     v1_u = vunit(v1)
@@ -234,40 +268,51 @@ def vrejection(a,b):
     
 # fast direction stuff
 
-def phiray2phigeo(phi,lat,lon,az,inc):
+    
+def phiray2phigeo(phi,az,inc):
     """
     convert phi in ray frame to phi in geographic frame
+    phi is angle measured in ray frame
+    az, inc is azimuth and inclination of ray at station
     """
     
-    if inc == 0:
-        return phi + az
+    up = [0,0,1]
+    north = [0,1,0]
     
-    up = vup(lat,lon)
-    north = vnorth(lat,lon)
-    ray = vray(lat,lon,az,inc)
-    transup = vunit(vrejection(up,ray))
+    psv2enu = local_psv2enu(az,inc)
     
+    # get fast axis in ray co-ordinates
     phi = np.deg2rad(phi)
-    fast = np.dot(rotation_matrix(ray,phi),transup)
-    ffloor = vrejection(fast,up)
+    fast = [0, -np.sin(phi), np.cos(phi)]
+    # convert fast to geographic co-ordinates
+    fast = np.dot(psv2enu,fast)
+    # find the projection of the fast axis on the floor
+    ffloor = vrejection(fast,up)    
     # measure angle
-    return (np.rad2deg(-vangle(north,ffloor))+3690)%180-90
+    ang = np.rad2deg(np.arctan2(ffloor[0],ffloor[1]))
+    return (ang+3690)%180-90
 
-def phigeo2phiray(phi,lat,lon,az,inc):
+
+
+def phigeo2phiray(phi,az,inc):
     """
-    convert phi in geographic frame to phi in ray frame
+    convert phi in ray frame to phi in geographic frame
+    phi is angle measured in ray frame
+    az, inc is azimuth and inclination of ray at station
     """
     
-    if inc == 0:
-        return phi + az
+    ray = [1,0,0]
+    transup = [0,0,1]
+
+    enu2psv = local_enu2psv(az,inc)
     
-    up = vup(lat,lon)
-    north = vnorth(lat,lon)
-    ray = vray(lat,lon,az,inc)
-    transup = vunit(vrejection(up,ray))
-    
+    # get fast axis in geo co-ordinates
     phi = np.deg2rad(phi)
-    ffloor = np.dot(rotation_matrix(up,-phi),north)
-    fast = vrejection(ffloor,ray)
+    fast = [np.sin(phi),np.cos(phi),0]
+    # convert fast to ray co-ordinates
+    fast = np.dot(enu2psv,fast)
+    # find the projection of the fast axis normal to the ray
+    fraynorm = vrejection(fast,ray)
     # measure angle
-    return (np.rad2deg(-vangle(transup,fast))+3690)%180-90    
+    ang = np.rad2deg(np.arctan2(-fraynorm[1],fraynorm[2]))
+    return (ang+3690)%180-90
