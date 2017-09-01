@@ -107,7 +107,7 @@ def geo2cart(lat, lon, r):
 
 #
 
-def local_enu2psv(az,inc):
+def enu2psv(az,inc):
     """return matrix to convert local ENU coordinates to PSV coordinates
        given local azimuth and inclination of ray"""
     az = np.deg2rad(az)
@@ -122,7 +122,7 @@ def local_enu2psv(az,inc):
                   [    cinc,    0,      sinc]])
     return m.T
 
-def local_psv2enu(az,inc):
+def psv2enu(az,inc):
     """return matrix to convert PSV coordinates to local ENU coordinates 
        given local azimuth and inclination of ray"""
     az = np.deg2rad(az)
@@ -280,8 +280,8 @@ def phiray2phigeo(phi,az,inc):
     phi = np.deg2rad(phi)
     fast = [0, -np.sin(phi), np.cos(phi)]
     # convert fast to geographic co-ordinates
-    psv2enu = local_psv2enu(az,inc)
-    fast = np.dot(psv2enu,fast)    
+    ray2geo = psv2enu(az,inc)
+    fast = np.dot(ray2geo,fast)    
     # measure angle from east and north parts
     ang = np.rad2deg(np.arctan2(fast[0],fast[1]))
     return (ang+3690)%180-90
@@ -294,32 +294,15 @@ def phigeo2phiray(phi,az,inc):
     phi is angle measured in ray frame
     az, inc is azimuth and inclination of ray at station
     """
-    # get fast axis in geo co-ordinates    
-    rphi = np.deg2rad(phi)
-    raz = np.deg2rad(az)
-    rinc = np.deg2rad(inc)
-    linc = rinc * np.cos(raz-rphi)
-    # linc = rinc * triangle_wave(az-phi)
-    # print('linc',linc)
-    zup = -np.sin(linc)
-    # print('zup',zup)
-    r = np.cos(linc)
-    fast = [r*np.sin(rphi),r*np.cos(rphi),zup]
-    # print(fast[0]**2+fast[1]**2+fast[2]**2)
-    # print('fast geo',fast)
-    # convert to ray co-ordinates
-    enu2psv = local_enu2psv(az,inc)
-    fast = np.dot(enu2psv,fast)
-    # print('fast ray',fast)
-    ang = np.rad2deg(np.arctan2(-fast[1],fast[2]))
     
+    # find where up vector at point related to phi in geographic co-ordinates intersects the plane
+    phi = np.deg2rad(phi)
+    fastfloor = [np.sin(phi),np.cos(phi),0]
+    ray2geo = psv2enu(az,inc)
+    geo2ray = ray2geo.T
+    raygeo = np.dot(ray2geo,[1,0,0])
+    up = -(raygeo[0]*fastfloor[0] + raygeo[1]*fastfloor[1])/raygeo[2]
+    fastgeo = [fastfloor[0],fastfloor[1],up]
+    fastray = np.dot(geo2ray,fastgeo)
+    ang = np.rad2deg(np.arctan2(-fastray[1],fastray[2]))
     return (ang+3690)%180-90
-
-# def triangle_wave(t,a=180):
-#     """
-#     value of triangle wave at point t with period 2a (a=180 by default)
-#     following: https://en.wikipedia.org/wiki/Triangle_wave
-#     """
-#     # floor = math.floor(t/a+1/2)
-#     # return 2/a * (t - a * floor ) * -1**floor
-#     return 2 * np.abs(2*(t/a - math.floor(t/a+1/2))) -1
