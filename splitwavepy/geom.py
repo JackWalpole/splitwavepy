@@ -276,20 +276,14 @@ def phiray2phigeo(phi,az,inc):
     az, inc is azimuth and inclination of ray at station
     """
     
-    up = [0,0,1]
-    north = [0,1,0]
-    
-    psv2enu = local_psv2enu(az,inc)
-    
     # get fast axis in ray co-ordinates
     phi = np.deg2rad(phi)
     fast = [0, -np.sin(phi), np.cos(phi)]
     # convert fast to geographic co-ordinates
-    fast = np.dot(psv2enu,fast)
-    # find the projection of the fast axis on the floor
-    ffloor = vrejection(fast,up)    
-    # measure angle
-    ang = np.rad2deg(np.arctan2(ffloor[0],ffloor[1]))
+    psv2enu = local_psv2enu(az,inc)
+    fast = np.dot(psv2enu,fast)    
+    # measure angle from east and north parts
+    ang = np.rad2deg(np.arctan2(fast[0],fast[1]))
     return (ang+3690)%180-90
 
 
@@ -300,19 +294,32 @@ def phigeo2phiray(phi,az,inc):
     phi is angle measured in ray frame
     az, inc is azimuth and inclination of ray at station
     """
-    
-    ray = [1,0,0]
-    transup = [0,0,1]
-
+    # get fast axis in geo co-ordinates    
+    rphi = np.deg2rad(phi)
+    raz = np.deg2rad(az)
+    rinc = np.deg2rad(inc)
+    # linc = rinc * np.cos(raz-rphi)
+    linc = rinc * triangle_wave(az-phi)
+    # print('linc',linc)
+    zup = np.sin(linc)
+    # print('zup',zup)
+    r = np.cos(linc)
+    fast = [r*np.sin(rphi),r*np.cos(rphi),+zup]
+    # print(fast[0]**2+fast[1]**2+fast[2]**2)
+    # print('fast geo',fast)
+    # convert to ray co-ordinates
     enu2psv = local_enu2psv(az,inc)
-    
-    # get fast axis in geo co-ordinates
-    phi = np.deg2rad(phi)
-    fast = [np.sin(phi),np.cos(phi),0]
-    # convert fast to ray co-ordinates
     fast = np.dot(enu2psv,fast)
-    # find the projection of the fast axis normal to the ray
-    fraynorm = vrejection(fast,ray)
-    # measure angle
-    ang = np.rad2deg(np.arctan2(-fraynorm[1],fraynorm[2]))
+    # print('fast ray',fast)
+    ang = np.rad2deg(np.arctan2(-fast[1],fast[2]))
+    
     return (ang+3690)%180-90
+
+def triangle_wave(t,a=180):
+    """
+    value of triangle wave at point t with period 2a (a=180 by default)
+    following: https://en.wikipedia.org/wiki/Triangle_wave
+    """    
+    # floor = math.floor(t/a+1/2)
+    # return 2/a * (t - a * floor ) * -1**floor
+    return 2 * np.abs(2*(t/a - math.floor(t/a+1/2))) -1
