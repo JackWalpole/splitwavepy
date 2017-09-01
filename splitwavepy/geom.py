@@ -298,13 +298,13 @@ def phigeo2phiray(phi,az,inc):
     rphi = np.deg2rad(phi)
     raz = np.deg2rad(az)
     rinc = np.deg2rad(inc)
-    # linc = rinc * np.cos(raz-rphi)
-    linc = rinc * triangle_wave(az-phi)
+    linc = rinc * np.cos(raz-rphi)
+    # linc = rinc * triangle_wave(az-phi)
     # print('linc',linc)
-    zup = np.sin(linc)
+    zup = -np.sin(linc)
     # print('zup',zup)
     r = np.cos(linc)
-    fast = [r*np.sin(rphi),r*np.cos(rphi),+zup]
+    fast = [r*np.sin(rphi),r*np.cos(rphi),zup]
     # print(fast[0]**2+fast[1]**2+fast[2]**2)
     # print('fast geo',fast)
     # convert to ray co-ordinates
@@ -315,11 +315,11 @@ def phigeo2phiray(phi,az,inc):
     
     return (ang+3690)%180-90
 
-def triangle_wave(t,a=180):
-    """
-    value of triangle wave at point t with period 2a (a=180 by default)
-    following: https://en.wikipedia.org/wiki/Triangle_wave
-    """    
-    # floor = math.floor(t/a+1/2)
-    # return 2/a * (t - a * floor ) * -1**floor
-    return 2 * np.abs(2*(t/a - math.floor(t/a+1/2))) -1
+# def triangle_wave(t,a=180):
+#     """
+#     value of triangle wave at point t with period 2a (a=180 by default)
+#     following: https://en.wikipedia.org/wiki/Triangle_wave
+#     """
+#     # floor = math.floor(t/a+1/2)
+#     # return 2/a * (t - a * floor ) * -1**floor
+#     return 2 * np.abs(2*(t/a - math.floor(t/a+1/2))) -1
