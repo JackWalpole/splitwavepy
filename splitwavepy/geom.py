@@ -267,9 +267,8 @@ def vrejection(a,b):
     return a - (np.linalg.norm(a)*np.cos(vangle(a,b))) * vunit(b)
     
 # fast direction stuff
-
-    
-def phiray2phigeo(phi,az,inc):
+ 
+def phiray2geo(phi,az,inc):
     """
     convert phi in ray frame to phi in geographic frame
     phi is angle measured in ray frame
@@ -288,7 +287,7 @@ def phiray2phigeo(phi,az,inc):
 
 
 
-def phigeo2phiray(phi,az,inc):
+def phigeo2ray(phi,az,inc):
     """
     convert phi in ray frame to phi in geographic frame
     phi is angle measured in ray frame
