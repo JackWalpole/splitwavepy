@@ -43,6 +43,11 @@ class Measurement:
         maxloc = c.max_idx(self.lam1/self.lam2)
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
+        # generate "squashed" profiles
+        self.fastprofile = np.sum(self.lam1/self.lam2, axis=0)
+        self.lagprofile = np.sum(self.lam1/self.lam2, axis=1)
+        # generate redefined "NI" value
+        self.ni = ni(self)
         
         # get some useful stuff
         self.data_corr = c.unsplit(self.data.data,self.fast,self.lag)
@@ -63,7 +68,7 @@ class Measurement:
         # number degrees of freedom
         self.ndf = ndf(c.window(self.srcpoldata_corr[1,:],self.window))
         # value of lam2 at 95% confidence contour
-        self.lam2_95 = Ftest(self.lam2,self.ndf,alpha=0.05)
+        self.lam2_95 = ftest(self.lam2,self.ndf,alpha=0.05)
 
         # convert traces to Pair class for convenience
         self.data_corr = c.Pair(self.data_corr)
@@ -71,18 +76,33 @@ class Measurement:
         self.srcpoldata_corr = c.Pair(self.srcpoldata_corr)
         
 
-    def plot(self,vals=None,cmap='magma',lam2_95=True):
+    def plot(self,vals=None,cmap='viridis',lam2_95=False,polar=True):
         """
         plot the measurement.
         by default plots lam1/lam2 with the lambda2 95% confidence interval overlaid
         """
+        
+        
+        
         if vals is None:
             vals = self.lam1 / self.lam2
-            
-        plt.contourf(self.lags,self.degs,vals,cmap=cmap)
+        
+        if polar is True:
+            rads = np.deg2rad(np.column_stack((self.degs,self.degs+180,self.degs[:,0]+360)))
+            lags = np.column_stack((self.lags,self.lags,self.lags[:,0]))
+            vals = np.column_stack((vals,vals,vals[:,0]))
+            fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
+            ax.contourf(rads,lags,vals,50,cmap=cmap)
+            ax.set_theta_direction(-1)
+            ax.set_theta_offset(np.pi/2.0)
+        else:
+            plt.contourf(self.lags,self.degs,vals,50,cmap=cmap)
         
         if lam2_95 is True:
             plt.contour(self.lags,self.degs,self.lam2,levels=[self.lam2_95])
+            
+
+            
         
         plt.show()
 
@@ -167,10 +187,11 @@ def ndf(y,taper=False,detrend=True):
     
     return ndf
     
-def Ftest(lam2,ndf,alpha=0.05):
+def ftest(lam2,ndf,alpha=0.05):
     """
     returns lambda2 value at 100(1-alpha)% confidence interval
-    by default alpha=0.05 yielding the value of lambda2 at 95% confidence interval
+    by default alpha = 0.05 = 95% confidence interval
+    following Silver and Chan (1991)
     """
     lam2min = lam2.min()
     k = 2 # two parameters, phi and dt.
@@ -184,5 +205,14 @@ def _synthM(deg=25,lag=10):
     P.split(deg,lag)
     return _grideigval(P.data)
     
-
+def ni(M):
+    """
+    measure of self-similarity in measurements at 90 degree shift in fast direction    
+    """
+    halfway = int(M.degs.shape[1]/2)
+    diff = M.fastprofile - np.roll(M.fastprofile,halfway)
+    mult = M.fastprofile * np.roll(M.fastprofile,halfway)
+    sumdiffsq = np.sum(diff**2)
+    summult = np.sum(mult)
+    return sumdiffsq/summult
      
