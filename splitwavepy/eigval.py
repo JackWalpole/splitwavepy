@@ -95,11 +95,13 @@ class Measurement:
             ax.contourf(rads,lags,vals,50,cmap=cmap)
             ax.set_theta_direction(-1)
             ax.set_theta_offset(np.pi/2.0)
+            if lam2_95 is True:
+                lam2 = np.column_stack((self.lam2,self.lam2,self.lam2[:,0]))
+                plt.contour(rads,lags,lam2,levels=[self.lam2_95])
         else:
-            plt.contourf(self.lags,self.degs,vals,50,cmap=cmap)
-        
-        if lam2_95 is True:
-            plt.contour(self.lags,self.degs,self.lam2,levels=[self.lam2_95])
+            plt.contourf(self.lags,self.degs,vals,50,cmap=cmap)        
+            if lam2_95 is True:
+                plt.contour(self.lags,self.degs,self.lam2,levels=[self.lam2_95])
             
 
             
