@@ -14,67 +14,8 @@ import numpy as np
 import math
 from scipy import signal
 
-from . import plotting as p
-from . import eigval
-
-# Classes
-
-class Pair:
-    """
-    The Pair is a class to store two traces in the x and y directions.
-    Methods are included to facilitate analysis on this Pair of traces.
-    If data is not provided on initiation will return a ricker wavelet with noise.
-    Usage: Pair()     => create Pair of synthetic data
-           Pair(data) => creates Pair from two traces stored as rows in numpy array data
-           Pair(x,y) => creates Pair from two traces stored in numpy arrays x and y.
-    """
-    def __init__(self,*args):
-        
-        if len(args) == 0:                      
-            self.data = synth()            
-        elif len(args) == 1:            
-            self.data = args[0]       
-        elif len(args) == 2:            
-            self.data = np.vstack((args[0],args[1]))     
-        else: 
-            raise Exception('Unexpected number of arguments')
-                    
-        # some sanity checks
-        if self.data.ndim != 2:
-            raise Exception('data must be two dimensional')
-        if self.data.shape[0] != 2:
-            raise Exception('data must contain two traces in two rows')
-        if self.data.shape[1]%2 == 0:
-            raise Exception('traces must have odd number of samples')
-
-        
-    # methods
-    def plot(self):
-        p.plot_data(self.data)
-    
-    def split(self,degrees,nsamps):
-        self.data = split(self.data,degrees,nsamps)
-        return self
-    
-    def unsplit(self,degrees,nsamps):
-        self.data = unsplit(self.data,degrees,nsamps)
-        return self
-        
-    def rotate(self,degrees):
-        self.data = rotate(self.data,degrees)
-        return self
-        
-    def lag(self,nsamps):
-        self.data = lag(self.data,nsamps)
-        return self
-        
-    def window(self,width):
-        self.data = window(self.data,width)
-        return self
-        
-    def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
-        return eigval.grideigval(self.data)
-
+# from . import plotting as p
+# from . import eigval
 
 
 def lag(data,nsamps):
@@ -122,7 +63,7 @@ def unsplit(data,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
     return rotate( rotate_and_lag(data,degrees,-nsamps), -degrees)
     
-def window(data,width):
+def window(data,nsamps):
     """Window trace, or traces, about centre sample
        width must be odd to maintain definite centre"""
     
@@ -131,16 +72,16 @@ def window(data,width):
     else:
         length = data.shape[1]
     
-    if width%2 != 1:
+    if nsamps%2 != 1:
         raise Exception('width must be odd')
     
     centre = math.floor(length/2)
         
-    if width > length:
+    if nsamps > length:
         raise Exception('window width is greater than trace length')
         
-    t0 = centre - math.floor(width/2)
-    t1 = centre + math.ceil(width/2)
+    t0 = centre - math.floor(nsamps/2)
+    t1 = centre + math.ceil(nsamps/2)
     
     if t0 < 0:
         raise Exception('window starts before trace data')
