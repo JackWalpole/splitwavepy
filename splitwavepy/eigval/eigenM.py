@@ -7,35 +7,47 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import ..pair
-import .eigval
+# from . import Pair
+from . import eigval
 
-class SCeig:
+class EigenM:
     
     """
     Silver and Chan (1991) eigenvalue method measurement.
     """
     
-    def __init__(self,data=None,degs=None,lags=None,lam1=None,lam2=None,window=None):
+    def __init__(self,*args,**kwargs):
         
-        if data is None:           
-            # generate synthetic
-            self.data, self.degs, self.lags, self.lam1, self.lam2, self.window = _synthM()      
-        elif data is not None and (degs is None or lags is None or lam1 is None or lam2 is None or window is None):                                              
-            # generate measurement using defaults
-            self.data,self.degs, self.lags, self.lam1, self.lam2, self.window = _grideigval(data)           
-        else:           
-            # everything provided from low level (except delta?)
-            self.data = data
-            self.degs = degs
-            self.lags = lags
-            self.lam1 = lam1
-            self.lam2 = lam2
-            self.window = window
+        Pair = Pair(*args,**kwargs)
+        # if data is None:
+        #     # generate synthetic Pair
+        #     Pair = pair.Pair(**kwargs)
+        #     #
+        #     self.data,
+        #     self.degs,
+        #     self.lags, self.lam1, self.lam2, self.window = _synthM()
+        # elif data is not None and (degs is None or
+        #                            lags is None or
+        #                            lam1 is None or
+        #                            lam2 is None or
+        #                            window is None):
+        #     # generate measurement using defaults
+        #     self.data,self.degs, self.lags, self.lam1, self.lam2, self.window = _grideigval(data)
+        # else:
+        #     # everything provided from low level (except delta?)
+        #     for key,arg in kwargs.items():
+        #         self.key = arg
             
-        # ensure data is a Pair for convenience functions
-        if not isinstance(self.data,c.Pair):
-            self.data = c.Pair(self.data)
+            # self.data = data
+            # self.degs = degs
+            # self.lags = lags
+            # self.lam1 = lam1
+            # self.lam2 = lam2
+            # self.window = window
+        #
+        # # ensure data is a Pair for convenience functions
+        # if not isinstance(self.data,pair.Pair):
+        #     self.data = c.Pair(self.data)
         
         # get some measurement attributes
         # uses ratio lam1/lam2 to find optimal fast and lag parameters
@@ -112,10 +124,10 @@ class SCeig:
     #     Save Measurement for future referral
     #     """
     
-def _synthM(deg=25,lag=10):
-    P = c.Pair()
-    P.split(deg,lag)
-    return _grideigval(P.data)
+# def _synthM(deg=25,lag=10):
+#     P = c.Pair()
+#     P.split(deg,lag)
+#     return eigval.grideigval(P.data)
 
 def ni(M):
     """

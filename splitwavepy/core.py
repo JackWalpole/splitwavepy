@@ -123,7 +123,7 @@ def snrRH(data):
 
 # Useful bits and pieces
 
-def synth(srcpol=0,fast=0,lag=0,noise=0.05,nsamps=501,width=16.0):
+def synth(pol=0,fast=0,lag=0,noise=0.05,nsamps=501,width=16.0):
     """return ricker wavelet synthetic data"""
     ricker = signal.ricker(int(nsamps), width)
     data = np.vstack((ricker,np.zeros(ricker.shape)))
@@ -135,7 +135,7 @@ def synth(srcpol=0,fast=0,lag=0,noise=0.05,nsamps=501,width=16.0):
     noise[0,:] = np.convolve(noise[0,:],gauss,'same')
     noise[1,:] = np.convolve(noise[1,:],gauss,'same')
     data = data + noise
-    data = rotate(data,srcpol)
+    data = rotate(data,pol)
     return split(data,fast,lag)
     
 def min_idx(vals):

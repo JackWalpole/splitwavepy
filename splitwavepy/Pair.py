@@ -2,9 +2,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import .core
-import .plotting
-import .eigval
+from . import core
+from . import plotting
+from .eigval import eigenM
 
 class Pair:
     """
@@ -15,14 +15,15 @@ class Pair:
            Pair(data) => creates Pair from two traces stored as rows in numpy array data
            Pair(x,y) => creates Pair from two traces stored in numpy arrays x and y.
     Optional:
-        - set sample interval using delta=x.  Where x is a float.  Default x=1.0.
-        - set orientation of trace1 using angle=x.  Where x is a float representing direction clockwise from North (or SV "up" if in ray frame).  Default is x=0.0.
+        - delta = x.  Where x = sample interval.  Default x=1.0.
+        - angle = x.  Where x = angle of component in Pair.data[0]. e.g. clockwise from North (or SV "up" if in ray frame).  Default is x=0.0.
     """
-    def __init__(self,*args,delta=None,angle=None):
+    def __init__(self,*args,delta=None,angle=None,**kwargs):
+        
         
         if len(args) == 0:                      
-            self.data = core.synth()            
-        elif len(args) == 1:            
+            self.data = core.synth(**kwargs)            
+        elif len(args) == 1:         
             self.data = args[0]       
         elif len(args) == 2:            
             self.data = np.vstack((args[0],args[1]))     
@@ -63,8 +64,8 @@ class Pair:
         # convert time shift to nsamples -- must be even
         nsamps = int(tlag / self.delta)
         nsamps = nsamps if nsamps%2==0 else nsamps + 1
-        # find appropriate rotation angle -- convert to counter-clockwise
-        rangle = -(degrees - self.angle)
+        # find appropriate rotation angle
+        rangle = degrees - self.angle
         # apply splitting
         self.data = core.split(self.data,rangle,nsamps)
         return self
@@ -103,14 +104,20 @@ class Pair:
         nsamps = nsamps if nsamps%2==0 else nsamps + 1
         self.data = core.lag(self.data,nsamps)
         
-    def window(self,width):
-        # convert width to nsamples -- must be odd
-        nsamps = int(tlag / self.delta)
-        nsamps = nsamps if nsamps%2==1 else nsamps + 1
-        self.data = core.window(self.data,nsamps)
+    # def window(self,width):
+    #     # convert width to nsamples -- must be odd
+    #     nsamps = int(tlag / self.delta)
+    #     nsamps = nsamps if nsamps%2==1 else nsamps + 1
+    #     self.data = core.window(self.data,nsamps)
         
-    # def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
-    #     return eigval.grideigval(self.data)
+    def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
+        """
+        Return an EigenM (after Silver and Chan, 1991).
+        
+        Uses the modified method for calculating degrees of freedom of Walsh et al. 2014.
+        """
+        
+        return eigenM(self)
 
 # def time2nsamps(time,delta):
 #     """
