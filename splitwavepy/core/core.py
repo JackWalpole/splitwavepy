@@ -63,7 +63,7 @@ def unsplit(data,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
     return rotate( rotate_and_lag(data,degrees,-nsamps), -degrees)
     
-def window(data,nsamps):
+def window(data,nsamps,tukey=None):
     """Window trace, or traces, about centre sample
        width must be odd to maintain definite centre"""
     
@@ -87,11 +87,16 @@ def window(data,nsamps):
         raise Exception('window starts before trace data')
     elif t1 > length:
         raise Exception('window ends after trace data')
-     
+        
+    if tukey is not None:
+        tukey = signal.tukey(nsamps,alpha=tukey)
+    else:
+        tukey = 1.
+        
     if data.ndim == 1:
-        return data[t0:t1]
+        return data[t0:t1] * tukey
     else: 
-        return data[:,t0:t1]
+        return data[:,t0:t1] * tukey
     
 def pca(data):
     """

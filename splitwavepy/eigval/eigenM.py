@@ -35,24 +35,26 @@ class EigenM:
         self.data.rotateto(0)
         
         # convert times to nsamples
+        self.delta = self.data.delta
+        
         if tlags is not None:
-            lags = tlags / self.data.delta
+            lags = tlags / self.delta
         else:
             lags = None
             
         if window is not None:
-            window = window / self.data.delta
+            window = window / self.delta
             
         if rcvcorr is not None:
             # convert time shift to nsamples -- must be even
-            nsamps = int(rcvcorr[1]/self.data.delta)
+            nsamps = int(rcvcorr[1]/self.delta)
             nsamps = nsamps if nsamps%2==0 else nsamps + 1
             rcv = (rcvcorr[0],nsamps)
         else:
             rcv = None
         
         if srccorr is not None:
-            nsamps = int(srccorr[1]/self.data.delta)
+            nsamps = int(srccorr[1]/self.delta)
             nsamps = nsamps if nsamps%2==0 else nsamps + 1
             src = (srccorr[0],nsamps)
         else:
@@ -62,7 +64,7 @@ class EigenM:
         self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(
                                                                         self.data.data,lags=lags,degs=degs,
                                                                         window=window,rcvcorr=rcv,srccorr=src)
-        self.tlags = self.lags * self.data.delta
+        self.tlags = self.lags * self.delta
         
         self.rcvcorr = rcvcorr
         self.srccorr = srccorr
@@ -100,12 +102,12 @@ class EigenM:
         self.lam2_95 = eigval.ftest(self.lam2,self.ndf,alpha=0.05)
 
         # convert traces to Pair class for convenience
-        self.data_corr = pair.Pair(self.data_corr)
-        self.srcpoldata = pair.Pair(self.srcpoldata)
-        self.srcpoldata_corr = pair.Pair(self.srcpoldata_corr)
+        self.data_corr = pair.Pair(self.data_corr,delta=self.delta)
+        self.srcpoldata = pair.Pair(self.srcpoldata,delta=self.delta)
+        self.srcpoldata_corr = pair.Pair(self.srcpoldata_corr,delta=self.delta)
         
 
-    def plot(self,vals=None,cmap='viridis',lam2_95=True,polar=False):
+    def plotsurf(self,vals=None,cmap='viridis',lam2_95=True,polar=False):
         """
         plot the measurement.
         by default plots lam1/lam2 with the lambda2 95% confidence interval overlaid
@@ -142,6 +144,46 @@ class EigenM:
     #     Save Measurement for future referral
     #     """
     
+    def plot(M):
+        import matplotlib.gridspec as gridspec
+        fig = plt.figure(figsize=(12, 3)) 
+        gs = gridspec.GridSpec(2, 3,
+                           width_ratios=[4,1,2]
+                           )
+    
+        ax1 = plt.subplot(gs[0,0])
+        ax2 = plt.subplot(gs[0,1])
+        ax3 = plt.subplot(gs[1,0])
+        ax4 = plt.subplot(gs[1,1])
+        ax5 = plt.subplot(gs[:,2])
+        
+        d1 = M.data.copy()
+        d1.window(M.window)
+        d2 = M.data_corr.copy()
+        d2.window(M.window)
+    
+        vals = M.lam1 / M.lam2
+        ax1.plot(d1.t(),d1.data[0])
+        ax1.plot(d1.t(),d1.data[1])
+        lim = abs(d1.data.max()) * 1.1
+        ax2.axis('equal')
+        ax2.plot(d1.data[1],d1.data[0])
+        ax2.set_xlim([-lim,lim])
+        ax2.set_ylim([-lim,lim])
+        ax2.axes.get_xaxis().set_visible(False)
+        ax2.axes.get_yaxis().set_visible(False)
+        ax3.plot(d2.t(),d2.data[0])
+        ax3.plot(d2.t(),d2.data[1])
+        lim = abs(d2.data.max()) * 1.1
+        ax4.axis('equal')
+        ax4.plot(d2.data[1],d2.data[0])
+        ax4.set_xlim([-lim,lim])
+        ax4.set_ylim([-lim,lim])
+        ax4.axes.get_xaxis().set_visible(False)
+        ax4.axes.get_yaxis().set_visible(False)
+        ax5.contourf(M.tlags,M.degs,vals,20,cmap='magma')
+    
+        plt.show()
 # def _synthM(deg=25,lag=10):
 #     P = c.Pair()
 #     P.split(deg,lag)

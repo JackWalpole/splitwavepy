@@ -8,6 +8,7 @@ from ..eigval.eigenM import EigenM
 
 import numpy as np
 import matplotlib.pyplot as plt
+import copy
 
 class Pair:
     """
@@ -54,7 +55,11 @@ class Pair:
             raise Exception('data must contain two traces in two rows')
         if self.data.shape[1]%2 == 0:
             raise Exception('traces must have odd number of samples')
+            
 
+    # set time from start
+    def t(self):
+        return np.arange(self.data.shape[1]) * self.delta
        
     # methods
     def plot(self):
@@ -64,11 +69,9 @@ class Pair:
         from matplotlib import gridspec
         fig = plt.figure(figsize=(12, 3)) 
         gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
-        # trace data
-        t = np.arange(self.data[0].size) * self.delta
         ax0 = plt.subplot(gs[0])
-        ax0.plot(t,self.data[0])
-        ax0.plot(t,self.data[1])
+        ax0.plot(self.t(),self.data[0])
+        ax0.plot(self.t(),self.data[1])
         # particle  motion
         lim = abs(self.data.max()) * 1.1
         # the polar axis:
@@ -140,7 +143,18 @@ class Pair:
         nsamps = int(tlag / self.delta)
         nsamps = nsamps if nsamps%2==0 else nsamps + 1
         self.data = core.lag(self.data,nsamps)
+     
+    def window(self,time,tukey=None):
+        """
+        Applies a window to the data
+        """   
+        # convert time to nsamples -- must be odd
+        nsamps = int(time / self.delta)
+        nsamps = nsamps if nsamps%2==1 else nsamps + 1        
+        self.data = core.window(self.data,nsamps,tukey)
         
+    def copy(self):
+        return copy.copy(self)
         
     # def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
     #     """
