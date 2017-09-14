@@ -92,7 +92,7 @@ class Pair:
         # show
         plt.show()
     
-    def split(self,degrees,tlag):
+    def split(self,degrees,tlag,copy=False):
         """
         Applies splitting operator (phi,dt) to Pair.
         
@@ -107,10 +107,14 @@ class Pair:
         # find appropriate rotation angle
         rangle = degrees - self.angle
         # apply splitting
-        self.data = core.split(self.data,rangle,nsamps)
-        return self
+        if copy = False:
+            self.data = core.split(self.data,rangle,nsamps)
+        else:
+            dupe = copy.copy(self)
+            dupe.data = core.split(self.data,rangle,nsamps)
+            return dupe
     
-    def unsplit(self,degrees,tlag):
+    def unsplit(self,degrees,tlag,copy=False):
         """
         Applies reverse splitting operator (phi,dt) to Pair.
         
@@ -124,34 +128,58 @@ class Pair:
         nsamps = nsamps if nsamps%2==0 else nsamps + 1
         # find appropriate rotation angle
         rangle = degrees - self.angle
-        self.data = core.unsplit(self.data,rangle,nsamps)
-        
-    def rotateto(self,degrees):
+        if copy = False:
+            self.data = core.unsplit(self.data,rangle,nsamps)
+        else:
+            dupe = copy.copy(self)
+            dupe.data = core.unsplit(self.data,rangle,nsamps)
+            return dupe
+            
+    def rotateto(self,degrees,copy=False):
         """
         Rotate data so that trace1 lines up with *degrees*
         """
         # find appropriate rotation angle
-        rangle = degrees - self.angle
-        self.data = core.rotate(self.data,rangle)
-        self.angle = degrees
+        rangle = degrees - self.angle        
+        if copy = False:
+            self.data = core.rotate(self.data,rangle)
+            self.angle = degrees
+        else:
+            dupe = copy.copy(self)
+            dupe.data = core.rotate(self.data,rangle)
+            dupe.angle = degrees
+            return dupe
         
-    def lag(self,tlag):
+
+        
+    def lag(self,tlag,copy=False):
         """
         Relative shift trace1 and trace2 by tlag seconds
         """
         # convert time shift to nsamples -- must be even
         nsamps = int(tlag / self.delta)
         nsamps = nsamps if nsamps%2==0 else nsamps + 1
-        self.data = core.lag(self.data,nsamps)
+        if copy = False:
+            self.data = core.lag(self.data,nsamps)
+        else:
+            dupe = copy.copy(self)
+            dupe.data = core.lag(self.data,nsamps)
+            return dupe
      
-    def window(self,time,tukey=None):
+    def window(self,time,tukey=None,copy=False):
         """
         Applies a window to the data
         """   
         # convert time to nsamples -- must be odd
         nsamps = int(time / self.delta)
         nsamps = nsamps if nsamps%2==1 else nsamps + 1        
-        self.data = core.window(self.data,nsamps,tukey)
+        if copy = False:
+            self.data = core.window(self.data,nsamps,tukey)
+        else:
+            dupe = copy.copy(self)
+            dupe.data = core.window(self.data,nsamps,tukey)
+            return dupe
+        
         
     def copy(self):
         return copy.copy(self)
