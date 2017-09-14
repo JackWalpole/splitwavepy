@@ -23,8 +23,22 @@ class Pair:
     """
     def __init__(self,*args,delta=None,angle=None,**kwargs):
         
+        if delta is None:
+            self.delta = 1.
+        else:
+            self.delta = float(delta)
+            
+        if angle is None:
+            self.angle = 0.
+        else:
+            self.angle = float(angle)
         
-        if len(args) == 0:                      
+        if len(args) == 0:
+            if ('lag' in kwargs):
+                # convert time shift to nsamples -- must be even
+                nsamps = int(kwargs['lag']/self.delta)
+                nsamps = nsamps if nsamps%2==0 else nsamps + 1
+                kwargs['lag'] = nsamps                                      
             self.data = core.synth(**kwargs)            
         elif len(args) == 1:       
             self.data = args[0]       
@@ -41,16 +55,7 @@ class Pair:
         if self.data.shape[1]%2 == 0:
             raise Exception('traces must have odd number of samples')
 
-        if delta is None:
-            self.delta = 1.
-        else:
-            self.delta = float(delta)
-            
-        if angle is None:
-            self.angle = 0.
-        else:
-            self.angle = float(angle)
-            
+       
     # methods
     def plot(self):
         """

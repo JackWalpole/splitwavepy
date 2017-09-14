@@ -37,7 +37,6 @@ class EigenM:
         # convert times to nsamples
         if tlags is not None:
             lags = tlags / self.data.delta
-            # check
         else:
             lags = None
             
