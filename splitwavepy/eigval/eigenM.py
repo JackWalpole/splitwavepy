@@ -18,6 +18,7 @@ class EigenM:
     
     def __init__(self,*args,**kwargs):
         
+        if 
         Pair = Pair(*args,**kwargs)
         # if data is None:
         #     # generate synthetic Pair
