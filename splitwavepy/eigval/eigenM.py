@@ -20,7 +20,10 @@ class EigenM:
     Silver and Chan (1991) eigenvalue method measurement.
     """
     
-    def __init__(self,*args,maxlag=None,window=None,steplag=None,**kwargs):
+    def __init__(self,*args,tlags=None,degs=None,window=None,rcvcorr=None,srccorr=None,**kwargs):
+        """
+        Populates an EigenM instance.
+        """
         
         # process input
         if len(args) == 1 and isinstance(args[0],pair.Pair):
@@ -30,14 +33,40 @@ class EigenM:
             
         # ensure trace1 at zero angle
         self.data.rotateto(0)
-        # convert times to nsamples
         
+        # convert times to nsamples
+        if tlags is not None:
+            lags = tlags / self.data.delta
+            # check
+        else:
+            lags = None
+            
+        if window is not None:
+            window = window / self.data.delta
+            
+        if rcvcorr is not None:
+            # convert time shift to nsamples -- must be even
+            nsamps = int(rcvcorr[1]/self.data.delta)
+            nsamps = nsamps if nsamps%2==0 else nsamps + 1
+            rcv = (rcvcorr[0],nsamps)
+        else:
+            rcv = None
+        
+        if srccorr is not None:
+            nsamps = int(srccorr[1]/self.data.delta)
+            nsamps = nsamps if nsamps%2==0 else nsamps + 1
+            src = (srccorr[0],nsamps)
+        else:
+            src = None
         
         # grid search splitting
-        self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.data)
-
+        self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(
+                                                                        self.data.data,lags=lags,degs=degs,
+                                                                        window=window,rcvcorr=rcv,srccorr=src)
+        self.tlags = self.lags * self.data.delta
         
-
+        self.rcvcorr = rcvcorr
+        self.srccorr = srccorr
         
         # get some measurement attributes
         # uses ratio lam1/lam2 to find optimal fast and lag parameters
@@ -77,7 +106,7 @@ class EigenM:
         self.srcpoldata_corr = pair.Pair(self.srcpoldata_corr)
         
 
-    def plot(self,vals=None,cmap='viridis',lam2_95=False,polar=True):
+    def plot(self,vals=None,cmap='viridis',lam2_95=True,polar=False):
         """
         plot the measurement.
         by default plots lam1/lam2 with the lambda2 95% confidence interval overlaid
@@ -90,7 +119,7 @@ class EigenM:
         
         if polar is True:
             rads = np.deg2rad(np.column_stack((self.degs,self.degs+180,self.degs[:,0]+360)))
-            lags = np.column_stack((self.lags,self.lags,self.lags[:,0]))
+            lags = np.column_stack((self.tlags,self.tlags,self.tlags[:,0]))
             vals = np.column_stack((vals,vals,vals[:,0]))
             fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
             ax.contourf(rads,lags,vals,50,cmap=cmap)
@@ -100,9 +129,9 @@ class EigenM:
                 lam2 = np.column_stack((self.lam2,self.lam2,self.lam2[:,0]))
                 plt.contour(rads,lags,lam2,levels=[self.lam2_95])
         else:
-            plt.contourf(self.lags,self.degs,vals,50,cmap=cmap)        
+            plt.contourf(self.tlags,self.degs,vals,50,cmap=cmap)        
             if lam2_95 is True:
-                plt.contour(self.lags,self.degs,self.lam2,levels=[self.lam2_95])
+                plt.contour(self.tlags,self.degs,self.lam2,levels=[self.lam2_95])
             
 
             

@@ -6,6 +6,9 @@ from . import core
 from . import plotting
 from ..eigval.eigenM import EigenM
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 class Pair:
     """
     The Pair is a class to store two traces in the x and y directions.
@@ -50,7 +53,36 @@ class Pair:
             
     # methods
     def plot(self):
-        plotting.plot_data(self.data)
+        """
+        Plot trace data and particle motion
+        """
+        from matplotlib import gridspec
+        fig = plt.figure(figsize=(12, 3)) 
+        gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+        # trace data
+        t = np.arange(self.data[0].size) * self.delta
+        ax0 = plt.subplot(gs[0])
+        ax0.plot(t,self.data[0])
+        ax0.plot(t,self.data[1])
+        # particle  motion
+        lim = abs(self.data.max()) * 1.1
+        # the polar axis:
+        # ax_polar = plt.subplot(gs[1], polar=True, frameon=False)
+        # ax_polar.set_rmax(lim)
+        # ax_polar.patch.set_facecolor(111)
+        # ax_polar.get_xaxis.set_visible(False)
+        # ax_polar.grid(True)
+        # the data
+        ax1 = plt.subplot(gs[1])
+        # ax1.patch.set_alpha(0)
+        ax1.axis('equal')
+        ax1.plot(self.data[1],self.data[0])
+        ax1.set_xlim([-lim,lim])
+        ax1.set_ylim([-lim,lim])
+        ax1.axes.get_xaxis().set_visible(False)
+        ax1.axes.get_yaxis().set_visible(False)
+        # show
+        plt.show()
     
     def split(self,degrees,tlag):
         """
@@ -104,29 +136,15 @@ class Pair:
         nsamps = nsamps if nsamps%2==0 else nsamps + 1
         self.data = core.lag(self.data,nsamps)
         
-    # def window(self,width):
-    #     # convert width to nsamples -- must be odd
-    #     nsamps = int(tlag / self.delta)
-    #     nsamps = nsamps if nsamps%2==1 else nsamps + 1
-    #     self.data = core.window(self.data,nsamps)
         
-    def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
-        """
-        Return an EigenM (after Silver and Chan, 1991).
+    # def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
+    #     """
+    #     Return an EigenM (after Silver and Chan, 1991).
+    #
+    #     Uses the modified method for calculating degrees of freedom of Walsh et al. 2014.
+    #     """
+    #
+    #     return EigenM(self)
 
-        Uses the modified method for calculating degrees of freedom of Walsh et al. 2014.
-        """
 
-        return EigenM(self)
-
-# def time2nsamps(time,delta):
-#     """
-#     Convert a time to number of samples given knowledge of sample interval
-#     """
-#     return time/delta
-#
-# def nsamps2time(nsamps,delta):
-#     """
-#     Convert a number of samples to time given knowledge of sample interval
-#     """
     
