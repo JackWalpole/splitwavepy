@@ -7,8 +7,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-# from . import Pair
+from ..core import core
+from ..core import pair
 from . import eigval
+
+import numpy as np
+import matplotlib.pyplot as plt
 
 class EigenM:
     
@@ -16,43 +20,28 @@ class EigenM:
     Silver and Chan (1991) eigenvalue method measurement.
     """
     
-    def __init__(self,*args,**kwargs):
+    def __init__(self,*args,maxlag=None,window=None,steplag=None,**kwargs):
         
-        if 
-        Pair = Pair(*args,**kwargs)
-        # if data is None:
-        #     # generate synthetic Pair
-        #     Pair = pair.Pair(**kwargs)
-        #     #
-        #     self.data,
-        #     self.degs,
-        #     self.lags, self.lam1, self.lam2, self.window = _synthM()
-        # elif data is not None and (degs is None or
-        #                            lags is None or
-        #                            lam1 is None or
-        #                            lam2 is None or
-        #                            window is None):
-        #     # generate measurement using defaults
-        #     self.data,self.degs, self.lags, self.lam1, self.lam2, self.window = _grideigval(data)
-        # else:
-        #     # everything provided from low level (except delta?)
-        #     for key,arg in kwargs.items():
-        #         self.key = arg
+        # process input
+        if len(args) == 1 and isinstance(args[0],pair.Pair):
+            self.data = args[0]
+        else:
+            self.data = pair.Pair(*args,**kwargs)
             
-            # self.data = data
-            # self.degs = degs
-            # self.lags = lags
-            # self.lam1 = lam1
-            # self.lam2 = lam2
-            # self.window = window
-        #
-        # # ensure data is a Pair for convenience functions
-        # if not isinstance(self.data,pair.Pair):
-        #     self.data = c.Pair(self.data)
+        # ensure trace1 at zero angle
+        self.data.rotateto(0)
+        # convert times to nsamples
+        
+        
+        # grid search splitting
+        self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.data)
+
+        
+
         
         # get some measurement attributes
         # uses ratio lam1/lam2 to find optimal fast and lag parameters
-        maxloc = c.max_idx(self.lam1/self.lam2)
+        maxloc = core.max_idx(self.lam1/self.lam2)
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
         # generate "squashed" profiles
@@ -62,10 +51,10 @@ class EigenM:
         self.ni = ni(self)
         
         # get some useful stuff
-        self.data_corr = c.unsplit(self.data.data,self.fast,self.lag)
-        self.srcpol = c.pca(self.data_corr)
-        self.srcpoldata = c.rotate(self.data.data,-self.srcpol)
-        self.srcpoldata_corr = c.rotate(self.data_corr,-self.srcpol)
+        self.data_corr = core.unsplit(self.data.data,self.fast,self.lag)
+        self.srcpol = core.pca(self.data_corr)
+        self.srcpoldata = core.rotate(self.data.data,-self.srcpol)
+        self.srcpoldata_corr = core.rotate(self.data_corr,-self.srcpol)
         
         # signal to noise ratio estimates
         # self.snr = c.snr(c.window(self.srcpoldata_corr,self.window))
@@ -78,14 +67,14 @@ class EigenM:
         self.snr = np.max((self.lam1-self.lam2)/(2*self.lam2))
 
         # number degrees of freedom
-        self.ndf = ndf(c.window(self.srcpoldata_corr[1,:],self.window))
+        self.ndf = eigval.ndf(core.window(self.srcpoldata_corr[1,:],self.window))
         # value of lam2 at 95% confidence contour
-        self.lam2_95 = ftest(self.lam2,self.ndf,alpha=0.05)
+        self.lam2_95 = eigval.ftest(self.lam2,self.ndf,alpha=0.05)
 
         # convert traces to Pair class for convenience
-        self.data_corr = c.Pair(self.data_corr)
-        self.srcpoldata = c.Pair(self.srcpoldata)
-        self.srcpoldata_corr = c.Pair(self.srcpoldata_corr)
+        self.data_corr = pair.Pair(self.data_corr)
+        self.srcpoldata = pair.Pair(self.srcpoldata)
+        self.srcpoldata_corr = pair.Pair(self.srcpoldata_corr)
         
 
     def plot(self,vals=None,cmap='viridis',lam2_95=False,polar=True):

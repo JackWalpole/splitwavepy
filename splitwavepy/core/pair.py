@@ -4,7 +4,7 @@ from __future__ import print_function
 
 from . import core
 from . import plotting
-from .eigval import eigenM
+from ..eigval.eigenM import EigenM
 
 class Pair:
     """
@@ -23,7 +23,7 @@ class Pair:
         
         if len(args) == 0:                      
             self.data = core.synth(**kwargs)            
-        elif len(args) == 1:         
+        elif len(args) == 1:       
             self.data = args[0]       
         elif len(args) == 2:            
             self.data = np.vstack((args[0],args[1]))     
@@ -113,11 +113,11 @@ class Pair:
     def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
         """
         Return an EigenM (after Silver and Chan, 1991).
-        
+
         Uses the modified method for calculating degrees of freedom of Walsh et al. 2014.
         """
-        
-        return eigenM(self)
+
+        return EigenM(self)
 
 # def time2nsamps(time,delta):
 #     """

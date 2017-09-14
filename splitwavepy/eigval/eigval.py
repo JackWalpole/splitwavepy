@@ -7,8 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-# import core as c
-# from . import core
+from ..core import core
 # from . import plotting
 
 import numpy as np
@@ -25,43 +24,54 @@ def eigvalcov(data):
     return np.sort(np.linalg.eigvals(np.cov(data)))
     
     
-def grideigval(data, maxlag=None, window=None, stepang=None, steplag=None):
-
+def grideigval(data, lags=None, degs=None, window=None,rcvcorr=None,srccorr=None):
+    """
+    Grid search for splitting parameters applied to data.
+    
+    lags = 1-D array of sample shifts to search over, if None an attempt at finding sensible values is made
+    degs = 1-D array of rotations to search over, if None an attempt at finding sensible values is made
+    window = number of samples included in analysis (must be odd)
+    rcvcorr = receiver correction parameters in tuple (fast,lag) 
+    srccorr = source correction parameters in tuple (fast,lag) 
+    """
     # set some defaults
-    if maxlag is None:
+    if lags is None:
         maxlag = int(data[0].size / 10)
         maxlag = maxlag if maxlag%2==0 else maxlag + 1
-    if steplag is None:
         steplag = 2 * int(np.max([1,maxlag/80]))
-    if stepang is None:
+        lags = np.arange(0,maxlag,steplag).astype(int)        
+        
+    if degs is None:
         stepang = 2
+        degs = np.arange(0,180,stepang)
+        
     if window is None:
-        # by default whatevers smaller,
-        # half trace length or 10 * max shift
+        # by default whatevers smaller: half trace length or 10 * maxlag
         # ensure window is odd length
         window = int(np.min([data.shape[1] * 0.5,maxlag * 10]))
         window = window if window%2==1 else window + 1
 
-    degs, lags = np.meshgrid(np.arange(0,180,stepang),
-                             np.arange(0,maxlag,steplag).astype(int))
+    # if requested -- pre-apply receiver correction
+    if rcvcorr is not None:
+        data = core.unsplit(data,*rcvcorr)
+        
+    gdegs, glags = np.meshgrid(degs,lags)
 
-    shape = degs.shape
+    shape = gdegs.shape
     lam1 = np.zeros(shape)
     lam2 = np.zeros(shape)
     for ii in np.arange(shape[1]):
-        temp = core.rotate(data,degs[0,ii])
+        temp = core.rotate(data,gdegs[0,ii])
         for jj in np.arange(shape[0]):
             # remove splitting so use inverse operator (negative lag)
-            temp2 = core.lag(temp,-lags[jj,ii])
-            temp3 = core.window(temp2,window)
-            lam2[jj,ii], lam1[jj,ii] = eigvalcov(temp3)
+            temp2 = core.lag(temp,-glags[jj,ii])
+            # if requested -- post-apply source correction
+            if srccorr is not None:
+                temp2 = core.unsplit(temp2,*srccorr)
+            temp2 = core.window(temp2,window)
+            lam2[jj,ii], lam1[jj,ii] = eigvalcov(temp2)
             
-    return data,degs,lags,lam1,lam2,window
-
-# def grideigval(data, maxlag=None, window=None, stepang=None, steplag=None):
-#     data,degs,lags,lam1,lam2,window = _grideigval(data)
-#     return Measurement(data=data,degs=degs,lags=lags,lam1=lam1,lam2=lam2,window=window)
-    
+    return gdegs,glags,lam1,lam2,window
 
 def ndf(y,taper=False,detrend=True):
     """
@@ -92,13 +102,13 @@ def ndf(y,taper=False,detrend=True):
     
     return ndf
     
-def ftest(lam2min,ndf,alpha=0.05):
+def ftest(lam2,ndf,alpha=0.05):
     """
     returns lambda2 value at 100(1-alpha)% confidence interval
     by default alpha = 0.05 = 95% confidence interval
     following Silver and Chan (1991)
     """
-    # lam2min = lam2.min()
+    lam2min = lam2.min()
     k = 2 # two parameters, phi and dt.
     # R = ((lam2 - lam2min)/k) /  (lam2min/(ndf-k))
     F = stats.f.ppf(1-alpha,k,ndf)
