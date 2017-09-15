@@ -5,6 +5,7 @@ from __future__ import print_function
 from . import core
 from . import plotting
 from ..eigval.eigenM import EigenM
+from .window import Window
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -56,12 +57,18 @@ class Pair:
         if self.data.shape[1]%2 == 0:
             raise Exception('traces must have odd number of samples')
             
-
+    # methods
+    
     # set time from start
     def t(self):
         return np.arange(self.data.shape[1]) * self.delta
-       
-    # methods
+
+    def power(self):
+        return self.data[0]**2+self.data[1]**2
+        
+    def centre(self):
+        return int(self.data.shape[1]/2)
+
     def plot(self):
         """
         Plot trace data and particle motion
@@ -107,7 +114,7 @@ class Pair:
         # find appropriate rotation angle
         rangle = degrees - self.angle
         # apply splitting
-        if copy = False:
+        if copy == False:
             self.data = core.split(self.data,rangle,nsamps)
         else:
             dupe = copy.copy(self)
@@ -128,7 +135,7 @@ class Pair:
         nsamps = nsamps if nsamps%2==0 else nsamps + 1
         # find appropriate rotation angle
         rangle = degrees - self.angle
-        if copy = False:
+        if copy == False:
             self.data = core.unsplit(self.data,rangle,nsamps)
         else:
             dupe = copy.copy(self)
@@ -141,7 +148,7 @@ class Pair:
         """
         # find appropriate rotation angle
         rangle = degrees - self.angle        
-        if copy = False:
+        if copy == False:
             self.data = core.rotate(self.data,rangle)
             self.angle = degrees
         else:
@@ -159,7 +166,7 @@ class Pair:
         # convert time shift to nsamples -- must be even
         nsamps = int(tlag / self.delta)
         nsamps = nsamps if nsamps%2==0 else nsamps + 1
-        if copy = False:
+        if copy == False:
             self.data = core.lag(self.data,nsamps)
         else:
             dupe = copy.copy(self)
@@ -173,7 +180,7 @@ class Pair:
         # convert time to nsamples -- must be odd
         nsamps = int(time / self.delta)
         nsamps = nsamps if nsamps%2==1 else nsamps + 1        
-        if copy = False:
+        if copy == False:
             self.data = core.window(self.data,nsamps,tukey)
         else:
             dupe = copy.copy(self)
@@ -193,5 +200,3 @@ class Pair:
     #
     #     return EigenM(self)
 
-
-    
