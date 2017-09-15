@@ -46,10 +46,11 @@ def grideigval(data, lags=None, degs=None, window=None,rcvcorr=None,srccorr=None
         degs = np.arange(0,180,stepang)
         
     if window is None:
+        # make a window by guessing
         nsamps = int(np.min([data.shape[1]/2, maxlag * 10]))
         nsamps = nsamps if nsamps%2==1 else nsamps + 1
         offset = 0
-        window = Window(offset,nsamps,tukey=None)
+        window = Window(nsamps,offset,tukey=None)
     elif not isinstance(window, Window):
         raise Exception('Window not valid')
         
