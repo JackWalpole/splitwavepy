@@ -14,9 +14,6 @@ import numpy as np
 import math
 from scipy import signal
 
-# from . import plotting as p
-# from . import eigval
-
 
 def lag(data,nsamps):
     """
@@ -46,7 +43,8 @@ def lag(data,nsamps):
         
 def rotate(data,degrees):
     """row 0 is x-axis and row 1 is y-axis,
-       rotates from x to y axis"""
+       rotates from x to y axis
+       e.g. N to E if row 0 is N cmp and row1 is E cmp"""
     ang = np.deg2rad(degrees)
     rot = np.array([[np.cos(ang),-np.sin(ang)],
                     [np.sin(ang), np.cos(ang)]])
@@ -142,11 +140,11 @@ def synth(pol=0,fast=0,lag=0,noise=0.05,nsamps=501,width=16.0):
     std = width/4
     norm = 1/(std*np.sqrt(2*np.pi))
     gauss = norm * signal.gaussian(int(nsamps),std)
-    noise[0,:] = np.convolve(noise[0,:],gauss,'same')
-    noise[1,:] = np.convolve(noise[1,:],gauss,'same')
+    noise[0] = np.convolve(noise[0],gauss,'same')
+    noise[1] = np.convolve(noise[1],gauss,'same')
     data = data + noise
     data = rotate(data,pol)
-    return split(data,fast,lag)
+    return split(data,fast-2*pol,lag)
     
 def min_idx(vals):
     """

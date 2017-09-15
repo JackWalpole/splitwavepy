@@ -39,7 +39,9 @@ class EigenM:
         self.delta = self.data.delta
         
         if tlags is not None:
-            lags = tlags / self.delta
+            # round to nearest 2
+            lags = 2 * np.rint( 0.5 * tlags / self.delta )
+            lags = np.unique(lags).astype(int)
         else:
             lags = None
             

@@ -174,7 +174,7 @@ class Pair:
         Rotate data so that trace1 lines up with *degrees*
         """
         # find appropriate rotation angle
-        rangle = degrees - self.angle        
+        rangle = -degrees - self.angle        
         if copy == False:
             self.data = core.rotate(self.data,rangle)
             self.angle = degrees
