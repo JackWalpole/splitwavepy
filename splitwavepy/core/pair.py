@@ -117,7 +117,7 @@ class Pair:
         if copy == False:
             self.data = core.split(self.data,rangle,nsamps)
         else:
-            dupe = copy.copy(self)
+            dupe = self.copy()
             dupe.data = core.split(self.data,rangle,nsamps)
             return dupe
     
@@ -138,7 +138,7 @@ class Pair:
         if copy == False:
             self.data = core.unsplit(self.data,rangle,nsamps)
         else:
-            dupe = copy.copy(self)
+            dupe = self.copy()
             dupe.data = core.unsplit(self.data,rangle,nsamps)
             return dupe
             
@@ -152,7 +152,7 @@ class Pair:
             self.data = core.rotate(self.data,rangle)
             self.angle = degrees
         else:
-            dupe = copy.copy(self)
+            dupe = self.copy()
             dupe.data = core.rotate(self.data,rangle)
             dupe.angle = degrees
             return dupe
@@ -169,28 +169,29 @@ class Pair:
         if copy == False:
             self.data = core.lag(self.data,nsamps)
         else:
-            dupe = copy.copy(self)
+            dupe = self.copy()
             dupe.data = core.lag(self.data,nsamps)
             return dupe
      
-    def chop(self,time_width,time_centre=None,tukey=None,copy=False):
+    def chop(self,window,copy=False):
         """
-        Chop data around centre sample
-        shortens trace to nearest odd number of samples that represent *time* = nsamps * delta
+        Chop data around window
         """
-        # convert time to nsamples -- must be odd
-        nsamps = int(time_width / self.delta)
-        nsamps = nsamps if nsamps%2==1 else nsamps + 1
-        # convert time_centre to sample number
-        if time_centre is not None:
-            centre = int(time_centre / self.delta)
-        else:
-            centre = None
+        
+        # if isinstance(window,window.Window):
+        #     # extract data
+        #     nsamps = window.width
+        #     centre = window.centre
+        # else:
+        #     raise Exception('window must be defined')
+        nsamps = window.width
+        centre = window.centre    
+        tukey = window.tukey
         # action
         if copy == False:
             self.data = core.chop(self.data,nsamps,centre,tukey)
         else:
-            dupe = copy.copy(self)
+            dupe = self.copy()
             dupe.data = core.chop(self.data,nsamps,centre,tukey)
             return dupe
         
@@ -203,6 +204,20 @@ class Pair:
         w = int(time_width / self.delta)
         w = w if w%2==1 else w + 1        
         return window.Window(c,w,tukey=tukey)
+        
+    # def autowindow(self,time_centre=None):
+    #     """
+    #     Makes a guess based on energy near *time_centre* about a suitable window
+    #
+    #     *time centre* should be the shear wave pick at the centre of the energy packet.
+    #     By default will use centre sample.
+    #     """
+    #     if time_centre is None:
+    #         t0 = self.centre()
+    #     else:
+    #         t0 = int(time_centre / self.delta)
+            
+        
                
     def copy(self):
         return copy.copy(self)
