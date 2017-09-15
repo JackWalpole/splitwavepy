@@ -18,7 +18,11 @@ class Window:
         self.end = self.centre + hw
         self.tukey = tukey
 
-    def asnumpy(self,nsamps):
+    def asarray(self,nsamps=None):
+        
+        if nsamps is None:
+            nsamps = self.start + self.end
+        
         # sense check -- is window in range?
         if self.end > nsamps:
             raise Exception('Window exceeds max range')        
@@ -30,10 +34,10 @@ class Window:
             alpha = 0.
         else:
             alpha = self.tukey
-        tukey = signal.tukey(self.width,alpha=alpha)
-        
-        array = tukey + np.zeros(nsamps)
-        return np.roll(array,self.start)
+        tukey = signal.tukey(self.width,alpha=alpha)        
+        array = np.zeros(nsamps)
+        array[self.start:self.end] = tukey
+        return array
                 
     def shift(self,shift):
         """
@@ -53,5 +57,6 @@ class Window:
         self.start = self.centre - hw
         self.end = self.centre + hw
         
-    def plot(self):
-        plt.plot(self.asnumpy)
+    def plot(self,nsamps=None):
+        plt.plot(self.asarray(nsamps))
+        plt.show()
