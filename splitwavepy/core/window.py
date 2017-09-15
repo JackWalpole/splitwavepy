@@ -15,6 +15,7 @@ class Window:
         width = int(width)
         self.width = width if width%2==1 else width + 1
         self.offset = offset
+        self.tukey = tukey
     
     def start(self,nsamps):
         """
@@ -63,7 +64,7 @@ class Window:
             alpha = self.tukey
         tukey = signal.tukey(self.width,alpha=alpha)        
         array = np.zeros(nsamps)
-        array[self.start:self.end+1] = tukey
+        array[self.start(nsamps):self.end(nsamps)+1] = tukey
         return array
                 
     def shift(self,shift):

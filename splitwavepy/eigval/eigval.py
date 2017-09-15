@@ -71,26 +71,29 @@ def grideigval(data, lags=None, degs=None, window=None,rcvcorr=None,srccorr=None
             if srccorr is not None:
                 temp2 = core.unsplit(temp2,*srccorr)
             centre = int(temp2.shape[1]/2) + window.offset
-            temp2 = core.chop(temp2,centre,window.width,window.tukey)
+            temp2 = core.chop(temp2,window.width,centre,window.tukey)
             lam2[jj,ii], lam1[jj,ii] = eigvalcov(temp2)
             
     return gdegs,glags,lam1,lam2,window
 
-def ndf(y,taper=False,detrend=True):
+def ndf(y,window=None,detrend=True):
     """
     Estimates number of degrees of freedom using noise trace y.
     Uses the improvement found by Walsh et al (2013).
     By default will detrend data to ensure zero mean
     and will taper edges using a Tukey filter affecting amplitudes of data at edges (extreme 5%)
     """
-
-    if taper is True:
-        y = y * signal.tukey(y.size,0.05)
         
     if detrend is True:
         # ensure no trend on the noise trace
         y = signal.detrend(y)
 
+    if window is not None:
+        # chop trace to window limits
+        width = window.width
+        centre = int(y.shape[0]/2) + window.offset
+        tukey = window.tukey
+        y = core.chop(y,width,centre,tukey)
   
     Y = np.fft.fft(y)
     amp = np.absolute(Y)

@@ -98,7 +98,8 @@ class EigenM:
         self.snr = np.max((self.lam1-self.lam2)/(2*self.lam2))
 
         # number degrees of freedom
-        self.ndf = eigval.ndf(core.chop(self.srcpoldata_corr[1,:],self.window.width,self.window.centre,self.window.tukey))
+        self.ndf = eigval.ndf(self.srcpoldata_corr[1,:],window=self.window)
+        
         # value of lam2 at 95% confidence contour
         self.lam2_95 = eigval.ftest(self.lam2,self.ndf,alpha=0.05)
 
@@ -113,9 +114,7 @@ class EigenM:
         plot the measurement.
         by default plots lam1/lam2 with the lambda2 95% confidence interval overlaid
         """
-        
-        
-        
+              
         if vals is None:
             vals = self.lam1 / self.lam2
         

@@ -77,15 +77,16 @@ def chop(data,nsamps,centre=None,tukey=None):
     
     if centre == None:
         # by defualt put centre at middle sample
-        centre = math.floor(length/2)
+        centre = int(length/2)
     else:
         centre = int(centre)
         
     if nsamps > length:
         raise Exception('chop width is greater than trace length')
-        
-    t0 = centre - math.floor(nsamps/2)
-    t1 = centre + math.ceil(nsamps/2)
+    
+    hw = int(nsamps/2)    
+    t0 = centre - hw
+    t1 = centre + hw
     
     if t0 < 0:
         raise Exception('chop starts before trace data')
@@ -98,9 +99,9 @@ def chop(data,nsamps,centre=None,tukey=None):
         tukey = 1.
         
     if data.ndim == 1:
-        return data[t0:t1] * tukey
+        return data[t0:t1+1] * tukey
     else: 
-        return data[:,t0:t1] * tukey
+        return data[:,t0:t1+1] * tukey
     
 def pca(data):
     """

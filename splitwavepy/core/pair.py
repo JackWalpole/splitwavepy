@@ -103,13 +103,16 @@ class Pair:
             ax0.plot(self.t(),self.data[0])
             ax0.plot(self.t(),self.data[1])
             # the window limits
-            ax0.axvline(window.start*self.delta,linewidth=2,color='r')
-            ax0.axvline(window.end*self.delta,linewidth=2,color='r')
+            nsamps = self.t().size
+            wbeg = window.start(nsamps)*self.delta
+            wend = window.end(nsamps)*self.delta
+            ax0.axvline(wbeg,linewidth=2,color='r')
+            ax0.axvline(wend,linewidth=2,color='r')
             # windowed data
             d2 = self.chop(window,copy=True)
             ax1 = plt.subplot(gs[1])
-            ax1.plot(d2.t()+window.start*self.delta,d2.data[0])
-            ax1.plot(d2.t()+window.start*self.delta,d2.data[1])
+            ax1.plot(d2.t()+wbeg,d2.data[0])
+            ax1.plot(d2.t()+wbeg,d2.data[1])
             # particle  motion
             lim = abs(d2.data.max()) * 1.1
             ax2 = plt.subplot(gs[2])
@@ -202,14 +205,14 @@ class Pair:
         Chop data around window
         """
         nsamps = window.width
-        centre = window.centre(nsamps) + window.offset 
+        centre = self.centre() + window.offset 
         tukey = window.tukey
         # action
         if copy == False:
-            self.data = core.chop(self.data,centre,nsamps,tukey)
+            self.data = core.chop(self.data,nsamps,centre,tukey)
         else:
             dupe = self.copy()
-            dupe.data = core.chop(self.data,centre,nsamps,tukey)
+            dupe.data = core.chop(self.data,nsamps,centre,tukey)
             return dupe
         
     def window(self,time_centre,time_width,tukey=None):
