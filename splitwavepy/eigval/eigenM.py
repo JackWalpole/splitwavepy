@@ -9,6 +9,7 @@ from __future__ import print_function
 
 from ..core import core
 from ..core import pair
+from ..core import window
 from . import eigval
 
 import numpy as np
@@ -42,8 +43,8 @@ class EigenM:
         else:
             lags = None
             
-        if window is not None:
-            window = window * self.delta
+        # if window is not None and isinstance(window,window.Window):
+        #     self.window = window
             
         if rcvcorr is not None:
             # convert time shift to nsamples -- must be even
@@ -97,7 +98,7 @@ class EigenM:
         self.snr = np.max((self.lam1-self.lam2)/(2*self.lam2))
 
         # number degrees of freedom
-        self.ndf = eigval.ndf(core.chop(self.srcpoldata_corr[1,:],self.window))
+        self.ndf = eigval.ndf(core.chop(self.srcpoldata_corr[1,:],self.window.width,self.window.centre,self.window.tukey))
         # value of lam2 at 95% confidence contour
         self.lam2_95 = eigval.ftest(self.lam2,self.ndf,alpha=0.05)
 
@@ -158,9 +159,9 @@ class EigenM:
         ax5 = plt.subplot(gs[:,2])
         
         d1 = M.data.copy()
-        d1.window(M.window)
+        d1.chop(M.window)
         d2 = M.data_corr.copy()
-        d2.window(M.window)
+        d2.chop(M.window)
     
         vals = M.lam1 / M.lam2
         ax1.plot(d1.t(),d1.data[0])

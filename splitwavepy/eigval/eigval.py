@@ -8,7 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core
-from ..core import window
+from ..core.window import Window
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,7 +30,7 @@ def grideigval(data, lags=None, degs=None, window=None,rcvcorr=None,srccorr=None
     
     lags = 1-D array of sample shifts to search over, if None an attempt at finding sensible values is made
     degs = 1-D array of rotations to search over, if None an attempt at finding sensible values is made
-    window = number of samples included in analysis (must be odd)
+    window = Window object (if None will guess an appropriate window)
     rcvcorr = receiver correction parameters in tuple (fast,lag) 
     srccorr = source correction parameters in tuple (fast,lag) 
     """
@@ -46,11 +46,13 @@ def grideigval(data, lags=None, degs=None, window=None,rcvcorr=None,srccorr=None
         degs = np.arange(0,180,stepang)
         
     if window is None:
-        # by default whatevers smaller: half trace length or 10 * maxlag
-        # ensure window is odd length
-        window = int(np.min([data.shape[1] * 0.5,maxlag * 10]))
-        window = window if window%2==1 else window + 1
-
+        nsamps = int(np.min([data.shape[1]/2, maxlag * 10]))
+        nsamps = nsamps if nsamps%2==1 else nsamps + 1
+        offset = 0
+        window = Window(offset,nsamps,tukey=None)
+    elif not isinstance(window, Window):
+        raise Exception('Window not valid')
+        
     # if requested -- pre-apply receiver correction
     if rcvcorr is not None:
         data = core.unsplit(data,*rcvcorr)
@@ -68,8 +70,8 @@ def grideigval(data, lags=None, degs=None, window=None,rcvcorr=None,srccorr=None
             # if requested -- post-apply source correction
             if srccorr is not None:
                 temp2 = core.unsplit(temp2,*srccorr)
-                
-            temp2 = core.chop(temp2,window)
+            centre = int(temp2.shape[1]/2) + window.offset
+            temp2 = core.chop(temp2,centre,window.width,window.tukey)
             lam2[jj,ii], lam1[jj,ii] = eigvalcov(temp2)
             
     return gdegs,glags,lam1,lam2,window

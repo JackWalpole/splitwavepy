@@ -69,33 +69,57 @@ class Pair:
     def centre(self):
         return int(self.data.shape[1]/2)
 
-    def plot(self):
+    def plot(self,window=None):
         """
         Plot trace data and particle motion
         """
         from matplotlib import gridspec
         fig = plt.figure(figsize=(12, 3)) 
-        gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
-        ax0 = plt.subplot(gs[0])
-        ax0.plot(self.t(),self.data[0])
-        ax0.plot(self.t(),self.data[1])
-        # particle  motion
-        lim = abs(self.data.max()) * 1.1
-        # the polar axis:
-        # ax_polar = plt.subplot(gs[1], polar=True, frameon=False)
-        # ax_polar.set_rmax(lim)
-        # ax_polar.patch.set_facecolor(111)
-        # ax_polar.get_xaxis.set_visible(False)
-        # ax_polar.grid(True)
-        # the data
-        ax1 = plt.subplot(gs[1])
-        # ax1.patch.set_alpha(0)
-        ax1.axis('equal')
-        ax1.plot(self.data[1],self.data[0])
-        ax1.set_xlim([-lim,lim])
-        ax1.set_ylim([-lim,lim])
-        ax1.axes.get_xaxis().set_visible(False)
-        ax1.axes.get_yaxis().set_visible(False)
+        if window is None:
+            gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+            ax0 = plt.subplot(gs[0])
+            ax0.plot(self.t(),self.data[0])
+            ax0.plot(self.t(),self.data[1])
+            # particle  motion
+            lim = abs(self.data.max()) * 1.1
+            # the polar axis:
+            # ax_polar = plt.subplot(gs[1], polar=True, frameon=False)
+            # ax_polar.set_rmax(lim)
+            # ax_polar.patch.set_facecolor(111)
+            # ax_polar.get_xaxis.set_visible(False)
+            # ax_polar.grid(True)
+            # the data
+            ax1 = plt.subplot(gs[1])
+            # ax1.patch.set_alpha(0)
+            ax1.axis('equal')
+            ax1.plot(self.data[1],self.data[0])
+            ax1.set_xlim([-lim,lim])
+            ax1.set_ylim([-lim,lim])
+            ax1.axes.get_xaxis().set_visible(False)
+            ax1.axes.get_yaxis().set_visible(False)
+        else:
+            gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
+            ax0 = plt.subplot(gs[0])
+            ax0.plot(self.t(),self.data[0])
+            ax0.plot(self.t(),self.data[1])
+            # the window limits
+            ax0.axvline(window.start*self.delta,linewidth=2,color='r')
+            ax0.axvline(window.end*self.delta,linewidth=2,color='r')
+            # windowed data
+            d2 = self.chop(window,copy=True)
+            ax1 = plt.subplot(gs[1])
+            ax1.plot(d2.t()+window.start*self.delta,d2.data[0])
+            ax1.plot(d2.t()+window.start*self.delta,d2.data[1])
+            # particle  motion
+            lim = abs(d2.data.max()) * 1.1
+            ax2 = plt.subplot(gs[2])
+            ax2.axis('equal')
+            ax2.plot(d2.data[1],d2.data[0])
+            ax2.set_xlim([-lim,lim])
+            ax2.set_ylim([-lim,lim])
+            ax2.axes.get_xaxis().set_visible(False)
+            ax2.axes.get_yaxis().set_visible(False)
+
         # show
         plt.show()
     
@@ -177,33 +201,27 @@ class Pair:
         """
         Chop data around window
         """
-        
-        # if isinstance(window,window.Window):
-        #     # extract data
-        #     nsamps = window.width
-        #     centre = window.centre
-        # else:
-        #     raise Exception('window must be defined')
         nsamps = window.width
-        centre = window.centre    
+        centre = window.centre(nsamps) + window.offset 
         tukey = window.tukey
         # action
         if copy == False:
-            self.data = core.chop(self.data,nsamps,centre,tukey)
+            self.data = core.chop(self.data,centre,nsamps,tukey)
         else:
             dupe = self.copy()
-            dupe.data = core.chop(self.data,nsamps,centre,tukey)
+            dupe.data = core.chop(self.data,centre,nsamps,tukey)
             return dupe
         
     def window(self,time_centre,time_width,tukey=None):
         """
         Return a window object about time_centre with time_width.
         """
-        c = int(time_centre / self.delta)
+        tcs = int(time_centre / self.delta)
+        offset = tcs - self.centre()
         # convert time to nsamples -- must be odd
-        w = int(time_width / self.delta)
-        w = w if w%2==1 else w + 1        
-        return window.Window(c,w,tukey=tukey)
+        width = int(time_width / self.delta)
+        width = width if width%2==1 else width + 1        
+        return window.Window(width,offset,tukey=tukey)
         
     # def autowindow(self,time_centre=None):
     #     """
