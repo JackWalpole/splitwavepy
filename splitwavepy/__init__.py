@@ -6,5 +6,6 @@ from __future__ import print_function
 from .core.pair import Pair
 from .eigval.eigenM import EigenM
 from .core import core
+# from .window import Window
 
 

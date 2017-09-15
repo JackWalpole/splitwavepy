@@ -181,10 +181,10 @@ class Pair:
         nsamps = int(time / self.delta)
         nsamps = nsamps if nsamps%2==1 else nsamps + 1        
         if copy == False:
-            self.data = core.window(self.data,nsamps,tukey)
+            self.data = core.chop(self.data,nsamps,tukey)
         else:
             dupe = copy.copy(self)
-            dupe.data = core.window(self.data,nsamps,tukey)
+            dupe.data = core.chop(self.data,nsamps,tukey)
             return dupe
         
         

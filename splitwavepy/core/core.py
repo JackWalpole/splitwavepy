@@ -63,7 +63,7 @@ def unsplit(data,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
     return rotate( rotate_and_lag(data,degrees,-nsamps), -degrees)
     
-def window(data,nsamps,tukey=None):
+def chop(data,nsamps,tukey=None):
     """Window trace, or traces, about centre sample
        width must be odd to maintain definite centre"""
     
@@ -78,15 +78,15 @@ def window(data,nsamps,tukey=None):
     centre = math.floor(length/2)
         
     if nsamps > length:
-        raise Exception('window width is greater than trace length')
+        raise Exception('chop width is greater than trace length')
         
     t0 = centre - math.floor(nsamps/2)
     t1 = centre + math.ceil(nsamps/2)
     
     if t0 < 0:
-        raise Exception('window starts before trace data')
+        raise Exception('chop starts before trace data')
     elif t1 > length:
-        raise Exception('window ends after trace data')
+        raise Exception('chop ends after trace data')
         
     if tukey is not None:
         tukey = signal.tukey(nsamps,alpha=tukey)

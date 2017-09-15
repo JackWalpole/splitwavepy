@@ -68,7 +68,8 @@ def grideigval(data, lags=None, degs=None, window=None,rcvcorr=None,srccorr=None
             # if requested -- post-apply source correction
             if srccorr is not None:
                 temp2 = core.unsplit(temp2,*srccorr)
-            temp2 = core.window(temp2,window)
+                
+            temp2 = core.chop(temp2,window)
             lam2[jj,ii], lam1[jj,ii] = eigvalcov(temp2)
             
     return gdegs,glags,lam1,lam2,window

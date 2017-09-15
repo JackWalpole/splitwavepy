@@ -43,7 +43,7 @@ class EigenM:
             lags = None
             
         if window is not None:
-            window = window / self.delta
+            window = window * self.delta
             
         if rcvcorr is not None:
             # convert time shift to nsamples -- must be even
@@ -97,7 +97,7 @@ class EigenM:
         self.snr = np.max((self.lam1-self.lam2)/(2*self.lam2))
 
         # number degrees of freedom
-        self.ndf = eigval.ndf(core.window(self.srcpoldata_corr[1,:],self.window))
+        self.ndf = eigval.ndf(core.chop(self.srcpoldata_corr[1,:],self.window))
         # value of lam2 at 95% confidence contour
         self.lam2_95 = eigval.ftest(self.lam2,self.ndf,alpha=0.05)
 
