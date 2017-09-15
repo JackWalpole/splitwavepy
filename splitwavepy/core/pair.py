@@ -5,7 +5,7 @@ from __future__ import print_function
 from . import core
 from . import plotting
 from ..eigval.eigenM import EigenM
-from .window import Window
+from . import window
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -173,21 +173,37 @@ class Pair:
             dupe.data = core.lag(self.data,nsamps)
             return dupe
      
-    def window(self,time,tukey=None,copy=False):
+    def chop(self,time_width,time_centre=None,tukey=None,copy=False):
         """
-        Applies a window to the data
-        """   
+        Chop data around centre sample
+        shortens trace to nearest odd number of samples that represent *time* = nsamps * delta
+        """
         # convert time to nsamples -- must be odd
-        nsamps = int(time / self.delta)
-        nsamps = nsamps if nsamps%2==1 else nsamps + 1        
+        nsamps = int(time_width / self.delta)
+        nsamps = nsamps if nsamps%2==1 else nsamps + 1
+        # convert time_centre to sample number
+        if time_centre is not None:
+            centre = int(time_centre / self.delta)
+        else:
+            centre = None
+        # action
         if copy == False:
-            self.data = core.chop(self.data,nsamps,tukey)
+            self.data = core.chop(self.data,nsamps,centre,tukey)
         else:
             dupe = copy.copy(self)
-            dupe.data = core.chop(self.data,nsamps,tukey)
+            dupe.data = core.chop(self.data,nsamps,centre,tukey)
             return dupe
         
-        
+    def window(self,time_centre,time_width,tukey=None):
+        """
+        Return a window object about time_centre with time_width.
+        """
+        c = int(time_centre / self.delta)
+        # convert time to nsamples -- must be odd
+        w = int(time_width / self.delta)
+        w = w if w%2==1 else w + 1        
+        return window.Window(c,w,tukey=tukey)
+               
     def copy(self):
         return copy.copy(self)
         

@@ -8,7 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core
-# from . import plotting
+from ..core import window
 
 import numpy as np
 import matplotlib.pyplot as plt

@@ -12,7 +12,9 @@ class Window:
     """
     def __init__(self,centre,width,tukey=None):
         self.centre = int(centre)
-        self.width = int(width)
+        # ensure width is odd (round up)
+        width = int(width)
+        self.width = width if width%2==1 else width + 1
         hw = int(self.width/2)
         self.start = self.centre - hw
         self.end = self.centre + hw
@@ -36,7 +38,7 @@ class Window:
             alpha = self.tukey
         tukey = signal.tukey(self.width,alpha=alpha)        
         array = np.zeros(nsamps)
-        array[self.start:self.end] = tukey
+        array[self.start:self.end+1] = tukey
         return array
                 
     def shift(self,shift):
@@ -51,7 +53,10 @@ class Window:
     def resize(self,resize):
         """
         +ve adds N samples to the window width
-        """
+        """        
+        # ensure resize is even (round up)
+        resize = int(resize)
+        resize = resize if resize%2==0 else resize + 1
         self.width = self.width + int(resize)
         hw = int(self.width/2)
         self.start = self.centre - hw

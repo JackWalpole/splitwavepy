@@ -63,8 +63,8 @@ def unsplit(data,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
     return rotate( rotate_and_lag(data,degrees,-nsamps), -degrees)
     
-def chop(data,nsamps,tukey=None):
-    """Window trace, or traces, about centre sample
+def chop(data,nsamps,centre=None,tukey=None):
+    """Chop trace, or traces, about *centre* sample (defaults to middle sample)
        width must be odd to maintain definite centre"""
     
     if data.ndim == 1:
@@ -75,7 +75,11 @@ def chop(data,nsamps,tukey=None):
     if nsamps%2 != 1:
         raise Exception('width must be odd')
     
-    centre = math.floor(length/2)
+    if centre == None:
+        # by defualt put centre at middle sample
+        centre = math.floor(length/2)
+    else:
+        centre = int(centre)
         
     if nsamps > length:
         raise Exception('chop width is greater than trace length')
