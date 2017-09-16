@@ -32,6 +32,9 @@ class EigenM:
         else:
             self.data = pair.Pair(*args,**kwargs)
         
+        # convert times to nsamples
+        self.delta = self.data.delta
+        
         if ('degs' in kwargs):
             degs = kwargs['degs']
         else:
@@ -72,10 +75,7 @@ class EigenM:
             self.srccorr = None
             
         # ensure trace1 at zero angle
-        self.data.rotateto(0)
-        
-        # convert times to nsamples
-        self.delta = self.data.delta
+        self.data.rotateto(0)        
         
         # grid search splitting
         self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(
