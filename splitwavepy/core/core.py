@@ -50,16 +50,19 @@ def rotate(data,degrees):
                     [np.sin(ang), np.cos(ang)]])
     return np.dot(rot,data)
 
-def rotate_and_lag(data,degrees,nsamps):
-    return lag(rotate(data,degrees), nsamps)
+# def rotate_and_lag(data,degrees,nsamps):
+#     return lag(rotate(data,degrees), nsamps)
 
 def split(data,degrees,nsamps):
     """Apply forward splitting and rotate back"""
-    return rotate( rotate_and_lag(data,degrees,nsamps), -degrees)
+    data = rotate(data,-degrees)
+    data = lag(data,nsamps)
+    data = rotate(data,degrees)
+    return data
 
 def unsplit(data,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
-    return rotate( rotate_and_lag(data,degrees,-nsamps), -degrees)
+    return split(data,degrees,-nsamps)
     
 def chop(data,nsamps,centre=None,tukey=None):
     """Chop trace, or traces, about *centre* sample (defaults to middle sample)
@@ -144,7 +147,7 @@ def synth(pol=0,fast=0,lag=0,noise=0.05,nsamps=501,width=16.0):
     noise[1] = np.convolve(noise[1],gauss,'same')
     data = data + noise
     data = rotate(data,pol)
-    return split(data,fast-2*pol,lag)
+    return split(data,fast,lag)
     
 def min_idx(vals):
     """

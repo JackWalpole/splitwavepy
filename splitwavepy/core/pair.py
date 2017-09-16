@@ -182,9 +182,7 @@ class Pair:
             dupe.data = core.rotate(self.data,rangle)
             dupe.angle = degrees
             return dupe
-        
-
-        
+             
     def lag(self,tlag,copy=False):
         """
         Relative shift trace1 and trace2 by tlag seconds
