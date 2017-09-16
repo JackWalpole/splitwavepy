@@ -4,7 +4,6 @@ from __future__ import print_function
 
 from . import core
 from . import plotting
-from ..eigval.eigenM import EigenM
 from . import window
 
 import numpy as np
@@ -23,7 +22,7 @@ class Pair:
         - delta = x.  Where x = sample interval.  Default x=1.0.
         - angle = x.  Where x = angle of component in Pair.data[0]. e.g. clockwise from North (or SV "up" if in ray frame).  Default is x=0.0.
     """
-    def __init__(self,*args,delta=None,angle=None,**kwargs):
+    def __init__(self,delta=None,angle=None,*args,**kwargs):
         
         if delta is None:
             self.delta = 1.

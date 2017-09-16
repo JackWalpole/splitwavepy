@@ -21,7 +21,7 @@ class EigenM:
     Silver and Chan (1991) eigenvalue method measurement.
     """
     
-    def __init__(self,*args,tlags=None,degs=None,window=None,rcvcorr=None,srccorr=None,**kwargs):
+    def __init__(self,tlags=None,degs=None,window=None,rcvcorr=None,srccorr=None,*args,**kwargs):
         """
         Populates an EigenM instance.
         """
