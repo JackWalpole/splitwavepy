@@ -134,7 +134,7 @@ def snrRH(data):
 
 # Useful bits and pieces
 
-def synth(pol=0,fast=0,lag=0,noise=0.05,nsamps=501,width=16.0):
+def synth(pol=0,fast=0,lag=0,noise=0.05,nsamps=501,width=16.0,**kwargs):
     """return ricker wavelet synthetic data"""
     ricker = signal.ricker(int(nsamps), width)
     data = np.vstack((ricker,np.zeros(ricker.shape)))

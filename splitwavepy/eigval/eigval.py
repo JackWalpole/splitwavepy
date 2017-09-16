@@ -64,7 +64,7 @@ def grideigval(data, lags=None, degs=None, window=None,rcvcorr=None,srccorr=None
     lam1 = np.zeros(shape)
     lam2 = np.zeros(shape)
     for ii in np.arange(shape[1]):
-        temp = core.rotate(data,gdegs[0,ii])
+        temp = core.rotate(data,-gdegs[0,ii])
         for jj in np.arange(shape[0]):
             # remove splitting so use inverse operator (negative lag)
             temp2 = core.lag(temp,-glags[jj,ii])

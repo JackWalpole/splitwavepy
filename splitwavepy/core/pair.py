@@ -22,17 +22,17 @@ class Pair:
         - delta = x.  Where x = sample interval.  Default x=1.0.
         - angle = x.  Where x = angle of component in Pair.data[0]. e.g. clockwise from North (or SV "up" if in ray frame).  Default is x=0.0.
     """
-    def __init__(self,delta=None,angle=None,*args,**kwargs):
+    def __init__(self,*args,**kwargs):
         
-        if delta is None:
+        if ('delta' in kwargs):
+            self.delta = kwargs['delta']
+        else:
             self.delta = 1.
-        else:
-            self.delta = float(delta)
             
-        if angle is None:
-            self.angle = 0.
+        if ('angle' in kwargs):
+            self.angle = kwargs['angle']
         else:
-            self.angle = float(angle)
+            self.angle = 0.
         
         if len(args) == 0:
             if ('lag' in kwargs):

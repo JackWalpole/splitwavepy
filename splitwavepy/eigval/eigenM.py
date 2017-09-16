@@ -21,7 +21,7 @@ class EigenM:
     Silver and Chan (1991) eigenvalue method measurement.
     """
     
-    def __init__(self,tlags=None,degs=None,window=None,rcvcorr=None,srccorr=None,*args,**kwargs):
+    def __init__(self,*args,**kwargs):
         """
         Populates an EigenM instance.
         """
@@ -31,6 +31,45 @@ class EigenM:
             self.data = args[0]
         else:
             self.data = pair.Pair(*args,**kwargs)
+        
+        if ('degs' in kwargs):
+            degs = kwargs['degs']
+        else:
+            degs = None
+              
+        if ('tlags' in kwargs):
+            # round to nearest 2
+            lags = 2 * np.rint( 0.5 * kwargs['tlags'] / self.delta )
+            lags = np.unique(lags).astype(int)
+        else:
+            lags = None
+            
+        if ('window' in kwargs):
+            window = kwargs['window']
+        else:
+            window = None
+            
+        if ('rcvcorr' in kwargs):
+            # convert time shift to nsamples -- must be even
+            degree = kwargs['rcvcorr'][0]
+            nsamps = int(kwargs['rcvcorr'][1]/self.delta)
+            nsamps = nsamps if nsamps%2==0 else nsamps + 1
+            rcvcorr = (degree,nsamps)
+            self.rcvcorr = (degree, nsamps * self.delta)
+        else:
+            rcvcorr = None
+            self.rcvcorr = None           
+        
+        if ('srccorr' in kwargs):
+            # convert time shift to nsamples -- must be even
+            degree = kwargs['srccorr'][0]
+            nsamps = int(kwargs['srccorr'][1]/self.delta)
+            nsamps = nsamps if nsamps%2==0 else nsamps + 1
+            srccorr = (degree,nsamps)
+            self.srccorr = (degree, nsamps * self.delta)
+        else:
+            srccorr = None
+            self.srccorr = None
             
         # ensure trace1 at zero angle
         self.data.rotateto(0)
@@ -38,39 +77,12 @@ class EigenM:
         # convert times to nsamples
         self.delta = self.data.delta
         
-        if tlags is not None:
-            # round to nearest 2
-            lags = 2 * np.rint( 0.5 * tlags / self.delta )
-            lags = np.unique(lags).astype(int)
-        else:
-            lags = None
-            
-        # if window is not None and isinstance(window,window.Window):
-        #     self.window = window
-            
-        if rcvcorr is not None:
-            # convert time shift to nsamples -- must be even
-            nsamps = int(rcvcorr[1]/self.delta)
-            nsamps = nsamps if nsamps%2==0 else nsamps + 1
-            rcv = (rcvcorr[0],nsamps)
-        else:
-            rcv = None
-        
-        if srccorr is not None:
-            nsamps = int(srccorr[1]/self.delta)
-            nsamps = nsamps if nsamps%2==0 else nsamps + 1
-            src = (srccorr[0],nsamps)
-        else:
-            src = None
-        
         # grid search splitting
         self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(
                                                                         self.data.data,lags=lags,degs=degs,
-                                                                        window=window,rcvcorr=rcv,srccorr=src)
+                                                                        window=window,rcvcorr=rcvcorr,srccorr=srccorr)
         self.tlags = self.lags * self.delta
         
-        self.rcvcorr = rcvcorr
-        self.srccorr = srccorr
         
         # get some measurement attributes
         # uses ratio lam1/lam2 to find optimal fast and lag parameters
