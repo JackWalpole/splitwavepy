@@ -10,10 +10,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from .window import Window
+
 import numpy as np
 import math
 from scipy import signal
-
 
 def lag(data,nsamps):
     """
@@ -64,28 +65,25 @@ def unsplit(data,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
     return split(data,degrees,-nsamps)
     
-def chop(data,nsamps,centre=None,tukey=None):
-    """Chop trace, or traces, about *centre* sample (defaults to middle sample)
-       width must be odd to maintain definite centre"""
+def chop(data,window):
+    """Chop trace, or traces, using window"""
+    
+    if not isinstance(window,Window):
+        raise Exception('window must be a Window')
     
     if data.ndim == 1:
         length = data.shape[0]
     else:
         length = data.shape[1]
-    
-    if nsamps%2 != 1:
-        raise Exception('width must be odd')
-    
-    if centre == None:
-        # by defualt put centre at middle sample
-        centre = int(length/2)
-    else:
-        centre = int(centre)
         
-    if nsamps > length:
-        raise Exception('chop width is greater than trace length')
+    if length%2 != 1:
+        raise Exception('data must have odd length')
+        
+    if window.width > length:
+        raise Exception('window width is greater than trace length')
     
-    hw = int(nsamps/2)    
+    centre = int(length/2) + window.offset
+    hw = int(window.width/2)    
     t0 = centre - hw
     t1 = centre + hw
     
@@ -94,8 +92,8 @@ def chop(data,nsamps,centre=None,tukey=None):
     elif t1 > length:
         raise Exception('chop ends after trace data')
         
-    if tukey is not None:
-        tukey = signal.tukey(nsamps,alpha=tukey)
+    if window.tukey is not None:
+        tukey = signal.tukey(window.width,alpha=tukey)
     else:
         tukey = 1.
         

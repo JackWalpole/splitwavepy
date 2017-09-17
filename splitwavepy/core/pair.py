@@ -201,15 +201,12 @@ class Pair:
         """
         Chop data around window
         """
-        nsamps = window.width
-        centre = self.centre() + window.offset 
-        tukey = window.tukey
         # action
         if copy == False:
-            self.data = core.chop(self.data,nsamps,centre,tukey)
+            self.data = core.chop(self.data,window)
         else:
             dupe = self.copy()
-            dupe.data = core.chop(self.data,nsamps,centre,tukey)
+            dupe.data = core.chop(self.data,window)
             return dupe
         
     def window(self,time_centre,time_width,tukey=None):
