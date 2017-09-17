@@ -89,6 +89,7 @@ class EigenM:
         maxloc = core.max_idx(self.lam1/self.lam2)
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
+        self.tlag = self.lag * self.delta
         # generate "squashed" profiles
         self.fastprofile = np.sum(self.lam1/self.lam2, axis=0)
         self.lagprofile = np.sum(self.lam1/self.lam2, axis=1)
@@ -123,7 +124,7 @@ class EigenM:
         self.srcpoldata_corr = pair.Pair(self.srcpoldata_corr,delta=self.delta)
         
 
-    def plotsurf(self,vals=None,cmap='viridis',lam2_95=True,polar=False):
+    def plotsurf(self,vals=None,cmap='magma',lam2_95=False,polar=False):
         """
         plot the measurement.
         by default plots lam1/lam2 with the lambda2 95% confidence interval overlaid
@@ -144,11 +145,56 @@ class EigenM:
                 lam2 = np.column_stack((self.lam2,self.lam2,self.lam2[:,0]))
                 plt.contour(rads,lags,lam2,levels=[self.lam2_95])
         else:
-            plt.contourf(self.tlags,self.degs,vals,50,cmap=cmap)        
+            from mpl_toolkits.axes_grid1 import make_axes_locatable
+            # fig = plt.figure(figsize=(6,6)) 
+            
+            ax = plt.subplot(111)
+            
+            # gs = gridspec.GridSpec(2, 2,
+            #                    width_ratios=[1,4],
+            #                    height_ratios=[4,1]
+            #                    )
+            #
+            # ax1 = plt.subplot(gs[0,0])
+            # ax2 = plt.subplot(gs[0,1])
+            # ax3 = plt.subplot(gs[1,1])
+            #
+            # # squash fast profile
+            # ax1.
+            
+            # error surface
+            v = np.linspace(0, 50, 26, endpoint=True)
+            cax = ax.contourf(self.tlags,self.degs,vals,v,cmap=cmap,extend='max')
+            ax.set_yticks(np.linspace(-90,90,7,endpoint=True))
+            cbar = plt.colorbar(cax,ticks=v[::5])
+            marker = plt.plot(self.tlag,self.fast,'k+',markersize=10.)
+                   
             if lam2_95 is True:
                 plt.contour(self.tlags,self.degs,self.lam2,levels=[self.lam2_95])
             
+            
+            # create new axes on the right and on the top of the current axes.
+            divider = make_axes_locatable(ax)
 
+            axFast = divider.append_axes("left", size=.5, pad=0.4, sharey=ax)
+            axFast.plot(self.fastprofile,self.degs[0,:])
+            axFast.axes.get_xaxis().set_visible(False)
+            axFast.axes.get_yaxis().set_visible(False)
+            axFast.set_title(r'Fast Direction (degrees)')
+            axFast.invert_xaxis()
+            # axFast.fill_betweenx(color='b',alpha=0.2)
+            
+            # ax.set_xlabel(r'Delay Time (s)')
+            # ax.set_ylabel(r'Fast Direction (degrees)')
+            
+            axLag  = divider.append_axes("bottom", size=.5, pad=0.4, sharex=ax)
+            axLag.plot(self.tlags[:,0],self.lagprofile)
+            axLag.axes.get_xaxis().set_visible(False)
+            axLag.axes.get_yaxis().set_visible(False)
+            axLag.invert_yaxis()
+            
+            ax.set_xlim(self.tlags[0][0],self.tlags[-1][-1])
+            ax.set_ylim(self.degs[0][0],self.degs[-1][-1])
         
         plt.show()
 
