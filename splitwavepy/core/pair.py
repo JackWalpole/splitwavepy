@@ -34,6 +34,11 @@ class Pair:
         else:
             self.angle = 0.
         
+        if ('window' in kwargs and isinstance(kwargs['window'],window.Window)):
+            self.window = window
+        else:
+            self.window = None
+        
         if len(args) == 0:
             if ('lag' in kwargs):
                 # convert time shift to nsamples -- must be even
