@@ -149,7 +149,6 @@ class EigenM:
                 plt.contour(self.tlags,self.degs,self.lam2,levels=[self.lam2_95])
             
 
-            
         
         plt.show()
 
@@ -160,9 +159,9 @@ class EigenM:
     
     def plot(M):
         import matplotlib.gridspec as gridspec
-        fig = plt.figure(figsize=(12, 3)) 
+        fig = plt.figure(figsize=(12,6)) 
         gs = gridspec.GridSpec(2, 3,
-                           width_ratios=[4,1,2]
+                           width_ratios=[1,1,2]
                            )
     
         ax1 = plt.subplot(gs[0,0])
@@ -177,8 +176,11 @@ class EigenM:
         d2.chop(M.window)
     
         vals = M.lam1 / M.lam2
+        # ax1 -- trace orig
         ax1.plot(d1.t(),d1.data[0])
         ax1.plot(d1.t(),d1.data[1])
+        ax1.axes.get_yaxis().set_visible(False)
+        # ax2 -- hodo orig
         lim = abs(d1.data.max()) * 1.1
         ax2.axis('equal')
         ax2.plot(d1.data[1],d1.data[0])
@@ -186,8 +188,11 @@ class EigenM:
         ax2.set_ylim([-lim,lim])
         ax2.axes.get_xaxis().set_visible(False)
         ax2.axes.get_yaxis().set_visible(False)
+        # ax3 -- trace new
         ax3.plot(d2.t(),d2.data[0])
         ax3.plot(d2.t(),d2.data[1])
+        ax3.axes.get_yaxis().set_visible(False)
+        # ax4 -- hodo new
         lim = abs(d2.data.max()) * 1.1
         ax4.axis('equal')
         ax4.plot(d2.data[1],d2.data[0])
@@ -195,8 +200,13 @@ class EigenM:
         ax4.set_ylim([-lim,lim])
         ax4.axes.get_xaxis().set_visible(False)
         ax4.axes.get_yaxis().set_visible(False)
-        ax5.contourf(M.tlags,M.degs,vals,20,cmap='magma')
-    
+        # ax5 -- error surface
+        v = np.linspace(0, 50, 26, endpoint=True)
+        cax = ax5.contourf(M.tlags,M.degs,vals,v,cmap='magma',extend='max')
+        ax5.set_xlabel(r'Delay Time (s)')
+        ax5.set_ylabel(r'Fast Direction (degrees)')
+        cbar = plt.colorbar(cax,ticks=v[::5])
+        
         plt.show()
 # def _synthM(deg=25,lag=10):
 #     P = c.Pair()
