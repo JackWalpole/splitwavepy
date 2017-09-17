@@ -103,7 +103,7 @@ class EigenM:
         
         # signal to noise ratio estimates
         # self.snr = c.snr(c.window(self.srcpoldata_corr,self.window))
-        # self.snrRH = c.snrRH(c.window(self.srcpoldata_corr,self.window))
+        self.snrRH = core.snrRH(core.chop(self.srcpoldata_corr,self.window.width))
         # self.snr = np.max(self.lam1/self.lam2)
         ### if total energy = signal + noise = lam1 + lam2
         ### lam1 = signal + 1/2 noise
