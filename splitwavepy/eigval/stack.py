@@ -10,7 +10,7 @@ from __future__ import print_function
 # from ..core import core
 # from ..core import pair
 # from ..core import window
-from . import EigenM
+from .eigenM import EigenM
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,9 +39,9 @@ class Stack:
         self.list = args[0]
         
         # numpy array of weights
-        if len(args) > 1 and 
-            isinstance(args[1],np.ndarray) and
-                args[1].size == len(self.list):            
+        if (len(args) > 1 and 
+                isinstance(args[1],np.ndarray) and
+                    args[1].size == len(self.list)):            
             self.weights = args[1]
         else:
             self.weights = np.ones(len(self.list))

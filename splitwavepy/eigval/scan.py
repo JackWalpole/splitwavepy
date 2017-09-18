@@ -12,6 +12,7 @@ from . import EigenM
 
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 # class Search:
 #     """
@@ -41,12 +42,39 @@ def window_scan(pair,widths,offsets,**kwargs):
     if not isinstance(widths):
         raise Exception('widths must be a numpy.ndarray')
     
-    # grunt work using list comprehension
-    listM = [ [ EigenM(pair,window=Window(w,o,**kwargs)) for w in widths ] for o in offsets ]
+    # populate a list of measurements
+    listM=[]
+    for w in widths:
+        for o in offsets:
+            listM.append(sw.EigenM(pair,window=sw.Window(w,o,**kwargs)))
     
     return listM
         
 
-       
-            
+# def frequency_scan():
+    
+
+# def receiver_correction_scan():
+    
+
+# def source_correction_scan():  
+
+
+def plot(listM,x,y):
+    """
+    Plot error surfaces in list
+    """
+    fig = plt.figure(figsize=(12,6)) 
+    nwid = widths.size
+    noff = offsets.size
+    gs = gridspec.GridSpec(nwid,noff)
+    v = np.linspace(0, 50, 26, endpoint=True)
+
+    for ii in range(nwid):
+        for jj in range(noff):
+            ax = plt.subplot(gs[ii,jj])
+            m = listM[ii*noff+jj]
+            ax.contourf(m.tlags,m.degs,m.lam1/m.lam2,v,cmap='magma',extend='max')
+
+    plt.show()
     
