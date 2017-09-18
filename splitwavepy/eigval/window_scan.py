@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 #         self.offsets = offsets
         
     
-def scan(pair,offsets,widths,**kwargs):
+def window_scan(pair,widths,offsets,**kwargs):
     """
     Returns a list of EigenM measurements.
     

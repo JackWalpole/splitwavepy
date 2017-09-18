@@ -93,7 +93,7 @@ def chop(data,window):
         raise Exception('chop ends after trace data')
         
     if window.tukey is not None:
-        tukey = signal.tukey(window.width,alpha=tukey)
+        tukey = signal.tukey(window.width,alpha=window.tukey)
     else:
         tukey = 1.
         
