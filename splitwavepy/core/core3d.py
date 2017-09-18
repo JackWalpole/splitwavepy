@@ -8,7 +8,7 @@ from __future__ import print_function
 
 from .window import Window
 from . import geom
-from .core import core
+from . import core
 
 import numpy as np
 from scipy import signal
@@ -23,7 +23,13 @@ def lag(data,nsamps):
     Therefore windowing must be used after this process 
     to ensure even trace lengths when measuring splitting.
     """
-    return np.vstack((core.lag(data[0:2],nsamps,data[2][nsamps/2:-nsamps/2])))
+    if nsamps%2 != 0:
+        raise Exception('nsamps must be even')
+    
+    if nsamps == 0:
+        return data
+    else:
+        return np.vstack((core.lag(data[0:2],nsamps),data[2][int(nsamps/2):-int(nsamps/2)]))
         
 def rotate(data,degrees):
     """row 0 is x-axis and row 1 is y-axis,
@@ -58,7 +64,7 @@ def chop(data,window):
 def synth(pol=0,fast=0,lag=0,noise=0.05,nsamps=501,width=16.0,**kwargs):
     """return ricker wavelet synthetic data"""
     ricker = signal.ricker(int(nsamps), width)
-    data = np.vstack((ricker,np.zeros(2,ricker.shape)))
+    data = np.vstack((ricker,np.zeros((2,ricker.shape[0]))))
     # gaussian noise convolved with a gaussian wavelet
     noise = np.random.normal(0,noise,data.shape)
     std = width/4

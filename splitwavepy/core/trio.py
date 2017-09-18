@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core
+from . import core3d
 from .pair import Pair
 from .window import Window
 
@@ -46,7 +47,7 @@ class Trio:
                 nsamps = int(kwargs['lag']/self.delta)
                 nsamps = nsamps if nsamps%2==0 else nsamps + 1
                 kwargs['lag'] = nsamps                                      
-            self.data = core.synth(**kwargs)            
+            self.data = core3d.synth(**kwargs)            
         elif len(args) == 1:       
             self.data = args[0]       
         elif len(args) == 3:            
@@ -55,8 +56,8 @@ class Trio:
             raise Exception('Unexpected number of arguments')
                     
         # some sanity checks
-        if self.data.ndim != 3:
-            raise Exception('data must be three dimensional')
+        if self.data.ndim != 2:
+            raise Exception('data must be two dimensional')
         if self.data.shape[0] != 3:
             raise Exception('data must contain three traces in three rows')
         if self.data.shape[1]%2 == 0:
@@ -74,62 +75,63 @@ class Trio:
     def centre(self):
         return int(self.data.shape[1]/2)
 
-    # def plot(self,window=None):
-    #     """
-    #     Plot trace data and particle motion
-    #     """
-    #     from matplotlib import gridspec
-    #     fig = plt.figure(figsize=(12, 3))
-    #     if window is None:
-    #         gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1])
-    #         ax0 = plt.subplot(gs[0])
-    #         ax0.plot(self.t(),self.data[0])
-    #         ax0.plot(self.t(),self.data[1])
-    #         # particle  motion
-    #         lim = abs(self.data.max()) * 1.1
-    #         # the polar axis:
-    #         # ax_polar = plt.subplot(gs[1], polar=True, frameon=False)
-    #         # ax_polar.set_rmax(lim)
-    #         # ax_polar.patch.set_facecolor(111)
-    #         # ax_polar.get_xaxis.set_visible(False)
-    #         # ax_polar.grid(True)
-    #         # the data
-    #         ax1 = plt.subplot(gs[1])
-    #         # ax1.patch.set_alpha(0)
-    #         ax1.axis('equal')
-    #         ax1.plot(self.data[1],self.data[0])
-    #         ax1.set_xlim([-lim,lim])
-    #         ax1.set_ylim([-lim,lim])
-    #         ax1.axes.get_xaxis().set_visible(False)
-    #         ax1.axes.get_yaxis().set_visible(False)
-    #     else:
-    #         gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
-    #         ax0 = plt.subplot(gs[0])
-    #         ax0.plot(self.t(),self.data[0])
-    #         ax0.plot(self.t(),self.data[1])
-    #         # the window limits
-    #         nsamps = self.t().size
-    #         wbeg = window.start(nsamps)*self.delta
-    #         wend = window.end(nsamps)*self.delta
-    #         ax0.axvline(wbeg,linewidth=2,color='r')
-    #         ax0.axvline(wend,linewidth=2,color='r')
-    #         # windowed data
-    #         d2 = self.chop(window,copy=True)
-    #         ax1 = plt.subplot(gs[1])
-    #         ax1.plot(d2.t()+wbeg,d2.data[0])
-    #         ax1.plot(d2.t()+wbeg,d2.data[1])
-    #         # particle  motion
-    #         lim = abs(d2.data.max()) * 1.1
-    #         ax2 = plt.subplot(gs[2])
-    #         ax2.axis('equal')
-    #         ax2.plot(d2.data[1],d2.data[0])
-    #         ax2.set_xlim([-lim,lim])
-    #         ax2.set_ylim([-lim,lim])
-    #         ax2.axes.get_xaxis().set_visible(False)
-    #         ax2.axes.get_yaxis().set_visible(False)
-    #
-    #     # show
-    #     plt.show()
+    def plot(self,window=None):
+        """
+        Plot trace data and particle motion
+        """
+        from matplotlib import gridspec
+        fig = plt.figure(figsize=(12, 3))
+        if window is None:
+            gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1])
+            ax0 = plt.subplot(gs[0])
+            ax0.plot(self.t(),self.data[0])
+            ax0.plot(self.t(),self.data[1])
+            ax0.plot(self.t(),self.data[2])
+            # particle  motion
+            lim = abs(self.data.max()) * 1.1
+            # the polar axis:
+            # ax_polar = plt.subplot(gs[1], polar=True, frameon=False)
+            # ax_polar.set_rmax(lim)
+            # ax_polar.patch.set_facecolor(111)
+            # ax_polar.get_xaxis.set_visible(False)
+            # ax_polar.grid(True)
+            # the data
+            ax1 = plt.subplot(gs[1])
+            # ax1.patch.set_alpha(0)
+            ax1.axis('equal')
+            ax1.plot(self.data[1],self.data[0])
+            ax1.set_xlim([-lim,lim])
+            ax1.set_ylim([-lim,lim])
+            ax1.axes.get_xaxis().set_visible(False)
+            ax1.axes.get_yaxis().set_visible(False)
+        else:
+            gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
+            ax0 = plt.subplot(gs[0])
+            ax0.plot(self.t(),self.data[0])
+            ax0.plot(self.t(),self.data[1])
+            # the window limits
+            nsamps = self.t().size
+            wbeg = window.start(nsamps)*self.delta
+            wend = window.end(nsamps)*self.delta
+            ax0.axvline(wbeg,linewidth=2,color='r')
+            ax0.axvline(wend,linewidth=2,color='r')
+            # windowed data
+            d2 = self.chop(window,copy=True)
+            ax1 = plt.subplot(gs[1])
+            ax1.plot(d2.t()+wbeg,d2.data[0])
+            ax1.plot(d2.t()+wbeg,d2.data[1])
+            # particle  motion
+            lim = abs(d2.data.max()) * 1.1
+            ax2 = plt.subplot(gs[2])
+            ax2.axis('equal')
+            ax2.plot(d2.data[1],d2.data[0])
+            ax2.set_xlim([-lim,lim])
+            ax2.set_ylim([-lim,lim])
+            ax2.axes.get_xaxis().set_visible(False)
+            ax2.axes.get_yaxis().set_visible(False)
+
+        # show
+        plt.show()
     #
     # def split(self,degrees,tlag,copy=False):
     #     """
