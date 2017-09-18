@@ -13,7 +13,6 @@ from __future__ import print_function
 from .window import Window
 
 import numpy as np
-import math
 from scipy import signal
 
 def lag(data,nsamps):
@@ -111,14 +110,14 @@ def pca(data):
     m = np.argmax(w)
     return np.rad2deg(np.arctan2(v[1,m],v[0,m]))
     
-def snr(data):
-    """
-    Returns signal to noise ratio assuming signal on trace1 and noise on trace2
-    Calculates on each trace by sum of squares and then takes the ratio
-    """
-    signal = np.sum(data[0,:]**2)
-    noise = np.sum(data[1,:]**2)
-    return signal / noise
+# def snr(data):
+#     """
+#     Returns signal to noise ratio assuming signal on trace1 and noise on trace2
+#     Calculates on each trace by sum of squares and then takes the ratio
+#     """
+#     signal = np.sum(data[0,:]**2)
+#     noise = np.sum(data[1,:]**2)
+#     return signal / noise
     
 def snrRH(data):
     """
@@ -136,7 +135,7 @@ def synth(pol=0,fast=0,lag=0,noise=0.05,nsamps=501,width=16.0,**kwargs):
     """return ricker wavelet synthetic data"""
     ricker = signal.ricker(int(nsamps), width)
     data = np.vstack((ricker,np.zeros(ricker.shape)))
-    # white noise convolved with a gaussian wavelet
+    # gaussian noise convolved with a gaussian wavelet
     noise = np.random.normal(0,noise,data.shape)
     std = width/4
     norm = 1/(std*np.sqrt(2*np.pi))

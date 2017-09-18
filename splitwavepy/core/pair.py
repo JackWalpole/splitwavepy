@@ -4,7 +4,7 @@ from __future__ import print_function
 
 from . import core
 from . import plotting
-from . import window
+from .window import Window
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -34,7 +34,7 @@ class Pair:
         else:
             self.angle = 0.
         
-        if ('window' in kwargs and isinstance(kwargs['window'],window.Window)):
+        if ('window' in kwargs and isinstance(kwargs['window'],Window)):
             self.window = window
         else:
             self.window = None
@@ -223,7 +223,7 @@ class Pair:
         # convert time to nsamples -- must be odd
         width = int(time_width / self.delta)
         width = width if width%2==1 else width + 1        
-        return window.Window(width,offset,tukey=tukey)
+        return Window(width,offset,tukey=tukey)
         
     # def autowindow(self,time_centre=None):
     #     """
