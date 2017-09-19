@@ -24,21 +24,14 @@ class Pair:
         - angle = 0. (component 1 angle) | float
     
     Advanced Keyword Arguments (if in doubt don't use):
-        - geom = 
-        - xyz = np.ones(3) | custom numpy array
+        - geom = 'geo' (N,E) [default] | 'ray' (SV,SH)
+        - xyz = np.ones(2) | custom numpy array
         - rcvloc = None
         - srcloc = None    
 
-
-    The Pair is a class to store two traces in the x and y directions.
-    Methods are included to facilitate analysis on this Pair of traces.
-    If data is not provided on initiation will return a ricker wavelet with noise.
-    Usage: Pair()     => create Pair of synthetic data
-           Pair(data) => creates Pair from two traces stored as rows in numpy array data
-           Pair(x,y) => creates Pair from two traces stored in numpy arrays x and y.
-    Optional:
-        - delta = x.  Where x = sample interval.  Default x=1.0.
-        - angle = x.  Where x = angle of component in Pair.data[0]. e.g. clockwise from North (or SV "up" if in ray frame).  Default is x=0.0.
+    Methods:
+        - plot()
+        -
     """
     def __init__(self,*args,**kwargs):
         
@@ -84,6 +77,21 @@ class Pair:
         if self.data.shape[1]%2 == 0:
             raise Exception('traces must have odd number of samples')
             
+        # add geometry info
+        if ('geom' in kwargs):
+            self.geom = kwargs['geom']
+        else:
+            # if using 2-component data I'll guess the user wants geo coordinates.
+            self.geom = 'geo'
+        if ('srcloc' in kwargs):
+            self.srcloc = kwargs['srcloc']
+        if ('rcvloc' in kwargs):
+            self.rcvloc = kwargs['rcvloc']
+        if ('xyz' in kwargs):
+            self.xyz = kargs['xyz']
+        else:
+            self.xyz = np.ones(3)
+
     # methods
     
     # set time from start

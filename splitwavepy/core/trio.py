@@ -70,20 +70,20 @@ class Trio:
         if self.data.shape[1]%2 == 0:
             raise Exception('traces must have odd number of samples')
          
-         # add geometry info
-         if ('geom' in kwargs):
-             self.geom = kwargs['geom']
-         else:
-             # if using 3-component data I'll guess the user wants cartesian coordinates.
-             self.geom = 'cart'
-         if ('srcloc' in kwargs):
-             self.srcloc = kwargs['srcloc']
-         if ('rcvloc' in kwargs):
-             self.rcvloc = kwargs['rcvloc']
-         if ('xyz' in kwargs):
-             self.xyz = kargs['xyz']
-         else:
-             self.xyz = np.ones(3)
+        # add geometry info
+        if ('geom' in kwargs):
+            self.geom = kwargs['geom']
+        else:
+            # if using 3-component data I'll guess the user wants cartesian coordinates.
+            self.geom = 'cart'
+        if ('srcloc' in kwargs):
+            self.srcloc = kwargs['srcloc']
+        if ('rcvloc' in kwargs):
+            self.rcvloc = kwargs['rcvloc']
+        if ('xyz' in kwargs):
+            self.xyz = kargs['xyz']
+        else:
+            self.xyz = np.ones(3)
         
     # methods
     
@@ -154,6 +154,15 @@ class Trio:
 
         # show
         plt.show()
+        
+    def ppm(self,window=None):
+        """Plot particle motion."""
+        fig = plt.figure()                       
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(self.x,self.y,self.z)
+        plt.show()
+        
+        
     #
     # def split(self,degrees,tlag,copy=False):
     #     """
