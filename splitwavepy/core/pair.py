@@ -7,6 +7,7 @@ from . import plotting
 from .window import Window
 
 import numpy as np
+from scipy import signal
 import matplotlib.pyplot as plt
 import copy
 
@@ -15,7 +16,6 @@ class Pair:
     The Pair: work with 2-component data.
         
     Usage: Pair()     => create Pair of synthetic data
-           Pair(data) => creates Pair from two traces stored as rows in numpy array data
            Pair(x,y) => creates Pair from two traces stored in numpy arrays x and y.
     
     Keyword Arguments:
@@ -25,7 +25,7 @@ class Pair:
     
     Advanced Keyword Arguments (if in doubt don't use):
         - geom = 'geo' (N,E) [default] | 'ray' (SV,SH)
-        - xyz = np.ones(2) | custom numpy array
+        - xy = np.ones(2) | custom numpy array
         - rcvloc = None
         - srcloc = None    
 
@@ -61,21 +61,16 @@ class Pair:
                 nsamps = int(kwargs['lag']/self.delta)
                 nsamps = nsamps if nsamps%2==0 else nsamps + 1
                 kwargs['lag'] = nsamps                                      
-            self.data = core.synth(**kwargs)            
-        elif len(args) == 1:       
-            self.data = args[0]       
+            self.x, self.y = _synth(**kwargs)                   
         elif len(args) == 2:            
-            self.data = np.vstack((args[0],args[1]))     
+            self.x = args[0]
+            self.y = args[1]
         else: 
             raise Exception('Unexpected number of arguments')
                     
         # some sanity checks
-        if self.data.ndim != 2:
-            raise Exception('data must be two dimensional')
-        if self.data.shape[0] != 2:
-            raise Exception('data must contain two traces in two rows')
-        if self.data.shape[1]%2 == 0:
-            raise Exception('traces must have odd number of samples')
+        if self.x.ndim != 1:
+            raise Exception('data must be one dimensional')
             
         # add geometry info
         if ('geom' in kwargs):
@@ -94,15 +89,21 @@ class Pair:
 
     # methods
     
-    # set time from start
+    # time from start
     def t(self):
-        return np.arange(self.data.shape[1]) * self.delta
+        return np.arange(self.x.size) * self.delta
+        
+    def nsamps(self):
+        return self.x.size
 
     def power(self):
-        return self.data[0]**2+self.data[1]**2
+        return self.x**2+self.y**2
         
     def centre(self):
-        return int(self.data.shape[1]/2)
+        return int(self.x.size/2)
+    
+    def xy(self):
+        return np.vstack((self.x,self.y))
 
     def plot(self,window=None):
         """
@@ -113,10 +114,10 @@ class Pair:
         if window is None:
             gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
             ax0 = plt.subplot(gs[0])
-            ax0.plot(self.t(),self.data[0])
-            ax0.plot(self.t(),self.data[1])
+            ax0.plot(self.t(),self.x)
+            ax0.plot(self.t(),self.y)
             # particle  motion
-            lim = abs(self.data.max()) * 1.1
+            lim = abs(self.xy().max()) * 1.1
             # the polar axis:
             # ax_polar = plt.subplot(gs[1], polar=True, frameon=False)
             # ax_polar.set_rmax(lim)
@@ -127,7 +128,7 @@ class Pair:
             ax1 = plt.subplot(gs[1])
             # ax1.patch.set_alpha(0)
             ax1.axis('equal')
-            ax1.plot(self.data[1],self.data[0])
+            ax1.plot(self.y,self.x)
             ax1.set_xlim([-lim,lim])
             ax1.set_ylim([-lim,lim])
             ax1.axes.get_xaxis().set_visible(False)
@@ -135,10 +136,10 @@ class Pair:
         else:
             gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
             ax0 = plt.subplot(gs[0])
-            ax0.plot(self.t(),self.data[0])
-            ax0.plot(self.t(),self.data[1])
+            ax0.plot(self.t(),self.x)
+            ax0.plot(self.t(),self.y)
             # the window limits
-            nsamps = self.t().size
+            nsamps = self.nsamps()
             wbeg = window.start(nsamps)*self.delta
             wend = window.end(nsamps)*self.delta
             ax0.axvline(wbeg,linewidth=2,color='r')
@@ -146,13 +147,13 @@ class Pair:
             # windowed data
             d2 = self.chop(window,copy=True)
             ax1 = plt.subplot(gs[1])
-            ax1.plot(d2.t()+wbeg,d2.data[0])
-            ax1.plot(d2.t()+wbeg,d2.data[1])
+            ax1.plot(d2.t()+wbeg,d2.x)
+            ax1.plot(d2.t()+wbeg,d2.y)
             # particle  motion
-            lim = abs(d2.data.max()) * 1.1
+            lim = abs(self.xy().max()) * 1.1
             ax2 = plt.subplot(gs[2])
             ax2.axis('equal')
-            ax2.plot(d2.data[1],d2.data[0])
+            ax2.plot(d2.y,d2.x)
             ax2.set_xlim([-lim,lim])
             ax2.set_ylim([-lim,lim])
             ax2.axes.get_xaxis().set_visible(False)
@@ -161,7 +162,7 @@ class Pair:
         # show
         plt.show()
     
-    def split(self,degrees,tlag,copy=False):
+    def split(self,degrees,tlag):
         """
         Applies splitting operator (phi,dt) to Pair.
         
@@ -176,14 +177,10 @@ class Pair:
         # find appropriate rotation angle
         rangle = degrees - self.angle
         # apply splitting
-        if copy == False:
-            self.data = core.split(self.data,rangle,nsamps)
-        else:
-            dupe = self.copy()
-            dupe.data = core.split(self.data,rangle,nsamps)
-            return dupe
+        self.x, self.y = core.split(self.x,self.y,rangle,nsamps)
+        
     
-    def unsplit(self,degrees,tlag,copy=False):
+    def unsplit(self,degrees,tlag):
         """
         Applies reverse splitting operator (phi,dt) to Pair.
         
@@ -197,53 +194,35 @@ class Pair:
         nsamps = nsamps if nsamps%2==0 else nsamps + 1
         # find appropriate rotation angle
         rangle = degrees - self.angle
-        if copy == False:
-            self.data = core.unsplit(self.data,rangle,nsamps)
-        else:
-            dupe = self.copy()
-            dupe.data = core.unsplit(self.data,rangle,nsamps)
-            return dupe
+        self.x, self.y = core.unsplit(self.x,self.y,rangle,nsamps)
+        
             
-    def rotateto(self,degrees,copy=False):
+    def rotateto(self,degrees):
         """
         Rotate data so that trace1 lines up with *degrees*
         """
         # find appropriate rotation angle
-        rangle = -degrees - self.angle        
-        if copy == False:
-            self.data = core.rotate(self.data,rangle)
-            self.angle = degrees
-        else:
-            dupe = self.copy()
-            dupe.data = core.rotate(self.data,rangle)
-            dupe.angle = degrees
-            return dupe
+        rangle = -degrees - self.angle 
+        self.x, self.y = core.rotate(self.x,self.y,rangle)
+        self.angle = degrees
+        
              
-    def lag(self,tlag,copy=False):
+    def lag(self,tlag):
         """
         Relative shift trace1 and trace2 by tlag seconds
         """
         # convert time shift to nsamples -- must be even
         nsamps = int(tlag / self.delta)
         nsamps = nsamps if nsamps%2==0 else nsamps + 1
-        if copy == False:
-            self.data = core.lag(self.data,nsamps)
-        else:
-            dupe = self.copy()
-            dupe.data = core.lag(self.data,nsamps)
-            return dupe
+        self.x, self.y = core.lag(self.x,self.y,nsamps)
+        
      
-    def chop(self,window,copy=False):
+    def chop(self,window):
         """
         Chop data around window
         """
-        # action
-        if copy == False:
-            self.data = core.chop(self.data,window)
-        else:
-            dupe = self.copy()
-            dupe.data = core.chop(self.data,window)
-            return dupe
+        self.x, self.y = core.chop(self.x,self.y,window)
+        
         
     def window(self,time_centre,time_width,tukey=None):
         """
@@ -273,12 +252,54 @@ class Pair:
     def copy(self):
         return copy.copy(self)
         
-    # def grideigval(self, maxshift=None, window=None, stepang=None, stepshift=None):
-    #     """
-    #     Return an EigenM (after Silver and Chan, 1991).
-    #
-    #     Uses the modified method for calculating degrees of freedom of Walsh et al. 2014.
-    #     """
-    #
-    #     return EigenM(self)
+def _synth(**kwargs):
+    """return ricker wavelet synthetic data"""
+    
+    if ('pol' in kwargs):
+        pol = kwargs['pol']
+    else:
+        pol = 0.
+        
+    if ('fast' in kwargs):
+        fast = kwargs['fast']
+    else:
+        fast = 0.
+        
+    if ('lag' in kwargs):
+        lag = kwargs['lag']
+    else:
+        lag = 0
+        
+    if ('noise' in kwargs):
+        noise = kwargs['noise']
+    else:
+        noise = 0.03
+        
+    if ('nsamps' in kwargs):
+        nsamps = kwargs['nsamps']
+    else:
+        nsamps = 501
+        
+    if ('width' in kwargs):
+        width = kwargs['width']
+    else:
+        width = 16.
+        
+    if ('window' in kwargs):
+        window = kwargs['window']
+    else:
+        window = Window(width*3)
+
+    nsamps = int(nsamps)
+    
+    x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,width/4)
+    y = core.noise(nsamps,noise,width/4)
+    
+    # rotate to polarisation
+    x,y = core.rotate(x,y,-pol)
+    
+    # add any splitting -- this will reduce nsamps
+    x,y = core.split(x,y,fast,lag)
+    
+    return x,y
 

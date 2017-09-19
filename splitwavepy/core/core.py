@@ -15,72 +15,65 @@ from .window import Window
 import numpy as np
 from scipy import signal
 
-def lag(data,nsamps):
+def lag(x,y,nsamps):
     """
-    Lag t1 nsamps/2 to the left and
-    lag t2 nsamps/2 to the right.
+    Lag x nsamps/2 to the left and
+    lag y nsamps/2 to the right.
     nsamps must be even.
-    If nsamps is negative t1 shifted to the right and t2 to the left.
+    If nsamps is negative x shifted to the right and y to the left.
     This process truncates trace length by nsamps and preserves centrality.
     Therefore windowing must be used after this process 
     to ensure even trace lengths when measuring splitting.
     """
     if nsamps == 0:
-        return data
+        return x,y
     elif nsamps%2 != 0:
         raise Exception('nsamps must be even')
-    
-    t1 = data[0,:]
-    t2 = data[1,:]
-    
+
     if nsamps > 0:
         # positive shift
-        return np.vstack((t1[nsamps:], t2[:-nsamps]))
+        return x[nsamps:], y[:-nsamps]
     else:
         # negative shift
-        return np.vstack((t1[:nsamps], t2[-nsamps:]))
+        return x[:nsamps], y[-nsamps:]
 
         
-def rotate(data,degrees):
+def rotate(x,y,degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis
        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
     ang = np.deg2rad(degrees)
-    rot = np.array([[np.cos(ang),-np.sin(ang)],
-                    [np.sin(ang), np.cos(ang)]])
-    return np.dot(rot,data)
+    rot = np.array([[np.cos(ang),np.sin(ang)],
+                    [-np.sin(ang), np.cos(ang)]])
+    xy = np.dot(rot,np.vstack((x,y)))
+    return xy[0], xy[1]
 
 # def rotate_and_lag(data,degrees,nsamps):
 #     return lag(rotate(data,degrees), nsamps)
 
-def split(data,degrees,nsamps):
+def split(x,y,degrees,nsamps):
     """Apply forward splitting and rotate back"""
-    data = rotate(data,-degrees)
-    data = lag(data,nsamps)
-    data = rotate(data,degrees)
-    return data
+    if nsamps == 0:
+        return x,y
+    x,y = rotate(x,y,degrees)
+    x,y = lag(x,y,nsamps)
+    x,y = rotate(x,y,-degrees)
+    return x,y
 
-def unsplit(data,degrees,nsamps):
+def unsplit(x,y,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
     return split(data,degrees,-nsamps)
-    
-def chop(data,window):
+
+def chop(x,y,window):
     """Chop trace, or traces, using window"""
     
     if not isinstance(window,Window):
         raise Exception('window must be a Window')
-    
-    if data.ndim == 1:
-        length = data.shape[0]
-    else:
-        length = data.shape[1]
-        
-    if length%2 != 1:
-        raise Exception('data must have odd length')
-        
+            
     if window.width > length:
         raise Exception('window width is greater than trace length')
     
+    length = x.size
     centre = int(length/2) + window.offset
     hw = int(window.width/2)    
     t0 = centre - hw
@@ -96,17 +89,15 @@ def chop(data,window):
     else:
         tukey = 1.
         
-    if data.ndim == 1:
-        return data[t0:t1+1] * tukey
-    else: 
-        return data[:,t0:t1+1] * tukey
+    return x[t0:t1+1] * tukey, y[t0:t1+1] * tukey
+
     
-def pca(data):
+def pca(x,y):
     """
     Principal component analysis
     Returns direction of strongest component in degrees anti-clockwise from x
     """
-    w,v = np.linalg.eig(np.cov(data))
+    w,v = np.linalg.eig(np.cov(np.vstack((x,y))))
     m = np.argmax(w)
     return np.rad2deg(np.arctan2(v[1,m],v[0,m]))
     
@@ -130,21 +121,13 @@ def snrRH(data):
     return signal / noise
 
 # Useful bits and pieces
-
-def synth(pol=0,fast=0,lag=0,noise=0.05,nsamps=501,width=16.0,**kwargs):
-    """return ricker wavelet synthetic data"""
-    ricker = signal.ricker(int(nsamps), width)
-    data = np.vstack((ricker,np.zeros(ricker.shape)))
-    # gaussian noise convolved with a gaussian wavelet
-    noise = np.random.normal(0,noise,data.shape)
-    std = width/4
-    norm = 1/(std*np.sqrt(2*np.pi))
-    gauss = norm * signal.gaussian(int(nsamps),std)
-    noise[0] = np.convolve(noise[0],gauss,'same')
-    noise[1] = np.convolve(noise[1],gauss,'same')
-    data = data + noise
-    data = rotate(data,pol)
-    return split(data,fast,lag)
+    
+def noise(size,amp,smooth):
+    """gaussian noise convolved with a gaussian wavelet"""
+    norm = 1/(smooth*np.sqrt(2*np.pi))
+    gauss = norm * signal.gaussian(size,smooth)
+    n = np.random.normal(0,amp,size)
+    return np.convolve(n,gauss,'same')  
     
 def min_idx(vals):
     """
