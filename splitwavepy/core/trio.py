@@ -13,16 +13,22 @@ import copy
 
 class Trio:
     """
-    The Trio is a class to store three traces in the x, y, z directions.
-    Methods are included to facilitate analysis on this Trio of traces.
-    If data is not provided on initiation will return a ricker wavelet with noise.
+    The Trio: work with 3-component data.
+        
     Usage: Trio()     => create Trio of synthetic data
            Trio(data) => creates Trio from two traces stored as rows in numpy array data
            Trio(x,y,z) => creates Trio from two traces stored in numpy arrays x and y.
     
     Keyword Arguments:
-        - delta = x.  Where x = sample interval.  Default x=1.0.
-        - cmpdir
+        - delta = 1. (sample interval) [default] | float
+        - units = 's' (for labelling) | string
+        - geom = 'cart' (x,y,z) [default] | 'geo' (az,inc,r) | 'ray' (P,SH,SV) 
+        - window = None (default) | Window object
+    
+    Advanced Keyword Arguments (if in doubt don't use):
+        - xyz = np.ones(3) | custom numpy array
+        - rcvloc = None
+        - srcloc = None
     """
     def __init__(self,*args,**kwargs):
         
@@ -31,10 +37,6 @@ class Trio:
         else:
             self.delta = 1.
             
-        if ('angle' in kwargs):
-            self.angle = kwargs['angle']
-        else:
-            self.angle = 0.
         
         if ('window' in kwargs and isinstance(kwargs['window'],Window)):
             self.window = window
@@ -62,7 +64,22 @@ class Trio:
             raise Exception('data must contain three traces in three rows')
         if self.data.shape[1]%2 == 0:
             raise Exception('traces must have odd number of samples')
-            
+         
+         # add geometry info
+         if ('geom' in kwargs):
+             self.geom = kwargs['geom']
+         else:
+             # if using 3-component data I'll guess the user wants cartesian coordinates.
+             self.geom = 'cart'
+         if ('srcloc' in kwargs):
+             self.srcloc = kwargs['srcloc']
+         if ('rcvloc' in kwargs):
+             self.rcvloc = kwargs['rcvloc']
+         if ('xyz' in kwargs):
+             self.xyz = kargs['xyz']
+         else:
+             self.xyz = np.ones(3)
+        
     # methods
     
     # set time from start
