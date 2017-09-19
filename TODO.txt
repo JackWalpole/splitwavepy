@@ -1,0 +1,18 @@
+add tests
+add transverse minimisation method
+add cross correlation method
+add splitting intensity method
+add window picker
+integrate obspy
+integrate pytasa
+auto window selection
+stacking methods
+receiver + source correction methods
+filter selection methods
+machine learning
+microseismic data
+Trio
+polarisation analysis
+documentation
+profile code
+release
