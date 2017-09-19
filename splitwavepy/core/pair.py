@@ -12,6 +12,24 @@ import copy
 
 class Pair:
     """
+    The Pair: work with 2-component data.
+        
+    Usage: Pair()     => create Pair of synthetic data
+           Pair(data) => creates Pair from two traces stored as rows in numpy array data
+           Pair(x,y) => creates Pair from two traces stored in numpy arrays x and y.
+    
+    Keyword Arguments:
+        - delta = 1. (sample interval) [default] | float
+        - units = 's' (for labelling) | string
+        - angle = 0. (component 1 angle) | float
+    
+    Advanced Keyword Arguments (if in doubt don't use):
+        - geom = 
+        - xyz = np.ones(3) | custom numpy array
+        - rcvloc = None
+        - srcloc = None    
+
+
     The Pair is a class to store two traces in the x and y directions.
     Methods are included to facilitate analysis on this Pair of traces.
     If data is not provided on initiation will return a ricker wavelet with noise.
@@ -28,6 +46,11 @@ class Pair:
             self.delta = kwargs['delta']
         else:
             self.delta = 1.
+            
+        if ('units' in kwargs):
+            self.units = kwargs['units']
+        else:
+            self.units = 's'
             
         if ('angle' in kwargs):
             self.angle = kwargs['angle']

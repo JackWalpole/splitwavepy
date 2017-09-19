@@ -24,6 +24,7 @@ class Trio:
         - units = 's' (for labelling) | string
         - geom = 'cart' (x,y,z) [default] | 'geo' (az,inc,r) | 'ray' (P,SH,SV) 
         - window = None (default) | Window object
+        - angle
     
     Advanced Keyword Arguments (if in doubt don't use):
         - xyz = np.ones(3) | custom numpy array
@@ -37,6 +38,10 @@ class Trio:
         else:
             self.delta = 1.
             
+        if ('units' in kwargs):
+            self.units = kwargs['units']
+        else:
+            self.units = 's'
         
         if ('window' in kwargs and isinstance(kwargs['window'],Window)):
             self.window = window
