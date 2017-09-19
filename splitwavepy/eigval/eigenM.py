@@ -8,8 +8,8 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core
-from ..core import pair
-from ..core import window
+from ..core.pair import Pair
+from ..core.window import Window
 from . import eigval
 
 import numpy as np
@@ -27,10 +27,10 @@ class EigenM:
         """
         
         # process input
-        if len(args) == 1 and isinstance(args[0],pair.Pair):
+        if len(args) == 1 and isinstance(args[0],Pair):
             self.data = args[0]
         else:
-            self.data = pair.Pair(*args,**kwargs)
+            self.data = Pair(*args,**kwargs)
         
         # convert times to nsamples
         self.delta = self.data.delta
@@ -78,9 +78,8 @@ class EigenM:
         self.data.rotateto(0)        
         
         # grid search splitting
-        self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(
-                                                                        self.data.data,lags=lags,degs=degs,
-                                                                        window=window,rcvcorr=rcvcorr,srccorr=srccorr)
+        self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.x,self.data.y,**kwargs)
+            
         self.tlags = self.lags * self.delta
         
         
@@ -97,31 +96,37 @@ class EigenM:
         self.ni = ni(self)
         
         # get some useful stuff
-        self.data_corr = core.unsplit(self.data.data,self.fast,self.lag)
-        self.srcpol = core.pca(self.data_corr)
-        self.srcpoldata = core.rotate(self.data.data,-self.srcpol)
-        self.srcpoldata_corr = core.rotate(self.data_corr,-self.srcpol)
+        self.data_corr = Pair(core.unsplit(self.data.x,self.data.y,self.fast,self.lag,**kwargs))
+        self.srcpol = core.pca(self.data_corr.x,self.data_corr.y)
         
-        # signal to noise ratio estimates
-        # self.snr = c.snr(c.window(self.srcpoldata_corr,self.window))
-        self.snrRH = core.snrRH(core.chop(self.srcpoldata_corr,self.window))
-        # self.snr = np.max(self.lam1/self.lam2)
+        # signal to noise calculation
         ### if total energy = signal + noise = lam1 + lam2
         ### lam1 = signal + 1/2 noise
         ### lam2 = 1/2 noise
-        ### then signal / noise = 
+        ### then signal = lam1 - lam2
+        ###       noise = 2 * lam2        
         self.snr = np.max((self.lam1-self.lam2)/(2*self.lam2))
-
-        # number degrees of freedom
-        self.ndf = eigval.ndf(self.srcpoldata_corr[1,:],window=self.window)
+    
+    def srcpoldata(self):
+        return Pair(core.rotate(self.data.x,self.data.y,self.srcpol()))
         
-        # value of lam2 at 95% confidence contour
-        self.lam2_95 = eigval.ftest(self.lam2,self.ndf,alpha=0.05)
-
-        # convert traces to Pair class for convenience
-        self.data_corr = pair.Pair(self.data_corr,delta=self.delta)
-        self.srcpoldata = pair.Pair(self.srcpoldata,delta=self.delta)
-        self.srcpoldata_corr = pair.Pair(self.srcpoldata_corr,delta=self.delta)
+    def srcpoldata_corr(self):
+        data_corr = self.data_corr(self)
+        return Pair(core.rotate(data_corr.x,data_corr.y,self.srcpol()))
+    
+    def snrRH(self):
+        """Restivo and Helffrich (1999) signal to noise ratio"""
+        d = self.srcpoldata_corr()
+        return core.snrRH(core.chop(d.x,d.y,self.window))
+        
+    def ndf(self):
+        """Number of degrees of freedom."""
+        d = self.srcpoldata_corr()
+        return eigval.ndf(d.y,window=self.window)
+    
+    def lam2_95(self):
+        """Value of lam2 at 95% confidence contour."""
+        return eigval.ftest(self.lam2,self.ndf(),alpha=0.05)
         
 
     def plotsurf(self,vals=None,cmap='magma',lam2_95=False,polar=False):

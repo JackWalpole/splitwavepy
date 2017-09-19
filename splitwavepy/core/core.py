@@ -69,11 +69,12 @@ def chop(x,y,window):
     
     if not isinstance(window,Window):
         raise Exception('window must be a Window')
-            
+    
+    length = x.size
+          
     if window.width > length:
         raise Exception('window width is greater than trace length')
     
-    length = x.size
     centre = int(length/2) + window.offset
     hw = int(window.width/2)    
     t0 = centre - hw
