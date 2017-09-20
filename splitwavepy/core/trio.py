@@ -261,7 +261,7 @@ class Trio:
         self.x, self.y, self.z = core.chop(self.x,self.y,self.z,window=window)
 
         
-    def window(self,time_centre,time_width,tukey=None):
+    def genwindow(self,time_centre,time_width,tukey=None):
         """
         Return a window object about time_centre with time_width.
         """

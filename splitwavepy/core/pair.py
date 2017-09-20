@@ -231,7 +231,7 @@ class Pair:
         self.x, self.y = core.chop(self.x,self.y,window=window)
         
         
-    def window(self,time_centre,time_width,tukey=None):
+    def genwindow(self,time_centre,time_width,tukey=None):
         """
         Return a window object about time_centre with time_width.
         """
