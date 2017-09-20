@@ -15,13 +15,21 @@ import numpy as np
 
 
 def trace(*args,**kwargs):
-    """Return axis with trace data."""
-        
+    """Return axis with trace data.
+    
+    kwargs:
+    - time
+    - ax
+    """
+    
     if 'time' not in kwargs:
         kwargs['time'] = np.arange(args[0].size)   
-      
-    # initiate axis  
-    ax = plt.subplot(111)
+    
+    if 'ax' not in kwargs:        
+        # initiate axis  
+        kwargs['ax'] = plt.subplot(111)    
+    ax = kwargs['ax']
+        
     # plot data
     for ii in range(len(args)):
         ax.plot(kwargs['time'],args[ii])
@@ -35,13 +43,19 @@ def trace(*args,**kwargs):
     
 
 def particle(*args,**kwargs):
-    """Return axis with particle motion data"""
+    """Return axis with particle motion data
+    
+    kwargs:
+    - ax
+    """
     if not ('labels' in kwargs):
             kwargs['labels'] = ['x','y','z']
-
+    
     # 2D particle motion
     if len(args) == 2:
-        ax = plt.subplot(111)
+        if 'ax' not in kwargs:         
+            kwargs['ax'] = plt.subplot(111)
+        ax = kwargs['ax']
         ax.plot(args[1],args[0])
         lim = abs(np.max(args)) * 1.1
         ax.set_aspect('equal')
@@ -54,7 +68,9 @@ def particle(*args,**kwargs):
     
     # 3D particle motion
     if len(args) == 3:
-        ax = plt.subplot(111,projection='3d')
+        if 'ax' not in kwargs:
+            kwargs['ax'] = plt.subplot(111,projection='3d')
+        ax = kwargs['ax']
         ax.plot(args[0],args[1],args[2])
         lim = abs(np.max(args)) * 1.1
         ax.set_aspect('equal')
