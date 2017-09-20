@@ -119,32 +119,17 @@ class Pair:
         fig = plt.figure(figsize=(12, 3)) 
         if window is None:
             gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+            # trace
             ax0 = plt.subplot(gs[0])
-            ax0.plot(self.t(),self.x)
-            ax0.plot(self.t(),self.y)
+            plot.trace(self.x,self.y,time=self.t(),ax=ax0)
             # particle  motion
-            lim = abs(self.xy().max()) * 1.1
-            # the polar axis:
-            # ax_polar = plt.subplot(gs[1], polar=True, frameon=False)
-            # ax_polar.set_rmax(lim)
-            # ax_polar.patch.set_facecolor(111)
-            # ax_polar.get_xaxis.set_visible(False)
-            # ax_polar.grid(True)
-            # the data
             ax1 = plt.subplot(gs[1])
-            # ax1.patch.set_alpha(0)
-            ax1.axis('equal')
-            ax1.plot(self.y,self.x)
-            ax1.set_xlim([-lim,lim])
-            ax1.set_ylim([-lim,lim])
-            ax1.axes.get_xaxis().set_visible(False)
-            ax1.axes.get_yaxis().set_visible(False)
+            plot.particle(self.x,self.y,ax=ax1)
         else:
             gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
+            # trace with window markers
             ax0 = plt.subplot(gs[0])
-            ax0.plot(self.t(),self.x)
-            ax0.plot(self.t(),self.y)
-            # the window limits
+            plot.trace(self.x,self.y,time=self.t(),ax=ax0)
             nsamps = self.nsamps()
             wbeg = window.start(nsamps)*self.delta
             wend = window.end(nsamps)*self.delta
@@ -154,19 +139,13 @@ class Pair:
             d2 = self.copy()
             d2.chop(window)
             ax1 = plt.subplot(gs[1])
-            ax1.plot(d2.t()+wbeg,d2.x)
-            ax1.plot(d2.t()+wbeg,d2.y)
+            plot.trace(d2.x,d2.y,time=d2.t()+wbeg,ax=ax1)
             # particle  motion
-            lim = abs(self.xy().max()) * 1.1
             ax2 = plt.subplot(gs[2])
-            ax2.axis('equal')
-            ax2.plot(d2.y,d2.x)
-            ax2.set_xlim([-lim,lim])
-            ax2.set_ylim([-lim,lim])
-            ax2.axes.get_xaxis().set_visible(False)
-            ax2.axes.get_yaxis().set_visible(False)
-
+            # ax2.axis('equal')
+            plot.particle(d2.x,d2.y,ax=ax2)
         # show
+        plt.tight_layout()
         plt.show()
     
     

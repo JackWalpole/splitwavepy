@@ -33,6 +33,11 @@ def trace(*args,**kwargs):
     # plot data
     for ii in range(len(args)):
         ax.plot(kwargs['time'],args[ii])
+        
+    # set limit
+    lim = abs(np.max(args)) * 1.1
+    ax.set_ylim([-lim,lim])    
+        
     # set label
     if 'units' in kwargs:
         units = kwargs['units']
@@ -49,7 +54,7 @@ def particle(*args,**kwargs):
     - ax
     """
     if not ('labels' in kwargs):
-            kwargs['labels'] = ['x','y','z']
+        kwargs['labels'] = ['x','y','z']
     
     # 2D particle motion
     if len(args) == 2:
