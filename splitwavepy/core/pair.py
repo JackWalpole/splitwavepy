@@ -129,13 +129,10 @@ class Pair:
             gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
             # trace with window markers
             ax0 = plt.subplot(gs[0])
-            plot.trace(self.x,self.y,time=self.t(),ax=ax0)
+            plot.trace(self.x,self.y,time=self.t(),window=window,ax=ax0)
+            # windowed data
             nsamps = self.nsamps()
             wbeg = window.start(nsamps)*self.delta
-            wend = window.end(nsamps)*self.delta
-            ax0.axvline(wbeg,linewidth=2,color='r')
-            ax0.axvline(wend,linewidth=2,color='r')
-            # windowed data
             d2 = self.copy()
             d2.chop(window)
             ax1 = plt.subplot(gs[1])

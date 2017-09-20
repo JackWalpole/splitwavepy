@@ -44,6 +44,15 @@ def trace(*args,**kwargs):
     else:
         units = 's'    
     ax.set_xlabel('Time (' + units +')')  
+    
+    # plot window markers
+    if 'window' in kwargs:
+        nsamps = args[0].size
+        wbeg = kwargs['window'].start(nsamps)*kwargs['time'][1]
+        wend = kwargs['window'].end(nsamps)*kwargs['time'][1]
+        ax.axvline(wbeg,linewidth=1,color='k')
+        ax.axvline(wend,linewidth=1,color='k')        
+    
     return ax
     
 
