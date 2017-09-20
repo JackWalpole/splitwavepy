@@ -149,7 +149,8 @@ class Trio:
             ax0.axvline(wbeg,linewidth=2,color='r')
             ax0.axvline(wend,linewidth=2,color='r')
             # windowed data
-            d2 = self.chop(window,copy=True)
+            d2 = self.copy()
+            d2.chop(window)
             ax1 = plt.subplot(gs[1])
             ax1.plot(d2.t()+wbeg,d2.x)
             ax1.plot(d2.t()+wbeg,d2.y)
@@ -257,13 +258,8 @@ class Trio:
         """
         Chop data around window
         """
-        # action
-        if copy == False:
-            self.data = core.chop(self.data,window)
-        else:
-            dupe = self.copy()
-            dupe.data = core.chop(self.data,window)
-            return dupe
+        self.x, self.y, self.z = core.chop(self.x,self.y,self.z,window=window)
+
         
     def window(self,time_centre,time_width,tukey=None):
         """

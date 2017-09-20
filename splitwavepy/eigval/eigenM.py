@@ -117,7 +117,7 @@ class EigenM:
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
         d = self.srcpoldata_corr()
-        return core.snrRH(*core.chop(d.x,d.y,self.window))
+        return core.snrRH(*core.chop(d.x,d.y,window=self.window))
         
     def ndf(self):
         """Number of degrees of freedom."""

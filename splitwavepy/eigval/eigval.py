@@ -102,7 +102,7 @@ def grideigval(x, y, **kwargs):
             # if requested -- post-apply source correction
             if srccorr is not None:
                 ux, uy = unsplit(ux,uy,*srccorr)
-            ux, uy = chop(ux,uy,window)
+            ux, uy = chop(ux,uy,window=window)
             lam2[jj,ii], lam1[jj,ii] = eigvalcov(np.vstack((ux,uy)))
             
     return gdegs,glags,lam1,lam2,window
@@ -119,7 +119,7 @@ def ndf(y,window=None,detrend=False):
 
     if window is not None:
         # chop trace to window limits
-        y = core.chop(y,window)
+        y = core.chop(y,window=window)
   
     Y = np.fft.fft(y)
     amp = np.absolute(Y)

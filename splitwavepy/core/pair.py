@@ -151,7 +151,8 @@ class Pair:
             ax0.axvline(wbeg,linewidth=2,color='r')
             ax0.axvline(wend,linewidth=2,color='r')
             # windowed data
-            d2 = self.chop(window,copy=True)
+            d2 = self.copy()
+            d2.chop(window)
             ax1 = plt.subplot(gs[1])
             ax1.plot(d2.t()+wbeg,d2.x)
             ax1.plot(d2.t()+wbeg,d2.y)
@@ -227,7 +228,7 @@ class Pair:
         """
         Chop data around window
         """
-        self.x, self.y = core.chop(self.x,self.y,window)
+        self.x, self.y = core.chop(self.x,self.y,window=window)
         
         
     def window(self,time_centre,time_width,tukey=None):

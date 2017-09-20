@@ -50,9 +50,9 @@ def unsplit(x,y,z,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
     return split(x,y,z,degrees,-nsamps)
     
-def chop(x,y,z,window):
+def chop(*args,**kwargs):
     """Chop trace, or traces, using window"""
-    return core.chop(x,y,z,window)
+    return core.chop(*args,**kwargs)
 
 # def pca(data):
 #     """

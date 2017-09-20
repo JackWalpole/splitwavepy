@@ -64,8 +64,11 @@ def unsplit(x,y,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
     return split(x,y,degrees,-nsamps)
 
-def chop(*args,window):
+def chop(*args,**kwargs):
     """Chop trace, or traces, using window"""
+    
+    if ('window' in kwargs):
+        window = kwargs['window']
     
     if not isinstance(window,Window):
         raise Exception('window must be a Window')
@@ -92,9 +95,9 @@ def chop(*args,window):
     
     if len(args)==1:    
         return args[0][t0:t1+1] * tukey
-    elif len(args==2):
+    elif len(args)==2:
         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey
-    elif len(args==3):
+    elif len(args)==3:
         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
 
     
