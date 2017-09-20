@@ -169,6 +169,19 @@ class Pair:
         # show
         plt.show()
     
+    def ppm(self,window=None):
+        """Plot particle motion."""
+        fig = plt.figure()                       
+        ax = fig.gca()
+        ax.plot(self.y,self.x)
+        lim = abs(self.xy().max()) * 1.1
+        ax.set_aspect('equal')
+        ax.set_xlim([-lim,lim])
+        ax.set_ylim([-lim,lim])
+        ax.set_xlabel('y')
+        ax.set_ylabel('x')
+        plt.show()
+    
     def split(self,degrees,tlag):
         """
         Applies splitting operator (phi,dt) to Pair.
