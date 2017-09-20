@@ -62,7 +62,7 @@ def split(x,y,degrees,nsamps):
 
 def unsplit(x,y,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
-    return split(data,degrees,-nsamps)
+    return split(x,y,degrees,-nsamps)
 
 def chop(x,y,window):
     """Chop trace, or traces, using window"""

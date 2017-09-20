@@ -96,7 +96,7 @@ class EigenM:
         self.ni = ni(self)
         
         # get some useful stuff
-        self.data_corr = Pair(core.unsplit(self.data.x,self.data.y,self.fast,self.lag,**kwargs))
+        self.data_corr = Pair(*core.unsplit(self.data.x,self.data.y,self.fast,self.lag,**kwargs))
         self.srcpol = core.pca(self.data_corr.x,self.data_corr.y)
         
         # signal to noise calculation
@@ -108,16 +108,16 @@ class EigenM:
         self.snr = np.max((self.lam1-self.lam2)/(2*self.lam2))
     
     def srcpoldata(self):
-        return Pair(core.rotate(self.data.x,self.data.y,self.srcpol()))
+        return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol()))
         
     def srcpoldata_corr(self):
         data_corr = self.data_corr(self)
-        return Pair(core.rotate(data_corr.x,data_corr.y,self.srcpol()))
+        return Pair(*core.rotate(data_corr.x,data_corr.y,self.srcpol()))
     
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
         d = self.srcpoldata_corr()
-        return core.snrRH(core.chop(d.x,d.y,self.window))
+        return core.snrRH(*core.chop(d.x,d.y,self.window))
         
     def ndf(self):
         """Number of degrees of freedom."""
@@ -148,24 +148,12 @@ class EigenM:
             ax.set_theta_offset(np.pi/2.0)
             if lam2_95 is True:
                 lam2 = np.column_stack((self.lam2,self.lam2,self.lam2[:,0]))
-                plt.contour(rads,lags,lam2,levels=[self.lam2_95])
+                plt.contour(rads,lags,lam2,levels=[self.lam2_95()])
         else:
             from mpl_toolkits.axes_grid1 import make_axes_locatable
             # fig = plt.figure(figsize=(6,6)) 
             
             ax = plt.subplot(111)
-            
-            # gs = gridspec.GridSpec(2, 2,
-            #                    width_ratios=[1,4],
-            #                    height_ratios=[4,1]
-            #                    )
-            #
-            # ax1 = plt.subplot(gs[0,0])
-            # ax2 = plt.subplot(gs[0,1])
-            # ax3 = plt.subplot(gs[1,1])
-            #
-            # # squash fast profile
-            # ax1.
             
             # error surface
             v = np.linspace(0, 50, 26, endpoint=True)
@@ -175,7 +163,7 @@ class EigenM:
             marker = plt.plot(self.tlag,self.fast,'k+',markersize=10.)
                    
             if lam2_95 is True:
-                plt.contour(self.tlags,self.degs,self.lam2,levels=[self.lam2_95])
+                plt.contour(self.tlags,self.degs,self.lam2,levels=[self.lam2_95()])
             
             
             # create new axes on the right and on the top of the current axes.
@@ -228,25 +216,25 @@ class EigenM:
     
         vals = M.lam1 / M.lam2
         # ax1 -- trace orig
-        ax1.plot(d1.t(),d1.data[0])
-        ax1.plot(d1.t(),d1.data[1])
+        ax1.plot(d1.t(),d1.x)
+        ax1.plot(d1.t(),d1.y)
         ax1.axes.get_yaxis().set_visible(False)
         # ax2 -- hodo orig
-        lim = abs(d1.data.max()) * 1.1
+        lim = abs(d1.xy().max()) * 1.1
         ax2.axis('equal')
-        ax2.plot(d1.data[1],d1.data[0])
+        ax2.plot(d1.y,d1.x)
         ax2.set_xlim([-lim,lim])
         ax2.set_ylim([-lim,lim])
         ax2.axes.get_xaxis().set_visible(False)
         ax2.axes.get_yaxis().set_visible(False)
         # ax3 -- trace new
-        ax3.plot(d2.t(),d2.data[0])
-        ax3.plot(d2.t(),d2.data[1])
+        ax3.plot(d2.t(),d2.x)
+        ax3.plot(d2.t(),d2.y)
         ax3.axes.get_yaxis().set_visible(False)
         # ax4 -- hodo new
-        lim = abs(d2.data.max()) * 1.1
+        lim = abs(d2.xy().max()) * 1.1
         ax4.axis('equal')
-        ax4.plot(d2.data[1],d2.data[0])
+        ax4.plot(d2.y,d2.x)
         ax4.set_xlim([-lim,lim])
         ax4.set_ylim([-lim,lim])
         ax4.axes.get_xaxis().set_visible(False)
