@@ -77,6 +77,8 @@ def particle(*args,**kwargs):
         ax.set_ylim([-lim,lim])
         ax.set_xlabel(kwargs['labels'][1])
         ax.set_ylabel(kwargs['labels'][0])
+        ax.axes.xaxis.set_ticklabels([])
+        ax.axes.yaxis.set_ticklabels([])
         ax.grid()
         return ax
     
@@ -97,6 +99,9 @@ def particle(*args,**kwargs):
         ax.set_xlabel(kwargs['labels'][0])
         ax.set_ylabel(kwargs['labels'][1])
         ax.set_zlabel(kwargs['labels'][2])
+        ax.axes.xaxis.set_ticklabels([])
+        ax.axes.yaxis.set_ticklabels([])
+        ax.axes.zaxis.set_ticklabels([])
         return ax
         
         
