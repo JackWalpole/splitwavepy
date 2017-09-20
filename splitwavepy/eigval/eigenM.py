@@ -78,7 +78,7 @@ class EigenM:
         self.data.rotateto(0)        
         
         # grid search splitting
-        self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.x,self.data.y,**kwargs)
+        self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.x,self.data.y,lags=lags,**kwargs)
             
         self.tlags = self.lags * self.delta
         

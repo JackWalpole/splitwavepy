@@ -39,11 +39,12 @@ def grideigval(x, y, **kwargs):
     
     if ('lags' in kwargs):
         lags = kwargs['lags']
-    else:        
+    else:
+        # default search
         maxlag = int(x.size / 10)
         maxlag = maxlag if maxlag%2==0 else maxlag + 1
-        steplag = 2 * int(np.max([1,maxlag/80]))
-        lags = np.arange(0,maxlag,steplag).astype(int)
+        lags = 2 * np.rint(np.linspace(0,0.5*maxlag,30))
+        lags = np.unique(lags).astype(int)
         
     if ('degs' in kwargs):
         degs = kwargs['degs']
