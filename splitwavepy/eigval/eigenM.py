@@ -96,7 +96,7 @@ class EigenM:
         self.ni = ni(self)
         
         # get some useful stuff
-        self.data_corr = Pair(*core.unsplit(self.data.x,self.data.y,self.fast,self.lag,**kwargs))
+        self.data_corr = Pair(*core.unsplit(self.data.x,self.data.y,self.fast,self.lag),**kwargs)
         self.srcpol = core.pca(self.data_corr.x,self.data_corr.y)
         
         # signal to noise calculation

@@ -50,8 +50,8 @@ class Pair:
         else:
             self.angle = 0.
         
-        if ('window' in kwargs and isinstance(kwargs['window'],Window)):
-            self.window = window
+        if ('window' in kwargs):
+            self.window = kwargs['window']
         else:
             self.window = None
         
