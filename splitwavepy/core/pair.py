@@ -169,18 +169,11 @@ class Pair:
         # show
         plt.show()
     
-    # def ppm(self,window=None):
-    #     """Plot particle motion."""
-    #     fig = plt.figure()
-    #     ax = fig.gca()
-    #     ax.plot(self.y,self.x)
-    #     lim = abs(self.xy().max()) * 1.1
-    #     ax.set_aspect('equal')
-    #     ax.set_xlim([-lim,lim])
-    #     ax.set_ylim([-lim,lim])
-    #     ax.set_xlabel('y')
-    #     ax.set_ylabel('x')
-    #     plt.show()
+    
+    def pt(self,**kwargs):
+        """Plot traces"""
+        ax = plot.trace(self.x,self.y,time=self.t(),**kwargs)
+        plt.show()
     
     def ppm(self,**kwargs):
         """Plot particle motion"""

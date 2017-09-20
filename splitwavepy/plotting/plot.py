@@ -15,18 +15,22 @@ import numpy as np
 
 
 def trace(*args,**kwargs):
-    """Return axis with trace data."""     
+    """Return axis with trace data."""
+        
+    if 'time' not in kwargs:
+        kwargs['time'] = np.arange(args[0].size)   
+      
     # initiate axis  
-    ax = plt.subplots(111)   
+    ax = plt.subplot(111)
     # plot data
-    for ii in len(args):
-        ax.plot(args[ii])
+    for ii in range(len(args)):
+        ax.plot(kwargs['time'],args[ii])
     # set label
     if 'units' in kwargs:
         units = kwargs['units']
     else:
-        units = ['(s)']    
-    ax.set_xlabel(units)  
+        units = 's'    
+    ax.set_xlabel('Time (' + units +')')  
     return ax
     
 
