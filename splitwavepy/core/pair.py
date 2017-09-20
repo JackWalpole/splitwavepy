@@ -63,14 +63,17 @@ class Pair:
                 kwargs['lag'] = nsamps                                      
             self.x, self.y = _synth(**kwargs)                   
         elif len(args) == 2:            
-            self.x = args[0]
-            self.y = args[1]
+            self.x, self.y = args[0], args[1]
         else: 
             raise Exception('Unexpected number of arguments')
                     
         # some sanity checks
         if self.x.ndim != 1:
             raise Exception('data must be one dimensional')
+        if self.x.size%2 == 0:
+            raise Exception('data must have odd number of samples')
+        if (self.x.size != self.y.size):
+            raise Exception('x and y must be the same length')
             
         # add geometry info
         if ('geom' in kwargs):

@@ -64,13 +64,13 @@ def unsplit(x,y,degrees,nsamps):
     """Apply inverse splitting and rotate back"""
     return split(x,y,degrees,-nsamps)
 
-def chop(x,y,window):
+def chop(*args,window):
     """Chop trace, or traces, using window"""
     
     if not isinstance(window,Window):
         raise Exception('window must be a Window')
     
-    length = x.size
+    length = args[0].size
           
     if window.width > length:
         raise Exception('window width is greater than trace length')
@@ -89,8 +89,13 @@ def chop(x,y,window):
         tukey = signal.tukey(window.width,alpha=window.tukey)
     else:
         tukey = 1.
-        
-    return x[t0:t1+1] * tukey, y[t0:t1+1] * tukey
+    
+    if len(args)==1:    
+        return args[0][t0:t1+1] * tukey
+    elif len(args==2):
+        return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey
+    elif len(args==3):
+        return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
 
     
 def pca(x,y):

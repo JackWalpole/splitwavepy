@@ -54,21 +54,19 @@ class Trio:
                 nsamps = int(kwargs['lag']/self.delta)
                 nsamps = nsamps if nsamps%2==0 else nsamps + 1
                 kwargs['lag'] = nsamps                                      
-            self.data = core3d.synth(**kwargs)            
-        elif len(args) == 1:       
-            self.data = args[0]       
+            self.x, self.y, self.z = _synth(**kwargs)                  
         elif len(args) == 3:            
-            self.data = np.vstack((args[0],args[1],args[3]))     
+            self.x, self.y, self.z = args[0],args[1],args[2]    
         else: 
             raise Exception('Unexpected number of arguments')
                     
         # some sanity checks
-        if self.data.ndim != 2:
-            raise Exception('data must be two dimensional')
-        if self.data.shape[0] != 3:
-            raise Exception('data must contain three traces in three rows')
-        if self.data.shape[1]%2 == 0:
-            raise Exception('traces must have odd number of samples')
+        if self.x.ndim != 1:
+            raise Exception('data must be one dimensional')
+        if self.x.size%2 == 0:
+            raise Exception('data must have odd number of samples')
+        if (self.x.size != self.y.size) or (self.x.size != self.z.size):
+            raise Exception('x and y and z must be the same length')
          
         # add geometry info
         if ('geom' in kwargs):
@@ -89,13 +87,13 @@ class Trio:
     
     # set time from start
     def t(self):
-        return np.arange(self.data.shape[1]) * self.delta
+        return np.arange(self.x.size) * self.delta
 
     def power(self):
-        return self.data[0]**2+self.data[1]**2+self.data[2]**2
+        return self.x**2+self.y**2+self.z**2
         
     def centre(self):
-        return int(self.data.shape[1]/2)
+        return int(self.x.size/2)
 
     def plot(self,window=None):
         """
@@ -264,3 +262,55 @@ class Trio:
         return copy.copy(self)
         
 
+
+def _synth(**kwargs):
+    """return ricker wavelet synthetic data"""
+    
+    if ('pol' in kwargs):
+        pol = kwargs['pol']
+    else:
+        pol = 0.
+        
+    if ('fast' in kwargs):
+        fast = kwargs['fast']
+    else:
+        fast = 0.
+        
+    if ('lag' in kwargs):
+        lag = kwargs['lag']
+    else:
+        lag = 0
+        
+    if ('noise' in kwargs):
+        noise = kwargs['noise']
+    else:
+        noise = 0.03
+        
+    if ('nsamps' in kwargs):
+        nsamps = kwargs['nsamps']
+    else:
+        nsamps = 501
+        
+    if ('width' in kwargs):
+        width = kwargs['width']
+    else:
+        width = 16.
+        
+    if ('window' in kwargs):
+        window = kwargs['window']
+    else:
+        window = Window(width*3)
+
+    nsamps = int(nsamps)
+    
+    x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,width/4)
+    y = core.noise(nsamps,noise,width/4)
+    z = core.noise(nsamps,noise,width/4)
+    
+    # rotate to polarisation
+    x,y = core.rotate(x,y,-pol)
+    
+    # add any splitting -- this will reduce nsamps
+    x,y = core.split(x,y,fast,lag)
+    
+    return x,y,z
