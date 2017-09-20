@@ -105,7 +105,62 @@ def particle(*args,**kwargs):
         return ax
         
         
+def surf(*args,**kwargs):
+    """
+    Plot an error surface.
+    
+    *args
+    - degs
+    - lags
+    - vals
+    
+    **kwargs
+    - cmap = 'magma'
+    - ax
+    """
+    
+    if len(args) != 3:
+        raise Exception('Expects 3 arguments: degs, lags, vals')
+    else:
+        degs = args[0]
+        lags = args[1]
+        vals = args[2]
+    
+    if 'cmap' not in kwargs:
+        kwargs['cmap'] = 'magma'
+    
+    if 'lam2_95' not in kwargs:
+        kwargs['lam2_95'] = False
+    
+    if 'ax' not in kwargs:         
+        kwargs['ax'] = plt.subplot(111)
+    
+    ax = kwargs['ax']
         
+    # error surface
+    v = np.linspace(0, 50, 26, endpoint=True)
+    cax = ax.contourf(tlags,degs,vals,v,cmap=kwargs['cmap'],extend='max')
+    ax.set_yticks(np.linspace(-90,90,7,endpoint=True))
+    cbar = ax.colorbar(cax,ticks=v[::5])
+    marker = ax.plot(self.tlag,self.fast,'k+',markersize=10.)               
+    return ax
+
+
+ 
+# def surf_polar
+#
+#
+#         rads = np.deg2rad(np.column_stack((degs,degs+180,degs[:,0]+360)))
+#         lags = np.column_stack((lags,lags,lags[:,0]))
+#         vals = np.column_stack((vals,vals,vals[:,0]))
+#         if 'ax' not in kwargs:
+#             fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
+#         ax.contourf(rads,lags,vals,50,cmap=cmap)
+#         ax.set_theta_direction(-1)
+#         ax.set_theta_offset(np.pi/2.0)
+#         if lam2_95 is True:
+#             lam2 = np.column_stack((self.lam2,self.lam2,self.lam2[:,0]))
+#             plt.contour(rads,lags,lam2,levels=[self.lam2_95()]) 
 
 # def surface(*args,**kwargs):
 #     """Plot 2-D surface data"""
