@@ -6,6 +6,7 @@ from . import core
 from . import core3d
 from .pair import Pair
 from .window import Window
+from ..plotting import plot
 
 import numpy as np
 from scipy import signal
@@ -168,22 +169,27 @@ class Trio:
         # show
         plt.show()
         
-    def ppm(self,window=None):
-        """Plot particle motion."""
-        fig = plt.figure()                       
-        ax = fig.gca(projection='3d')
-        ax.plot(self.x,self.y,self.z)
-        lim = abs(self.xyz().max()) * 1.1
-        ax.set_aspect('equal')
-        ax.set_xlim([-lim,lim])
-        ax.set_ylim([-lim,lim])
-        ax.set_zlim([-lim,lim])
-        ax.plot(self.x,self.y,-lim,zdir='z',alpha=0.3,color='g')
-        ax.plot(self.x,self.z,lim,zdir='y',alpha=0.3,color='g')
-        ax.plot(self.y,self.z,-lim,zdir='x',alpha=0.3,color='g')
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
+    # def ppm(self,window=None):
+    #     """Plot particle motion."""
+    #     fig = plt.figure()
+    #     ax = fig.gca(projection='3d')
+    #     ax.plot(self.x,self.y,self.z)
+    #     lim = abs(self.xyz().max()) * 1.1
+    #     ax.set_aspect('equal')
+    #     ax.set_xlim([-lim,lim])
+    #     ax.set_ylim([-lim,lim])
+    #     ax.set_zlim([-lim,lim])
+    #     ax.plot(self.x,self.y,-lim,zdir='z',alpha=0.3,color='g')
+    #     ax.plot(self.x,self.z,lim,zdir='y',alpha=0.3,color='g')
+    #     ax.plot(self.y,self.z,-lim,zdir='x',alpha=0.3,color='g')
+    #     ax.set_xlabel('x')
+    #     ax.set_ylabel('y')
+    #     ax.set_zlabel('z')
+    #     plt.show()
+    
+    def ppm(self,**kwargs):
+        """Plot particle motion"""
+        ax = plotting.particle(self.x,self.y,self.z,**kwargs)
         plt.show()
         
         

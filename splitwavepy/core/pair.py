@@ -3,7 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core
-from . import plotting
+from ..plotting import plot
 from .window import Window
 
 import numpy as np
@@ -169,17 +169,22 @@ class Pair:
         # show
         plt.show()
     
-    def ppm(self,window=None):
-        """Plot particle motion."""
-        fig = plt.figure()                       
-        ax = fig.gca()
-        ax.plot(self.y,self.x)
-        lim = abs(self.xy().max()) * 1.1
-        ax.set_aspect('equal')
-        ax.set_xlim([-lim,lim])
-        ax.set_ylim([-lim,lim])
-        ax.set_xlabel('y')
-        ax.set_ylabel('x')
+    # def ppm(self,window=None):
+    #     """Plot particle motion."""
+    #     fig = plt.figure()
+    #     ax = fig.gca()
+    #     ax.plot(self.y,self.x)
+    #     lim = abs(self.xy().max()) * 1.1
+    #     ax.set_aspect('equal')
+    #     ax.set_xlim([-lim,lim])
+    #     ax.set_ylim([-lim,lim])
+    #     ax.set_xlabel('y')
+    #     ax.set_ylabel('x')
+    #     plt.show()
+    
+    def ppm(self,**kwargs):
+        """Plot particle motion"""
+        ax = plot.particle(self.x,self.y,**kwargs)
         plt.show()
     
     def split(self,degrees,tlag):
