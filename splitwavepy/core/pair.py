@@ -81,14 +81,17 @@ class Pair:
         else:
             # if using 2-component data I'll guess the user wants geo coordinates.
             self.geom = 'geo'
+            
         if ('srcloc' in kwargs):
             self.srcloc = kwargs['srcloc']
+            
         if ('rcvloc' in kwargs):
             self.rcvloc = kwargs['rcvloc']
-        if ('xyz' in kwargs):
-            self.xyz = kargs['xyz']
-        else:
-            self.xyz = np.ones(3)
+            
+        # if ('xyz' in kwargs):
+        #     self.xyz = kargs['xyz']
+        # else:
+        #     self.xyz = np.ones(3)
 
     # methods
     

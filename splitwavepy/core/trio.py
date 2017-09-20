@@ -8,7 +8,10 @@ from .pair import Pair
 from .window import Window
 
 import numpy as np
+from scipy import signal
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 import copy
 
 class Trio:
@@ -74,26 +77,35 @@ class Trio:
         else:
             # if using 3-component data I'll guess the user wants cartesian coordinates.
             self.geom = 'cart'
+            
         if ('srcloc' in kwargs):
             self.srcloc = kwargs['srcloc']
+            
         if ('rcvloc' in kwargs):
             self.rcvloc = kwargs['rcvloc']
-        if ('xyz' in kwargs):
-            self.xyz = kargs['xyz']
-        else:
-            self.xyz = np.ones(3)
+            
+        # if ('xyz' in kwargs):
+        #     self.xyz = kargs['xyz']
+        # else:
+        #     self.xyz = np.ones(3)
         
     # methods
     
     # set time from start
     def t(self):
         return np.arange(self.x.size) * self.delta
+        
+    def nsamps(self):
+        return self.x.size
 
     def power(self):
         return self.x**2+self.y**2+self.z**2
         
     def centre(self):
         return int(self.x.size/2)
+        
+    def xyz(self):
+        return np.vstack((self.x,self.y,self.z))
 
     def plot(self,window=None):
         """
@@ -104,11 +116,11 @@ class Trio:
         if window is None:
             gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1])
             ax0 = plt.subplot(gs[0])
-            ax0.plot(self.t(),self.data[0])
-            ax0.plot(self.t(),self.data[1])
-            ax0.plot(self.t(),self.data[2])
+            ax0.plot(self.t(),self.x)
+            ax0.plot(self.t(),self.y)
+            ax0.plot(self.t(),self.z)
             # particle  motion
-            lim = abs(self.data.max()) * 1.1
+            lim = abs(self.xyz().max()) * 1.1
             # the polar axis:
             # ax_polar = plt.subplot(gs[1], polar=True, frameon=False)
             # ax_polar.set_rmax(lim)
@@ -119,7 +131,7 @@ class Trio:
             ax1 = plt.subplot(gs[1])
             # ax1.patch.set_alpha(0)
             ax1.axis('equal')
-            ax1.plot(self.data[1],self.data[0])
+            ax1.plot(self.y,self.x)
             ax1.set_xlim([-lim,lim])
             ax1.set_ylim([-lim,lim])
             ax1.axes.get_xaxis().set_visible(False)
@@ -127,8 +139,9 @@ class Trio:
         else:
             gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
             ax0 = plt.subplot(gs[0])
-            ax0.plot(self.t(),self.data[0])
-            ax0.plot(self.t(),self.data[1])
+            ax0.plot(self.t(),self.x)
+            ax0.plot(self.t(),self.y)
+            ax0.plot(self.t(),self.z)
             # the window limits
             nsamps = self.t().size
             wbeg = window.start(nsamps)*self.delta
@@ -138,13 +151,14 @@ class Trio:
             # windowed data
             d2 = self.chop(window,copy=True)
             ax1 = plt.subplot(gs[1])
-            ax1.plot(d2.t()+wbeg,d2.data[0])
-            ax1.plot(d2.t()+wbeg,d2.data[1])
+            ax1.plot(d2.t()+wbeg,d2.x)
+            ax1.plot(d2.t()+wbeg,d2.y)
+            ax1.plot(d2.t()+wbeg,d2.z)
             # particle  motion
-            lim = abs(d2.data.max()) * 1.1
+            lim = abs(d2.xyz().max()) * 1.1
             ax2 = plt.subplot(gs[2])
             ax2.axis('equal')
-            ax2.plot(d2.data[1],d2.data[0])
+            ax2.plot(d2.y,d2.x)
             ax2.set_xlim([-lim,lim])
             ax2.set_ylim([-lim,lim])
             ax2.axes.get_xaxis().set_visible(False)
@@ -156,8 +170,8 @@ class Trio:
     def ppm(self,window=None):
         """Plot particle motion."""
         fig = plt.figure()                       
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(self.x,self.y,self.z)
+        ax = fig.gca(projection='3d')
+        ax.plot(self.x,self.y,self.z)
         plt.show()
         
         

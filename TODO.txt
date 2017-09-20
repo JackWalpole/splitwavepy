@@ -16,3 +16,4 @@ polarisation analysis
 documentation
 profile code
 release
+tidy up plotting routines
