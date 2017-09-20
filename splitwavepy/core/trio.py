@@ -172,6 +172,11 @@ class Trio:
         fig = plt.figure()                       
         ax = fig.gca(projection='3d')
         ax.plot(self.x,self.y,self.z)
+        lim = abs(self.xyz().max()) * 1.1
+        ax.axis('equal')
+        ax.set_xlim([-lim,lim])
+        ax.set_ylim([-lim,lim])
+        ax.set_zlim([-lim,lim])
         plt.show()
         
         
