@@ -35,7 +35,7 @@ def trace(*args,**kwargs):
         ax.plot(kwargs['time'],args[ii])
         
     # set limit
-    lim = abs(np.max(args)) * 1.1
+    lim = np.abs(args).max() * 1.1
     ax.set_ylim([-lim,lim])    
         
     # set label
@@ -71,7 +71,7 @@ def particle(*args,**kwargs):
             kwargs['ax'] = plt.subplot(111)
         ax = kwargs['ax']
         ax.plot(args[1],args[0])
-        lim = abs(np.max(args)) * 1.1
+        lim = np.abs(args).max() * 1.1
         ax.set_aspect('equal')
         ax.set_xlim([-lim,lim])
         ax.set_ylim([-lim,lim])
@@ -86,7 +86,7 @@ def particle(*args,**kwargs):
             kwargs['ax'] = plt.subplot(111,projection='3d')
         ax = kwargs['ax']
         ax.plot(args[0],args[1],args[2])
-        lim = abs(np.max(args)) * 1.1
+        lim = np.abs(args).max() * 1.1
         ax.set_aspect('equal')
         ax.set_xlim([-lim,lim])
         ax.set_ylim([-lim,lim])
