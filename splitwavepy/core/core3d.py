@@ -29,7 +29,7 @@ def lag(x,y,z,nsamps):
         raise Exception('nsamps must be even')
     
     x, y = core.lag(x,y,nsamps)
-    z = x[abs(nsamps)/2:-abs(nsamps)/2]
+    z = z[int(abs(nsamps)/2):-int(abs(nsamps)/2)]
     
     return x, y, z
         
@@ -37,7 +37,8 @@ def rotate(x,y,z,degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis
        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
-    return core.rotate(x,y,degrees), z
+    x, y = core.rotate(x,y,degrees)
+    return x,y,z
 
 def split(x,y,z,degrees,nsamps):
     """Apply forward splitting and rotate back"""

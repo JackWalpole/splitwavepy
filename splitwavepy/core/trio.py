@@ -174,10 +174,16 @@ class Trio:
         ax = fig.gca(projection='3d')
         ax.plot(self.x,self.y,self.z)
         lim = abs(self.xyz().max()) * 1.1
-        ax.axis('equal')
+        ax.set_aspect('equal')
         ax.set_xlim([-lim,lim])
         ax.set_ylim([-lim,lim])
         ax.set_zlim([-lim,lim])
+        ax.plot(self.x,self.y,-lim,zdir='z',alpha=0.3,color='g')
+        ax.plot(self.x,self.z,lim,zdir='y',alpha=0.3,color='g')
+        ax.plot(self.y,self.z,-lim,zdir='x',alpha=0.3,color='g')
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
         plt.show()
         
         
@@ -323,9 +329,9 @@ def _synth(**kwargs):
     z = core.noise(nsamps,noise,width/4)
     
     # rotate to polarisation
-    x,y = core.rotate(x,y,-pol)
+    x,y,z = core3d.rotate(x,y,z,-pol)
     
     # add any splitting -- this will reduce nsamps
-    x,y = core.split(x,y,fast,lag)
+    x,y,z = core3d.split(x,y,z,fast,lag)
     
     return x,y,z
