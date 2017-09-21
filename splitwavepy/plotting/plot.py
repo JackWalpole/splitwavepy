@@ -139,10 +139,10 @@ def surf(*args,**kwargs):
         
     # error surface
     v = np.linspace(0, 50, 26, endpoint=True)
-    cax = ax.contourf(tlags,degs,vals,v,cmap=kwargs['cmap'],extend='max')
-    ax.set_yticks(np.linspace(-90,90,7,endpoint=True))
-    cbar = ax.colorbar(cax,ticks=v[::5])
-    marker = ax.plot(self.tlag,self.fast,'k+',markersize=10.)               
+    cax = ax.contourf(lags,degs,vals,v,cmap=kwargs['cmap'],extend='max')
+    ax.set_yticks(np.linspace(-90,90,7))
+    cbar = plt.colorbar(cax,ticks=v[::5])
+    # marker = plt.plot(self.tlag,self.fast,'k+',markersize=10.)
     return ax
 
 

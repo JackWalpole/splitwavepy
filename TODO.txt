@@ -1,19 +1,34 @@
-add tests
+-- fundamental
+stacking methods
+geometry
+
+-- useful
+add window picker
+polarisation analysis
+
+---integration
+integrate obspy
+integrate pytasa
+
+---scanning
+auto window selection
+receiver + source correction scanning
+bandpass filter selection methods
+
+---methods
 add transverse minimisation method
 add cross correlation method
 add splitting intensity method
-add window picker
-integrate obspy
-integrate pytasa
-auto window selection
-stacking methods
-receiver + source correction methods
-filter selection methods
-machine learning
+
+---real data examples
 microseismic data
-Trio
-polarisation analysis
+
+---code
+add tests
 documentation
 profile code
 release
-tidy up plotting routines
+
+---distant future
+machine learning
+2-layer
