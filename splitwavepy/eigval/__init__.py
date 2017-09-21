@@ -1,1 +1,1 @@
-from . import stack
+from .stack import Stack
