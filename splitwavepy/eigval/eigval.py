@@ -63,20 +63,20 @@ def grideigval(x, y, **kwargs):
     # avoid using "dots" in loops for performance
     rotate = core.rotate
     lag = core.lag
-    unsplit = core.unsplit
     chop = core.chop
     
     # pre-apply receiver correction
     if 'rcvcorr' in kwargs:
-        x,y = unsplit(x,y,*kwargs['rcvcorr'])
+        x,y = core.unsplit(x,y,*kwargs['rcvcorr'])
     
     # make function to do source correction (used in loop)
     if 'srccorr' in kwargs:
+        srcphi, srclag = kwargs['srccorr']
         def srccorr(x,y,ang):
             # unwind rotation
-            x,y = rotate(x,y,ang)
+            x,y = rotate(x,y,srcphi-ang)
             # remove splitting
-            x,y = unsplit(x,y,*kwargs['srccorr'])
+            x,y = lag(x,y,-srclag)
             return x,y
     else:
         def srccorr(x,y,ang):
@@ -89,7 +89,7 @@ def grideigval(x, y, **kwargs):
             # remove splitting so use inverse operator (negative lag)
             ux, uy = lag(tx,ty,-lags[jj,ii])
             # if requested -- post-apply source correction
-            ux, uy = srccorr(ux,uy,-degs[0,ii])
+            ux, uy = srccorr(ux,uy,degs[0,ii])
             # chop to analysis window
             ux, uy = chop(ux,uy,window=kwargs['window'])
             # measure eigenvalues of covariance matrix
