@@ -34,54 +34,29 @@ def grideigval(x, y, **kwargs):
     rcvcorr = receiver correction parameters in tuple (fast,lag) 
     srccorr = source correction parameters in tuple (fast,lag) 
     """
-    
-    # lags=None, degs=None, window=None,rcvcorr=None,srccorr=None,
-    
-    if ('lags' in kwargs):
-        lags = kwargs['lags']
-    else:
+        
+    if 'lags' not in kwargs:
         # default search
         maxlag = int(x.size / 10)
         maxlag = maxlag if maxlag%2==0 else maxlag + 1
         lags = 2 * np.rint(np.linspace(0,0.5*maxlag,30))
-        lags = np.unique(lags).astype(int)
+        kwargs['lags'] = np.unique(lags).astype(int)
         
-    if ('degs' in kwargs):
-        degs = kwargs['degs']
-    else:
+    if 'degs' not in kwargs:
         # default search
         stepang = 3
-        degs = np.arange(-90,90,stepang)
+        kwargs['degs'] = np.arange(-90,90,stepang)
         
-    if ('window' in kwargs):
-        window = kwargs['window']
-    else:
+    if 'window' not in kwargs:
         # make a window by guessing
         nsamps = int(x.size/2)
         nsamps = nsamps if nsamps%2==1 else nsamps + 1
         offset = 0
-        window = Window(nsamps,offset,tukey=None)
-        
-    if ('rcvcorr' in kwargs):
-        rcvcorr = kwargs['rcvcorr']
-    else:
-        rcvcorr = None
-
-    if ('srcorr' in kwargs):
-        srcorr = kwargs['srccorr']
-    else:
-        srccorr = None
-    
-    # set some defaults
-    if lags is None:
-        maxlag = int(x.size / 10)
-        maxlag = maxlag if maxlag%2==0 else maxlag + 1
-        steplag = 2 * int(np.max([1,maxlag/80]))
-        lags = np.arange(0,maxlag,steplag).astype(int)        
-        
+        kwargs['window'] = Window(nsamps,offset,tukey=None)
+                    
     # grid of degs and lags to search over
-    gdegs, glags = np.meshgrid(degs,lags)
-    shape = gdegs.shape
+    degs, lags = np.meshgrid(kwargs['degs'],kwargs['lags'])
+    shape = degs.shape
     lam1 = np.zeros(shape)
     lam2 = np.zeros(shape)
     
@@ -91,22 +66,32 @@ def grideigval(x, y, **kwargs):
     unsplit = core.unsplit
     chop = core.chop
     
-    # if requested -- pre-apply receiver correction
-    if rcvcorr is not None:
-        x,y = core.unsplit(x,y,*rcvcorr)
+    # pre-apply receiver correction
+    if 'rcvcorr' in kwargs:
+        x,y = core.unsplit(x,y,*kwargs['rcvcorr'])
+    
+    # make function to do source correction (used in loop)
+    if 'srccorr' in kwargs:
+        def srccorr(x,y):
+            return core.unsplit(x,y,*kwargs['srccorr'])
+    else:
+        def srccorr(x,y):
+            # no source correction so do nothing
+            return x,y
     
     for ii in np.arange(shape[1]):
-        tx, ty = rotate(x,y,gdegs[0,ii])
+        tx, ty = rotate(x,y,degs[0,ii])
         for jj in np.arange(shape[0]):
             # remove splitting so use inverse operator (negative lag)
-            ux, uy = lag(tx,ty,-glags[jj,ii])
+            ux, uy = lag(tx,ty,-lags[jj,ii])
             # if requested -- post-apply source correction
-            if srccorr is not None:
-                ux, uy = unsplit(ux,uy,*srccorr)
-            ux, uy = chop(ux,uy,window=window)
+            ux, uy = srccorr(ux,uy)
+            # chop to analysis window
+            ux, uy = chop(ux,uy,window=kwargs['window'])
+            # measure eigenvalues of covariance matrix
             lam2[jj,ii], lam1[jj,ii] = eigvalcov(np.vstack((ux,uy)))
             
-    return gdegs,glags,lam1,lam2,window
+    return degs,lags,lam1,lam2,kwargs['window']
 
 def ndf(y,window=None,detrend=False):
     """

@@ -19,6 +19,21 @@ class EigenM:
     
     """
     Silver and Chan (1991) eigenvalue method measurement.
+    
+    >>> EigenM(**kwargs) returns a synthetic measurement
+    
+    >>> EigenM(Pair,**kwargs) returns a measurement on data contained in Pair
+    
+    kwargs:
+    rcvcorr = (fast,tlag) | tuple
+    srccorr = (fast,tlag) | tuple
+    
+    kwargs for synthetic generation:
+    fast = 0.    | float
+    tlag = 0.    | float
+    pol = 0.     | float
+    noise = 0.03 | float
+        
     """
     
     def __init__(self,*args,**kwargs):
@@ -35,68 +50,62 @@ class EigenM:
         # convert times to nsamples
         self.delta = self.data.delta
         
-        if ('degs' in kwargs):
-            degs = kwargs['degs']
-        else:
-            degs = None
+        # process kwargs
               
         if ('tlags' in kwargs):
             # round to nearest 2
             lags = 2 * np.rint( 0.5 * kwargs['tlags'] / self.delta )
-            lags = np.unique(lags).astype(int)
-        else:
-            lags = None
-            
-        if ('window' in kwargs):
-            window = kwargs['window']
-        else:
-            window = None
-            
+            kwargs['lags'] = np.unique(lags).astype(int)
+                      
         if ('rcvcorr' in kwargs):
             # convert time shift to nsamples -- must be even
             degree = kwargs['rcvcorr'][0]
-            nsamps = int(kwargs['rcvcorr'][1]/self.delta)
-            nsamps = nsamps if nsamps%2==0 else nsamps + 1
-            rcvcorr = (degree,nsamps)
-            self.rcvcorr = (degree, nsamps * self.delta)
-        else:
-            rcvcorr = None
-            self.rcvcorr = None           
-        
+            nsamps = int(2 * np.rint( 0.5 * kwargs['rcvcorr'][1] / self.delta ))
+            kwargs['rcvcorr'] = (degree, nsamps)
+            self.rcvcorr = ( degree, nsamps * self.delta)
+                   
         if ('srccorr' in kwargs):
             # convert time shift to nsamples -- must be even
             degree = kwargs['srccorr'][0]
-            nsamps = int(kwargs['srccorr'][1]/self.delta)
-            nsamps = nsamps if nsamps%2==0 else nsamps + 1
-            srccorr = (degree,nsamps)
-            self.srccorr = (degree, nsamps * self.delta)
-        else:
-            srccorr = None
-            self.srccorr = None
+            nsamps = int(2 * np.rint( 0.5 * kwargs['srccorr'][1] / self.delta ))
+            kwargs['srccorr'] = (degree, nsamps)
+            self.srccorr = (degree,nsamps * self.delta)
+
             
         # ensure trace1 at zero angle
         self.data.rotateto(0)        
         
         # grid search splitting
-        self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.x,self.data.y,lags=lags,**kwargs)
+        self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.x,self.data.y,**kwargs)
             
         self.tlags = self.lags * self.delta
-        
-        
+                
         # get some measurement attributes
         # uses ratio lam1/lam2 to find optimal fast and lag parameters
         maxloc = core.max_idx(self.lam1/self.lam2)
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
         self.tlag = self.lag * self.delta
+        
         # generate "squashed" profiles
         self.fastprofile = np.sum(self.lam1/self.lam2, axis=0)
         self.lagprofile = np.sum(self.lam1/self.lam2, axis=1)
         # generate redefined "NI" value
         self.ni = ni(self)
         
-        # get some useful stuff
-        self.data_corr = Pair(*core.unsplit(self.data.x,self.data.y,self.fast,self.lag),**kwargs)
+        # correct the data
+        x,y = self.data.x, self.data.y
+        # rcv side      
+        if 'rcvcorr' in kwargs:
+            x,y = core.unsplit(x,y,*kwargs['rcvcorr'])
+        # target layer
+        x,y = core.unsplit(x,y,self.fast,self.lag)
+        # src side
+        if 'srccorr' in kwargs:
+            x,y = core.unsplit(x,y,*kwargs['srccorr'])
+        
+        self.data_corr = Pair(x,y,**kwargs)
+        
         self.srcpol = core.pca(self.data_corr.x,self.data_corr.y)
         
         # signal to noise calculation
@@ -127,8 +136,7 @@ class EigenM:
     def lam2_95(self):
         """Value of lam2 at 95% confidence contour."""
         return eigval.ftest(self.lam2,self.ndf(),alpha=0.05)
-        
-
+    
     def plotsurf(self,vals=None,cmap='magma',lam2_95=False,polar=False):
         """
         plot the measurement.
@@ -220,7 +228,7 @@ class EigenM:
         ax1.plot(d1.t(),d1.y)
         ax1.axes.get_yaxis().set_visible(False)
         # ax2 -- hodo orig
-        lim = abs(d1.xy().max()) * 1.1
+        lim = np.abs(d1.xy()).max() * 1.1
         ax2.axis('equal')
         ax2.plot(d1.y,d1.x)
         ax2.set_xlim([-lim,lim])
@@ -232,7 +240,7 @@ class EigenM:
         ax3.plot(d2.t(),d2.y)
         ax3.axes.get_yaxis().set_visible(False)
         # ax4 -- hodo new
-        lim = abs(d2.xy().max()) * 1.1
+        lim = np.abs(d2.xy()).max() * 1.1
         ax4.axis('equal')
         ax4.plot(d2.y,d2.x)
         ax4.set_xlim([-lim,lim])
@@ -246,11 +254,9 @@ class EigenM:
         ax5.set_ylabel(r'Fast Direction (degrees)')
         cbar = plt.colorbar(cax,ticks=v[::5])
         
+        plt.tight_layout()
         plt.show()
-# def _synthM(deg=25,lag=10):
-#     P = c.Pair()
-#     P.split(deg,lag)
-#     return eigval.grideigval(P.data)
+
 
 def ni(M):
     """
