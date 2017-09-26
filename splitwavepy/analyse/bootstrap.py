@@ -11,8 +11,7 @@ import numpy as np
 def get_noise(y):
     """
     Return a randomly simulated noise trace with similar spectral properties to y.
-    """
-    
+    """  
     # white noise
     x = np.random.normal(y.size)
     # convolve with y
@@ -22,7 +21,9 @@ def get_noise(y):
     # whipeout near nyquist
     x = np.covolve(np.array([1,1,1]))
     # normalise energy
-    x = x / 
+    x = x / np.sum(y**2)
+    # return
+    return x
 
 def bootstrap_sample(data,fast,lag):    
     # copy original data
@@ -35,7 +36,7 @@ def bootstrap_sample(data,fast,lag):
     
 def bootstrap_loop(data,N=50):
     """
-    Make repeat measurement N times and save output to list
+    Return list of bootstrap samples
     """
     
     if not isinstance(data,Pair):
@@ -51,20 +52,26 @@ def bootstrap_loop(data,N=50):
     idx = np.random.choice(surf.ravel())
     fast, lag =
     
-    bslist = []
-    
-    # Bootstrap Loop
-    for ii np.range(N):
+    # bslist = []
+    #
+    # # Bootstrap Loop
+    # for ii np.range(N):
+    #
+    #     # Generate Bootstrap Sample
+    #     bs = bootstrap_sample(data,fast,lag)
+    #
+    #     # Measure
+    #     bm = EigenM(bs)
+    #
+    #     # Add to list
+    #     bslist = bslist.append(bm)
         
-        # Generate Bootstrap Sample
-        bs = bootstrap_sample(data,fast,lag)
-        
-        # Measure
-        bm = EigenM(bs)
-        
-        # Add to list
-        bslist = bslist.append(bm)
-        
+    bslist = [ EigenM(x) for bs in [ bootstrap_sample(x) for x in range(N) ] ]
     return bslist
     
-def 
+def boot_std(listM):
+    avg = np.average(np.stack(listM))
+    diffs = [ M - avg for M in listM ]
+    np.transpose(diffs)
+    ( 1 / ( len(listM) - 1 ) ) * [ np.transpose(m - avg)]
+    

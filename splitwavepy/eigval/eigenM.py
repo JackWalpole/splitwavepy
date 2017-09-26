@@ -120,7 +120,7 @@ class EigenM:
         return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol()))
         
     def srcpoldata_corr(self):
-        data_corr = self.data_corr(self)
+        data_corr = self.data_corr
         return Pair(*core.rotate(data_corr.x,data_corr.y,self.srcpol()))
     
     def snrRH(self):
