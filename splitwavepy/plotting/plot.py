@@ -79,7 +79,7 @@ def particle(*args,**kwargs):
         ax.set_ylabel(kwargs['labels'][0])
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
-        ax.grid()
+        # ax.grid()
         return ax
     
     # 3D particle motion

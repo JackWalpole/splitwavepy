@@ -15,6 +15,9 @@ from . import eigval
 import numpy as np
 import matplotlib.pyplot as plt
 
+# for contouring
+from skimage import measure
+
 class EigenM:
     
     """
@@ -128,6 +131,8 @@ class EigenM:
         d = self.srcpoldata_corr()
         return core.snrRH(*core.chop(d.x,d.y,window=self.window))
         
+    # F-test utilities
+    
     def ndf(self):
         """Number of degrees of freedom."""
         d = self.srcpoldata_corr()
@@ -136,6 +141,15 @@ class EigenM:
     def lam2_95(self):
         """Value of lam2 at 95% confidence contour."""
         return eigval.ftest(self.lam2,self.ndf(),alpha=0.05)
+        
+    # def f_errors(self):
+    #     """
+    #     Return dfast and dtlag.
+    #
+    #     """
+    #
+    #     contour = measure.find_contour(self.lam2,self.lam2_95())
+        
         
     # def dfast(self):
     #     """
@@ -151,6 +165,16 @@ class EigenM:
     #
     #     Quarter width of 95% confidence contour along lag axis.
     #     """
+    
+    # Output
+    
+    def report(self):
+        """
+        Print out a summary of the result.
+        """
+        
+    
+    # Plotting
     
     def plotsurf(self,vals=None,cmap='magma',lam2_95=False,polar=False):
         """
