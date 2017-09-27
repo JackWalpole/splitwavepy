@@ -13,60 +13,51 @@ def get_noise(y):
     Return a randomly simulated noise trace with similar spectral properties to y.
     """  
     # white noise
-    x = np.random.normal(y.size)
+    x = np.random.normal(0,1,y.size)
     # convolve with y
-    x = np.convolve(y,x,'same')
+    x = np.convolve(x,y,'same')
     # additional randomisation
-    x = np.roll(np.random.randint(y.size))
+    x = np.roll(x,np.random.randint(y.size))
     # whipeout near nyquist
-    x = np.covolve(np.array([1,1,1]))
+    x = np.convolve(np.array([1,1,1]),x,'same')
     # normalise energy
-    x = x / np.sum(y**2)
+    x = x * np.sqrt((np.sum(y**2) / np.sum(x**2)))
     # return
     return x
 
 def bootstrap_sample(data,fast,lag):    
     # copy original data
-    bs = data.copy()     
+    bs = data.copy()   
+    origang = bs.angle
     # replace noise sequence
-    copy.unsplit(fast,lag)
-    copy.y = get_noise(copy.y)
-    copy.split(fast,lag)
-    return copy
+    bs.unsplit(fast,lag)
+    bs.rotateto(bs.pca())
+    bs.y = get_noise(bs.y)
+    bs.rotateto(origang)
+    bs.split(fast,lag)
+    return bs
     
 def bootstrap_loop(data,N=50):
     """
     Return list of bootstrap samples
-    """
-    
-    if not isinstance(data,Pair):
-        raise Exception('data must be a Pair')
-    
+    """        
     # initial measurement:
-    m = EigenM(data)
-    # polar normalise lam1/lam2 to use as weights
-    surf = polnorm * m.lam1 / m.lam2
-    del m
-
-    # choose correction to find noise sequence
-    idx = np.random.choice(surf.ravel())
-    fast, lag =
+    m = sw.EigenM(data)
+    # get probability surface to pick from
+    # boost surf by **3 to enhance probability of picks at peaks (value chosen by testing on synthetics)
+    surf = (m.lam1/m.lam2)**3
+    dlag = m.lags[1,0] - m.lags[0,0]
+    density = rho(m.lags,dlag)
+    surf = surf / density
+    surf = surf / surf.sum()
     
-    # bslist = []
-    #
-    # # Bootstrap Loop
-    # for ii np.range(N):
-    #
-    #     # Generate Bootstrap Sample
-    #     bs = bootstrap_sample(data,fast,lag)
-    #
-    #     # Measure
-    #     bm = EigenM(bs)
-    #
-    #     # Add to list
-    #     bslist = bslist.append(bm)
-        
-    bslist = [ EigenM(x) for bs in [ bootstrap_sample(x) for x in range(N) ] ]
+    # pick fast and tlag from surf
+    probs = surf.ravel()
+    picks = np.random.choice(probs.size,size=N,replace=True,p=probs)
+    idx = np.unravel_index(picks,surf.shape)
+    
+    # generate bootstrap sample measurements    
+    bslist = [ sw.EigenM(bs) for bs in [ bootstrap_sample(data,degs,lags) for lags,degs in zip(m.tlags[idx],m.degs[idx]) ] ]
     return bslist
     
 def boot_std(listM):
