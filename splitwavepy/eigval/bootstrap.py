@@ -5,14 +5,20 @@ The method is generalised to work without prior knowlege of the wave source pola
 and therefore does not can be used on phases other than SKS.
 """
 
-from .pair import Pair
-from .core import core
-from .eigen import EigenM
+from ..core.pair import Pair
+from ..core import core
+from .eigenM import EigenM
 
 import numpy as np
 
+class Bootstrap:
+    
+    def __init__(self,pair,**kwargs):
+        self.listM = bootstrap_measurements(pair,**kwargs)
+        v = [ m.lam1 / m.lam2 for m in self.listM ]
+        self.stk_l1_l2 = np.stack(v)
 
-        
+
 
 def get_noise(y):
     """
@@ -64,7 +70,9 @@ def bootstrap_measurements(data,N=50):
     Return list of bootstrap measurements
     """        
     # initial measurement:
-    m = sw.EigenM(data)
+    m = EigenM(data)
+    mlags = m.tlags[:,0]
+    mdegs = m.degs[0,:]
     # get probability surface to pick from
     # boost surf by **3 to enhance probability of picks at peaks (value chosen by testing on synthetics)
     surf = (m.lam1/m.lam2)**3
@@ -79,7 +87,7 @@ def bootstrap_measurements(data,N=50):
     idx = np.unravel_index(picks,surf.shape)
     
     # generate bootstrap sample measurements    
-    bslist = [ sw.EigenM(bs) for bs in [ bootstrap_sample(data,degs,lags) for lags,degs in zip(m.tlags[idx],m.degs[idx]) ] ]
+    bslist = [ EigenM(bs,tlags=mlags,degs=mdegs) for bs in [ bootstrap_sample(data,degs,lags) for lags,degs in zip(m.tlags[idx],m.degs[idx]) ] ]
     return bslist
     
 # def boot_std(listM):

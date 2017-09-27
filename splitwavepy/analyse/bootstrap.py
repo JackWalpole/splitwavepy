@@ -5,6 +5,10 @@ The method is generalised to work without prior knowlege of the wave source pola
 and therefore does not can be used on phases other than SKS.
 """
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+
 from ..pair import Pair
 from ..core import core
 from . import EigenM

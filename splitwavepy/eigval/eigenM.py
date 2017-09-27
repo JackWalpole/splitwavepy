@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # for contouring
-from skimage import measure
+# from skimage import measure
 
 class EigenM:
     

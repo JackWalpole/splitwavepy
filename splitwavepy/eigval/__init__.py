@@ -1,2 +1,2 @@
 from .stack import Stack
-from . import bootstrap
+from .bootstrap import Bootstrap
