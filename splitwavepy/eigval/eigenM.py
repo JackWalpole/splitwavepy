@@ -117,11 +117,11 @@ class EigenM:
         self.snr = np.max((self.lam1-self.lam2)/(2*self.lam2))
     
     def srcpoldata(self):
-        return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol()))
+        return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol))
         
     def srcpoldata_corr(self):
         data_corr = self.data_corr
-        return Pair(*core.rotate(data_corr.x,data_corr.y,self.srcpol()))
+        return Pair(*core.rotate(data_corr.x,data_corr.y,self.srcpol))
     
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
@@ -136,6 +136,21 @@ class EigenM:
     def lam2_95(self):
         """Value of lam2 at 95% confidence contour."""
         return eigval.ftest(self.lam2,self.ndf(),alpha=0.05)
+        
+    # def dfast(self):
+    #     """
+    #     Standard error in fast direction using F test.
+    #
+    #     Quarter width of 95% confidence contour along fast axis.
+    #     """
+    #
+    #
+    # def dtlag(self):
+    #     """
+    #     Standard error in delay time using F test.
+    #
+    #     Quarter width of 95% confidence contour along lag axis.
+    #     """
     
     def plotsurf(self,vals=None,cmap='magma',lam2_95=False,polar=False):
         """
