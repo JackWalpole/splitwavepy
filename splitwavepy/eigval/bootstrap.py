@@ -1,5 +1,8 @@
 """
-Use Bootstrapping to estimate measurement errors following (Sandvol and Hearn, 1994)
+Use Bootstrapping to estimate measurement errors following (Sandvol and Hearn, 1994).
+
+The method is generalised to work without prior knowlege of the wave source polarisation
+and therefore does not can be used on phases other than SKS.
 """
 
 from .pair import Pair
@@ -7,6 +10,9 @@ from .core import core
 from .eigen import EigenM
 
 import numpy as np
+
+
+        
 
 def get_noise(y):
     """
@@ -25,7 +31,10 @@ def get_noise(y):
     # return
     return x
 
-def bootstrap_sample(data,fast,lag):    
+def bootstrap_sample(data,fast,lag):
+    """
+    Return data with new noise sequence
+    """    
     # copy original data
     bs = data.copy()   
     origang = bs.angle
@@ -36,10 +45,23 @@ def bootstrap_sample(data,fast,lag):
     bs.rotateto(origang)
     bs.split(fast,lag)
     return bs
-    
-def bootstrap_loop(data,N=50):
+
+def rho(n,step):
     """
-    Return list of bootstrap samples
+    Polar density of measurements
+    """
+    if n == 0:
+        return 1 / (np.pi/4 * step**2)
+    elif n > 0:
+        return 1 / (2 * np.pi * n * step)
+    else:
+        raise Exception('n not valid')
+        
+rho = np.vectorize(rho)
+    
+def bootstrap_measurements(data,N=50):
+    """
+    Return list of bootstrap measurements
     """        
     # initial measurement:
     m = sw.EigenM(data)
@@ -60,9 +82,9 @@ def bootstrap_loop(data,N=50):
     bslist = [ sw.EigenM(bs) for bs in [ bootstrap_sample(data,degs,lags) for lags,degs in zip(m.tlags[idx],m.degs[idx]) ] ]
     return bslist
     
-def boot_std(listM):
-    avg = np.average(np.stack(listM))
-    diffs = [ M - avg for M in listM ]
-    np.transpose(diffs)
-    ( 1 / ( len(listM) - 1 ) ) * [ np.transpose(m - avg)]
+# def boot_std(listM):
+#     avg = np.average(np.stack(listM))
+#     diffs = [ M - avg for M in listM ]
+#     np.transpose(diffs)
+#     ( 1 / ( len(listM) - 1 ) ) * [ np.transpose(m - avg)]
     
