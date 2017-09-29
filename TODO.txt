@@ -1,6 +1,7 @@
 -- fundamental
 stacking methods
 geometry
+error estimation
 
 -- useful
 add window picker
