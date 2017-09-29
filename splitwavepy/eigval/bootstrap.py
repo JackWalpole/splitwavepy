@@ -37,7 +37,7 @@ def get_noise(y):
     # return
     return x
 
-def bootstrap_sample(data,fast,lag):
+def bootstrap_sample(data,fast,lag,**kwargs):
     """
     Return data with new noise sequence
     """    
@@ -65,12 +65,12 @@ def rho(n,step):
         
 rho = np.vectorize(rho)
     
-def bootstrap_measurements(data,N=50):
+def bootstrap_measurements(data,N=50,**kwargs):
     """
     Return list of bootstrap measurements
     """        
     # initial measurement:
-    m = EigenM(data)
+    m = EigenM(data,**kwargs)
     mlags = m.tlags[:,0]
     mdegs = m.degs[0,:]
     # get probability surface to pick from

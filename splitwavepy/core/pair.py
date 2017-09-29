@@ -156,10 +156,6 @@ class Pair:
         ax = plot.particle(self.x,self.y,**kwargs)
         plt.show()
     
-    def pca(self):
-        """Return orientation of principal component"""
-        return core.pca(self.x,self.y)
-    
     def split(self,degrees,tlag):
         """
         Applies splitting operator (phi,dt) to Pair.
@@ -200,7 +196,7 @@ class Pair:
         Rotate data so that trace1 lines up with *degrees*
         """
         # find appropriate rotation angle
-        rangle = degrees - self.angle 
+        rangle = -degrees - self.angle 
         self.x, self.y = core.rotate(self.x,self.y,rangle)
         self.angle = degrees
         
