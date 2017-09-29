@@ -248,7 +248,7 @@ class Pair:
         
                
     def copy(self):
-        return copy.copy(self)
+        return copy.deepcopy(self)
         
 def _synth(**kwargs):
     """return ricker wavelet synthetic data"""
