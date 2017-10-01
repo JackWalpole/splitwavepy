@@ -7,6 +7,8 @@ error estimation
 add window picker
 polarisation analysis
 
+-- documentation
+
 ---integration
 integrate obspy
 integrate pytasa
@@ -20,6 +22,7 @@ bandpass filter selection methods
 add transverse minimisation method
 add cross correlation method
 add splitting intensity method
+cross convolution?
 
 ---real data examples
 microseismic data
