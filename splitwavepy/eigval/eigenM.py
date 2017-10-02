@@ -131,6 +131,12 @@ class EigenM:
     def srcpoldata_corr(self):
         # data_corr = self.data_corr
         return Pair(*core.rotate(self.data_corr.x,self.data_corr.y,self.srcpol))
+        
+    def fastslowdata(self):
+        return Pair(*core.rotate(self.data.x,self.data.y,self.fast))
+        
+    def fastslowdata_corr(self):
+        return Pair(*core.rotate(self.data_corr.x,self.data_corr.y,self.fast))
     
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
@@ -213,9 +219,13 @@ class EigenM:
         ax3 = plt.subplot(gs[1,1])
         ax4 = plt.subplot(gs[:,2])
     
-        d1 = self.data.copy()
+        # d1 = self.data.copy()
+        # d1.chop(self.window)
+        # d2 = self.data_corr.copy()
+        # d2.chop(self.window)
+        d1 = self.srcpoldata()
         d1.chop(self.window)
-        d2 = self.data_corr.copy()
+        d2 = self.srcpoldata_corr()
         d2.chop(self.window)
         
         # original
