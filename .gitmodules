@@ -1,0 +1,3 @@
+[submodule "icosphere"]
+	path = splitwavepy/core/icosphere
+	url = https://github.com/JackWalpole/icosphere

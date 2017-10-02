@@ -9,7 +9,7 @@ from __future__ import print_function
 # import taup from obsp for ray calculation
 import numpy as np
 import math
-
+from icosphere.icosphere.icosphere import IcoSphere
 
 # classes
 
