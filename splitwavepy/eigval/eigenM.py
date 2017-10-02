@@ -142,14 +142,40 @@ class EigenM:
         """Value of lam2 at 95% confidence contour."""
         return eigval.ftest(self.lam2,self.ndf(),alpha=0.05)
         
-    # def f_errors(self):
-    #     """
-    #     Return dfast and dtlag.
-    #
-    #     """
-    #
-    #     contour = measure.find_contour(self.lam2,self.lam2_95())
+    def f_errors(self):
+        """
+        Return dfast and dtlag.
         
+        These errors correspond to one sigma in the parameter estimate.
+        
+        Calculated by taking a quarter of the width of 95% confidence region (found using F-test).
+        """
+        
+        # search interval steps
+        tlag_step = self.tlags[1,0]-self.tlags[0,0]
+        fast_step = self.degs[0,1]-self.degs[0,0]
+        
+        # Find nodes where we fall within the 95% confidence region
+        confbool = self.lam2 <= self.lam2_95() 
+        
+        # tlag error
+        tlagbool = confbool.any(axis=1)
+        # last true value - first true value
+        truth = np.where(tlagbool)[0]
+        dtlag = (truth[-1] - truth[0] + 1) * tlag_step * 0.25   
+          
+        # fast error
+        fastbool = confbool.any(axis=0)
+        # trickier to handle due to cyclicity of angles
+        # search for the longest continuous line of False values
+        cyclic = np.hstack((fastbool,fastbool))
+        lengthFalse = np.diff(np.where(cyclic)).max()
+        # shortest line that contains ALL true values is then:
+        lengthTrue = fastbool.size - lengthFalse
+        dfast = lengthTrue * fast_step * 0.25 
+               
+        # return
+        return dfast, dtlag
         
     # def dfast(self):
     #     """
