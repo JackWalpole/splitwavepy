@@ -203,10 +203,12 @@ class EigenM:
             ax = plt.subplot(111)
             
             # error surface
-            v = np.linspace(0, 50, 26, endpoint=True)
-            cax = ax.contourf(self.tlags,self.degs,vals,v,cmap=cmap,extend='max')
+            # v = np.linspace(0, 50, 26, endpoint=True)
+            # cax = ax.contourf(self.tlags,self.degs,vals,v,cmap=cmap,extend='max')
+            cax = ax.contourf(self.tlags,self.degs,vals,26,cmap=cmap,extend='max')
             ax.set_yticks(np.linspace(-90,90,7,endpoint=True))
-            cbar = plt.colorbar(cax,ticks=v[::5])
+            # cbar = plt.colorbar(cax,ticks=v[::5])
+            cbar = plt.colorbar(cax)
             marker = plt.plot(self.tlag,self.fast,'k+',markersize=10.)
                    
             if lam2_95 is True:
@@ -287,11 +289,12 @@ class EigenM:
         ax4.axes.get_xaxis().set_visible(False)
         ax4.axes.get_yaxis().set_visible(False)
         # ax5 -- error surface
-        v = np.linspace(0, 50, 26, endpoint=True)
-        cax = ax5.contourf(M.tlags,M.degs,vals,v,cmap='magma',extend='max')
+        # v = np.linspace(0, 50, 26, endpoint=True)
+        cax = ax5.contourf(M.tlags,M.degs,vals,26,cmap='magma',extend='max')
         ax5.set_xlabel(r'Delay Time (s)')
         ax5.set_ylabel(r'Fast Direction (degrees)')
-        cbar = plt.colorbar(cax,ticks=v[::5])
+        cbar = plt.colorbar(cax)
+        # cbar = plt.colorbar(cax,ticks=v[::5])
         
         plt.tight_layout()
         plt.show()

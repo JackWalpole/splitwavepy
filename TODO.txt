@@ -1,13 +1,18 @@
 -- fundamental
-stacking methods
-geometry
-error estimation
+stacking methods (started)
+geometry (started)
+error estimation (started)
+..measure width of confidence interval contour
 
 -- useful
 add window picker
-polarisation analysis
+polarisation analysis (let user control this but offer a solution if asked)
 
 -- documentation
+introduction
+commands
+examples
+
 
 ---integration
 integrate obspy
