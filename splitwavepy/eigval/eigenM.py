@@ -11,12 +11,11 @@ from ..core import core
 from ..core.pair import Pair
 from ..core.window import Window
 from . import eigval
+from ..plotting import plot
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-# for contouring
-# from skimage import measure
+import matplotlib.gridspec as gridspec
 
 class EigenM:
     
@@ -52,6 +51,9 @@ class EigenM:
         
         # convert times to nsamples
         self.delta = self.data.delta
+        
+        # other stuff
+        self.units = self.data.units
         
         # process kwargs
               
@@ -181,21 +183,6 @@ class EigenM:
         # return
         return dfast, dtlag
         
-    # def dfast(self):
-    #     """
-    #     Standard error in fast direction using F test.
-    #
-    #     Quarter width of 95% confidence contour along fast axis.
-    #     """
-    #
-    #
-    # def dtlag(self):
-    #     """
-    #     Standard error in delay time using F test.
-    #
-    #     Quarter width of 95% confidence contour along lag axis.
-    #     """
-    
     # Output
     
     def report(self):
@@ -203,129 +190,46 @@ class EigenM:
         Print out a summary of the result.
         """
         
-    
-    # Plotting
-    
-    def plotsurf(self,vals=None,cmap='magma',lam2_95=False,polar=False):
-        """
-        plot the measurement.
-        by default plots lam1/lam2 with the lambda2 95% confidence interval overlaid
-        """
-              
-        if vals is None:
-            vals = self.lam1 / self.lam2
-        
-        if polar is True:
-            rads = np.deg2rad(np.column_stack((self.degs,self.degs+180,self.degs[:,0]+360)))
-            lags = np.column_stack((self.tlags,self.tlags,self.tlags[:,0]))
-            vals = np.column_stack((vals,vals,vals[:,0]))
-            fig, ax = plt.subplots(subplot_kw=dict(projection='polar'))
-            ax.contourf(rads,lags,vals,50,cmap=cmap)
-            ax.set_theta_direction(-1)
-            ax.set_theta_offset(np.pi/2.0)
-            if lam2_95 is True:
-                lam2 = np.column_stack((self.lam2,self.lam2,self.lam2[:,0]))
-                plt.contour(rads,lags,lam2,levels=[self.lam2_95()])
-        else:
-            from mpl_toolkits.axes_grid1 import make_axes_locatable
-            # fig = plt.figure(figsize=(6,6)) 
-            
-            ax = plt.subplot(111)
-            
-            # error surface
-            # v = np.linspace(0, 50, 26, endpoint=True)
-            # cax = ax.contourf(self.tlags,self.degs,vals,v,cmap=cmap,extend='max')
-            cax = ax.contourf(self.tlags,self.degs,vals,26,cmap=cmap,extend='max')
-            ax.set_yticks(np.linspace(-90,90,7,endpoint=True))
-            # cbar = plt.colorbar(cax,ticks=v[::5])
-            cbar = plt.colorbar(cax)
-            marker = plt.plot(self.tlag,self.fast,'k+',markersize=10.)
-                   
-            if lam2_95 is True:
-                plt.contour(self.tlags,self.degs,self.lam2,levels=[self.lam2_95()])
-            
-            
-            # create new axes on the right and on the top of the current axes.
-            divider = make_axes_locatable(ax)
-
-            axFast = divider.append_axes("left", size=.5, pad=0.4, sharey=ax)
-            axFast.plot(self.fastprofile,self.degs[0,:])
-            axFast.axes.get_xaxis().set_visible(False)
-            axFast.axes.get_yaxis().set_visible(False)
-            axFast.set_title(r'Fast Direction (degrees)')
-            axFast.invert_xaxis()
-            # axFast.fill_betweenx(color='b',alpha=0.2)
-            
-            # ax.set_xlabel(r'Delay Time (s)')
-            # ax.set_ylabel(r'Fast Direction (degrees)')
-            
-            axLag  = divider.append_axes("bottom", size=.5, pad=0.4, sharex=ax)
-            axLag.plot(self.tlags[:,0],self.lagprofile)
-            axLag.axes.get_xaxis().set_visible(False)
-            axLag.axes.get_yaxis().set_visible(False)
-            axLag.invert_yaxis()
-            
-            ax.set_xlim(self.tlags[0][0],self.tlags[-1][-1])
-            ax.set_ylim(self.degs[0][0],self.degs[-1][-1])
-        
-        plt.show()
+        # pformat = 
 
     # def save():
     #     """
     #     Save Measurement for future referral
-    #     """
+    #     """     
+        
     
-    def plot(M):
-        import matplotlib.gridspec as gridspec
+    # Plotting
+
+    def plot(self,**kwargs):
+        
         fig = plt.figure(figsize=(12,6)) 
         gs = gridspec.GridSpec(2, 3,
                            width_ratios=[1,1,2]
                            )
+
+        ax0 = plt.subplot(gs[0,0])
+        ax1 = plt.subplot(gs[0,1])
+        ax2 = plt.subplot(gs[1,0])
+        ax3 = plt.subplot(gs[1,1])
+        ax4 = plt.subplot(gs[:,2])
     
-        ax1 = plt.subplot(gs[0,0])
-        ax2 = plt.subplot(gs[0,1])
-        ax3 = plt.subplot(gs[1,0])
-        ax4 = plt.subplot(gs[1,1])
-        ax5 = plt.subplot(gs[:,2])
+        d1 = self.data.copy()
+        d1.chop(self.window)
+        d2 = self.data_corr.copy()
+        d2.chop(self.window)
         
-        d1 = M.data.copy()
-        d1.chop(M.window)
-        d2 = M.data_corr.copy()
-        d2.chop(M.window)
-    
-        vals = M.lam1 / M.lam2
-        # ax1 -- trace orig
-        ax1.plot(d1.t(),d1.x)
-        ax1.plot(d1.t(),d1.y)
-        ax1.axes.get_yaxis().set_visible(False)
-        # ax2 -- hodo orig
-        lim = np.abs(d1.xy()).max() * 1.1
-        ax2.axis('equal')
-        ax2.plot(d1.y,d1.x)
-        ax2.set_xlim([-lim,lim])
-        ax2.set_ylim([-lim,lim])
-        ax2.axes.get_xaxis().set_visible(False)
-        ax2.axes.get_yaxis().set_visible(False)
-        # ax3 -- trace new
-        ax3.plot(d2.t(),d2.x)
-        ax3.plot(d2.t(),d2.y)
-        ax3.axes.get_yaxis().set_visible(False)
-        # ax4 -- hodo new
-        lim = np.abs(d2.xy()).max() * 1.1
-        ax4.axis('equal')
-        ax4.plot(d2.y,d2.x)
-        ax4.set_xlim([-lim,lim])
-        ax4.set_ylim([-lim,lim])
-        ax4.axes.get_xaxis().set_visible(False)
-        ax4.axes.get_yaxis().set_visible(False)
-        # ax5 -- error surface
-        # v = np.linspace(0, 50, 26, endpoint=True)
-        cax = ax5.contourf(M.tlags,M.degs,vals,26,cmap='magma',extend='max')
-        ax5.set_xlabel(r'Delay Time (s)')
-        ax5.set_ylabel(r'Fast Direction (degrees)')
-        cbar = plt.colorbar(cax)
-        # cbar = plt.colorbar(cax,ticks=v[::5])
+        # original
+        plot.trace(d1.x,d1.y,time=d1.t(),ax=ax0)
+        plot.particle(d1.x,d1.y,ax=ax1)
         
+        # corrected
+        plot.trace(d2.x,d2.y,time=d2.t(),ax=ax2)
+        plot.particle(d2.x,d2.y,ax=ax3)
+        
+        # error surface
+        plot.surf(self,**kwargs,ax=ax4)
+        
+        # neaten and show
         plt.tight_layout()
         plt.show()
 
