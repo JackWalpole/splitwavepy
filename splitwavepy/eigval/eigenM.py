@@ -89,6 +89,7 @@ class EigenM:
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
         self.tlag = self.lag * self.delta
+
         
         # generate "squashed" profiles
         self.fastprofile = np.sum(self.lam1/self.lam2, axis=0)
@@ -118,13 +119,16 @@ class EigenM:
         ### then signal = lam1 - lam2
         ###       noise = 2 * lam2        
         self.snr = np.max((self.lam1-self.lam2)/(2*self.lam2))
+        
+        # error estimations
+        self.dfast, self.dtlag = self.f_errors()
     
     def srcpoldata(self):
         return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol))
         
     def srcpoldata_corr(self):
-        data_corr = self.data_corr
-        return Pair(*core.rotate(data_corr.x,data_corr.y,self.srcpol))
+        # data_corr = self.data_corr
+        return Pair(*core.rotate(self.data_corr.x,self.data_corr.y,self.srcpol))
     
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""

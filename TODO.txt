@@ -1,8 +1,6 @@
 -- fundamental
 stacking methods (started)
 geometry (started)
-error estimation (started)
-..measure width of confidence interval contour
 
 -- useful
 add window picker
