@@ -6,6 +6,8 @@
 Welcome to SplitWavePy's documentation!
 =======================================
 
+Easily measure shear wave splitting using python!
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
