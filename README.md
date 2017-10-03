@@ -8,5 +8,5 @@ github: https://github.com/JackWalpole/splitwavepy
 
 install: download from github and use `pip install splitwavepy` from the folder holding the download.
 
-documentation coming soon
+documentation: http://splitwavepy.readthedocs.io/
 
