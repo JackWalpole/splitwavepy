@@ -3,18 +3,15 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to SplitWavePy's documentation!
+SplitWavePy
 =======================================
 
-*Easy shear wave splitting in python.*
+**Splitting made easy in Python.**
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
 
 .. toctree::
    introduction
-
+   tutorial
 
 
 Indices and tables
