@@ -132,7 +132,11 @@ def snrRH(data):
 # Useful bits and pieces
     
 def noise(size,amp,smooth):
-    """gaussian noise convolved with a gaussian wavelet"""
+    """Gaussian noise convolved with a (normalised) gaussian wavelet.
+       nsamps = size,
+       sigma  = amp,
+       width of gaussian = smooth.
+    """
     norm = 1/(smooth*np.sqrt(2*np.pi))
     gauss = norm * signal.gaussian(size,smooth)
     n = np.random.normal(0,amp,size)
