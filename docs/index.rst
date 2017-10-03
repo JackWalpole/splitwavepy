@@ -12,6 +12,9 @@ Welcome to SplitWavePy's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+.. toctree::
+   introduction
+
 
 
 Indices and tables
