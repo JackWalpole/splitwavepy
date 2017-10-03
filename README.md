@@ -1,3 +1,12 @@
-# splitting
+# SplitWavePy
 
-Routines for measuring shear wave splitting
+_Easily measure shear wave splitting using python._
+
+Jack Walpole
+
+github: https://github.com/JackWalpole/splitwavepy
+
+install: download from github and use `pip install splitwavepy` from the folder holding the download.
+
+documentation coming soon
+
