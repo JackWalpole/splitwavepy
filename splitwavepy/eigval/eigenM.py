@@ -237,7 +237,7 @@ class EigenM:
         plot.particle(d2.x,d2.y,ax=ax3)
         
         # error surface
-        plot.surf(self,**kwargs,ax=ax4)
+        plot.surf(self,ax=ax4,**kwargs)
         
         # neaten and show
         plt.tight_layout()
