@@ -1,0 +1,7 @@
+#
+####### example-requirements.txt #######
+#
+###### Requirements without Version Specifiers ######
+numpy
+matplotlib
+scipy
