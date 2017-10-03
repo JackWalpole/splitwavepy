@@ -6,17 +6,13 @@
 Welcome to SplitWavePy's documentation!
 =======================================
 
+*Easy shear wave splitting in python.*
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   introduction
-   tutorial
-  
-.. automodule:: splitwavepy.core.pair
-   :members:
 
-.. autofunction:: splitwavepy.core.pair.Pair
 
 Indices and tables
 ==================
