@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 The eigenvalue method of Silver and Chan (1991)
 Low level routines works on numpy arrays and shifts using samples (doesn't know about time)

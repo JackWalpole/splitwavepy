@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Interactive plot to analyse rotation"""
 
 from ..core import core

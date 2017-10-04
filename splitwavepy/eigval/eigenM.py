@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 The eigenvalue method of Silver and Chan (1991)
 Uses Pair to do high level work

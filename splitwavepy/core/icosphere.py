@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Subdivided icosahedral mesh generation"""
 from __future__ import print_function
 import numpy as np

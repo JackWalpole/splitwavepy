@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Low level routines for dealing with traces in numpy arrays.
 Works on arrays sample by sample and need not know 

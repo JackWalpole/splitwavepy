@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Use Bootstrapping to estimate measurement errors following (Sandvol and Hearn, 1994).
 
