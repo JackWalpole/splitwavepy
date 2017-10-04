@@ -63,25 +63,22 @@ Lambda1 / Lambda2 surface stacking
 ----------------------------------
 
 
-
-
-To do list
-------------
-
-- Interactive *Window* picking
-- Transverse energy minimization method.
-- Rotation correlation method.
-- *Q* calculation for null identification.
-- Cluster *Windowow* analysis
-- Frequency analysis
-- Splitting intensity
-
 Contribute!
 -----------
 
 Code collaborators and pilot users, get in touch!
 Please consider contributing to the code on github.
 
+.. To do
+.. -----
+..
+.. - Interactive *Window* picking
+.. - Transverse energy minimization method.
+.. - Rotation correlation method.
+.. - *Q* calculation for null identification.
+.. - Cluster *Window* analysis
+.. - Frequency analysis
+.. - Splitting intensity
 
 
 
