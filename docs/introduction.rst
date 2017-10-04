@@ -4,7 +4,9 @@
 Introduction
 ****************************************************
 
-SplitWavePy provides simple to use tools to measure shear wave splitting on seismic datasets.  It works with either 2 (shear plane) -- or 3 -- component data.  Under the hood it's all numpy, which provides a quick gateway to fully unleashed Python.
+Shear wave splitting is becoming an increasingly popular method to study anisotropy in the Earth, splitting is being measured in increasingly complex scenarios.
+
+SplitWavePy provides simple to use open source tools to measure shear wave splitting on seismic datasets.  It works with either 2 (shear plane) -- or 3 -- component data.  Under the hood it's all numpy, which provides a quick gateway to fully unleashed Python.
 
 Get started
 ------------
@@ -25,20 +27,20 @@ Silver and Chan (1991) measurement
 
 We've just made a measurement using the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  
 
-The data and the measurement is stored in an *EigenM* object.
+The data and the measurement is stored in an *EigenM* object.  This contains:
 
-- waveform data and analysis window
+- waveform data and analysis window, for easy reproducibility.
 
 .. nbplot::
 	:include-source:
 	
 	m.data.plot()
 
-- F-test error surface (using the summation coefficients found by Walsh et al., 2014).
+- Error surface from F--test (using the summation coefficients found by Walsh et al., 2014).
 
 >>> m.plot(m.error)
 
-- lambda1 and lambda2 surfaces
+- Lambda1 and Lambda2 surfaces
 
 >>> m.plot(m.lam1/m.lam2)
 

@@ -32,7 +32,7 @@ The *Pair* instance has some useful methods, one of which is *plot()*:
 	
 	data.plot()
 
-You can add another 'layer' of splitting if you want to replicate more complex scenarios with multiple regions of anisotropy.
+The data are already split, but that doesn't mean they can't be split again! You can add more splitting using the *split()* method.
 
 .. nbplot::
 	:include-source:
@@ -51,7 +51,7 @@ Sometimes we might want to do a *correction* and apply the *inverse* splitting o
 .. note::
 	Every time a lag operation is applied the traces are shortened.  This is fine so long as your traces extend far beyond your analysis *Window*.
 	
-When measuring splitting we need a *Window*.  A *Window* captures the region of interest.  Only data within the *Window* will be subject to splitting analysis.
+When measuring splitting we need a *Window*. This should be designed to capture the region of interest, only data within the *Window* will be subject to splitting analysis.
 
 *Windows* are parameterised by two (or three) parameters:
 
@@ -59,7 +59,7 @@ When measuring splitting we need a *Window*.  A *Window* captures the region of 
 - *width* of the window,
 - *tukey* (optional) fraction of window to cosine taper (from 0 to 1).
 
-You don't *need* to set the *Window*, the code will make a guess for you (and the guess is designed to be about right for the synthetic case), but in general this guess could be wildly inappropriate, so it's best to set the *Window* yourself.
+You don't *need* to set the *Window*, the code will make a guess for you (and the guess is designed to be about right for the synthetic case), but in general this guess could be wildly inappropriate, so it's best to keep a close eye and set it yourself.
 
 .. .. autoclass:: splitwavepy.core.window.Window
 
@@ -68,9 +68,10 @@ A *Window* can be generate using the *getWindow()* method, and you can see the *
 .. nbplot::
 	:include-source:
 
-	wind = data.get_window(22,15)
+	wind = data.get_window( 22, 15) # offset from centre, width 
 	data.plot(window=True)
-
+	
+	
 .. note::
 
 	This brings me to a subtle but fundamental point about SplitWavePy, it works by a *centrality* principle.  Every lag operation involves a shift in the data, and must maintain balance on the centre sample.  Therefore every shift must always be an even number of samples (x trace shifts half *lag* to the left, y trace shifts half *lag* to the right).  To ensure a balanced centre point all *Window* objects must have an odd *width*.  This should affect how you pick a *Window*.  You want the shear energy  in the middle of the *Window*, narrow enough to avoid surrounding energy, and wide enough to capture relevant energy with a bit extra for 'spreading room'.
