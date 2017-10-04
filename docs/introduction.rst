@@ -6,7 +6,7 @@ Introduction
 
 SplitWavePy provides simple to use tools to measure shear wave splitting on seismic datasets.  It works with either 2 (shear plane) -- or 3 -- component data.  Under the hood it's all numpy, which provides a quick gateway to fully unleashed Python.
 
-Easy to use
+Get started
 ------------
 
 Import code, create a synthetic, and plot it, in three lines:
@@ -63,25 +63,22 @@ Lambda1 / Lambda2 surface stacking
 ----------------------------------
 
 
-
-
-To do list
-------------
-
-- Interactive *Window* picking
-- Transverse energy minimization method.
-- Rotation correlation method.
-- *Q* calculation for null identification.
-- Cluster *Windowow* analysis
-- Frequency analysis
-- Splitting intensity
-
 Contribute!
 -----------
 
 Code collaborators and pilot users, get in touch!
 Please consider contributing to the code on github.
 
+.. To do
+.. -----
+..
+.. - Interactive *Window* picking
+.. - Transverse energy minimization method.
+.. - Rotation correlation method.
+.. - *Q* calculation for null identification.
+.. - Cluster *Window* analysis
+.. - Frequency analysis
+.. - Splitting intensity
 
 
 
