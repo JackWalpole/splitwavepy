@@ -10,54 +10,79 @@ Synthetic data
 Let's get started with some synthetic data.
 This is achieved by the *Pair* class.
 
-.. autoclass:: splitwavepy.core.pair.Pair
+.. .. autoclass:: splitwavepy.core.pair.Pair
 
->>> # Start by importing
->>> import splitwavepy as sw
->>> import matplotlib.pyplot as plt
->>>
->>> # now it's a one-liner (set some parameters using keywords)
->>> data = sw.Pair(fast=30, lag=1.4, delta=0.1, noise=0.03)
+.. nbplot::
+	:include-source:
+	
+	# Before using the code we need to import it.
+	import splitwavepy as sw
+	
+	# now it's a one-liner (set some parameters using keywords)
+	data = sw.Pair(fast=30, lag=1.4, delta=0.1, noise=0.03)
 
-You can change the *noise* level using the *noise* keyword.
-Change the *fast* direction and the *lag* time similarly.
+
+You can change the *noise* level using the *noise* keyword, and the *fast* direction and *lag* time similarly.
 Don't forget to set the sample interval *delta* appropriately (defaults to 1) as it determines how your *lag* time is interpreted.  If you want to change the source polarisation use the *pol* keyword.
 
 The *Pair* instance has some useful methods, one of which is *plot()*:
 
->>> data.plot()
+.. nbplot::
+	:include-source:
+	
+	data.plot()
 
-Add another 'layer' of splitting.
+You can add another 'layer' of splitting if you want to replicate more complex scenarios with multiple regions of anisotropy.
 
->>> data.split( -12, 1.3) 
->>> data.plot()
+.. nbplot::
+	:include-source:
+	
+	data.split( -12, 1.3) # fast, lag 
+	data.plot()
 
-Sometimes we might want to do a *correction* and apply the *inverse* splitting operator.
+Sometimes we might want to do a *correction* and apply the *inverse* splitting operator.  This is supported using the *unsplit()* method.  If we correct the above data for the latter layer of anisotropy we should return the waveforms to their former state.
 
->>> data.unsplit( -12, 1.3)
->>> data.plot()
+.. nbplot::
+	:include-source:
+
+	data.unsplit( -12, 1.3)
+	data.plot()
 
 .. note::
-	Every time a lag operation is applied the traces are shortened.
+	Every time a lag operation is applied the traces are shortened.  This is fine so long as your traces extend far beyond your analysis *Window*.
 	
-When measuring splitting we need a *Window*, which is defined by two parameters:
+When measuring splitting we need a *Window*.  A *Window* captures the region of interest.  Only data within the *Window* will be subject to splitting analysis.
 
-- *offset* from centre,
+*Windows* are parameterised by two (or three) parameters:
+
+- *offset* from centre of trace,
 - *width* of the window,
-- *tukey* (optional, 0 to 1) fraction of window to cosine taper.
+- *tukey* (optional) fraction of window to cosine taper (from 0 to 1).
 
-.. autoclass:: splitwavepy.core.window.Window
+You don't *need* to set the *Window*, the code will make a guess for you (and the guess is designed to be about right for the synthetic case), but in general this guess could be wildly inappropriate, so it's best to set the *Window* yourself.
+
+.. .. autoclass:: splitwavepy.core.window.Window
+
+A *Window* can be generate using the *getWindow()* method, and you can see the *Window* on the data by setting the keyword `window=True`.
+
+.. nbplot::
+	:include-source:
+
+	wind = data.get_window(22,15)
+	data.plot(window=True)
 
 .. note::
 
-	This brings me to a subtle point about SplitWavePy, it works by a *centrality* principle.  Lags maintain balance on the centre sample and so must always have an even number of samples (x trace shifts half *lag* to the left, y trace shifts half *lag* to the right).  To ensure a balanced centre point all *Window* objects must have an odd *width*.  This should affect how you pick a *Window*.  You want the shear energy  in the middle of the *Window*, narrow enough not to incorporate too much surrounding energy, and wide enough to allow the energy to *spread* with lagging.
+	This brings me to a subtle but fundamental point about SplitWavePy, it works by a *centrality* principle.  Every lag operation involves a shift in the data, and must maintain balance on the centre sample.  Therefore every shift must always be an even number of samples (x trace shifts half *lag* to the left, y trace shifts half *lag* to the right).  To ensure a balanced centre point all *Window* objects must have an odd *width*.  This should affect how you pick a *Window*.  You want the shear energy  in the middle of the *Window*, narrow enough to avoid surrounding energy, and wide enough to capture relevant energy with a bit extra for 'spreading room'.
 	
->>> wind = data.getWindow()
->>> data.plot(window=True)
+.. .. nbplot::
+	:include-source:
+
+
 
 With a window selected we are almost ready to meausure shear wave splitting!  We can tell the algorithm which splitting operators to trial using the *degs* and *tlags* keywords.  The measurement is made by instantiating an *EigenM* object.
 
-.. autoclass:: splitwavepy.EigenM
+.. .. autoclass:: splitwavepy.EigenM
 
 >>> import numpy as np
 >>> search_degs = np.linspace()
@@ -66,7 +91,7 @@ With a window selected we are almost ready to meausure shear wave splitting!  We
 
 .. note::
 
-	If *Window*, *tlags*, or *degs* are unspecified a guess is made.
+	If *Window*, *tlags*, or *degs* are unspecified, guesses are made.  It is strongly advised that you set these manually and at the very least check that these parameters look reasonable!
 	
 
 Real data
