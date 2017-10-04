@@ -55,24 +55,24 @@ When measuring splitting we need a *Window*. This should be designed to capture 
 
 *Windows* are parameterised by two (or three) parameters:
 
-- *offset* from centre of trace,
-- *width* of the window,
+- *centre* time centre of window,
+- *width* time length of window,
 - *tukey* (optional) fraction of window to cosine taper (from 0 to 1).
 
 You don't *need* to set the *Window*, the code will make a guess for you (and the guess is designed to be about right for the synthetic case), but in general this guess could be wildly inappropriate, so it's best to keep a close eye and set it yourself.
 
 .. .. autoclass:: splitwavepy.core.window.Window
 
-A *Window* can be generate using the *getWindow()* method, and you can see the *Window* on the data by setting the keyword `window=True`.
+A *Window* can be generate using the *getWindow(centre,width)* method, and you can see the *Window* on the data by using `plot(window=True)`.
 
 .. nbplot::
 	:include-source:
 
-	wind = data.get_window( 22, 15) # offset from centre, width 
+	wind = data.getWindow( 22, 15) # centre, width 
 	data.plot(window=True)
 	
 	
-.. note::
+.. .. note::
 
 	This brings me to a subtle but fundamental point about SplitWavePy, it works by a *centrality* principle.  Every lag operation involves a shift in the data, and must maintain balance on the centre sample.  Therefore every shift must always be an even number of samples (x trace shifts half *lag* to the left, y trace shifts half *lag* to the right).  To ensure a balanced centre point all *Window* objects must have an odd *width*.  This should affect how you pick a *Window*.  You want the shear energy  in the middle of the *Window*, narrow enough to avoid surrounding energy, and wide enough to capture relevant energy with a bit extra for 'spreading room'.
 	

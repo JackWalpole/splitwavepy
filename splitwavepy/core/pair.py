@@ -51,11 +51,6 @@ class Pair:
         else:
             self.angle = 0.
         
-        if ('window' in kwargs):
-            self.window = kwargs['window']
-        else:
-            self.window = None
-        
         if len(args) == 0:
             if ('lag' in kwargs):
                 # convert time shift to nsamples -- must be even
@@ -112,21 +107,17 @@ class Pair:
     def xy(self):
         return np.vstack((self.x,self.y))
 
-    def plot(self,window=None):
+    def plot(self,**kwargs):
         """
         Plot trace data and particle motion
         """
         from matplotlib import gridspec
         fig = plt.figure(figsize=(12, 3)) 
-        if window is None:
-            gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
-            # trace
-            ax0 = plt.subplot(gs[0])
-            plot.trace(self.x,self.y,time=self.t(),ax=ax0)
-            # particle  motion
-            ax1 = plt.subplot(gs[1])
-            plot.particle(self.x,self.y,ax=ax1)
-        else:
+               
+        if 'window' in kwargs:                        
+            if kwargs['window'] is True:
+                kwargs['window'] = self.window
+            window = kwargs['window']
             gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
             # trace with window markers
             ax0 = plt.subplot(gs[0])
@@ -141,7 +132,15 @@ class Pair:
             # particle  motion
             ax2 = plt.subplot(gs[2])
             # ax2.axis('equal')
-            plot.particle(d2.x,d2.y,ax=ax2)
+            plot.particle(d2.x,d2.y,ax=ax2)                        
+        else:
+            gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+            # trace
+            ax0 = plt.subplot(gs[0])
+            plot.trace(self.x,self.y,time=self.t(),ax=ax0)
+            # particle  motion
+            ax1 = plt.subplot(gs[1])
+            plot.particle(self.x,self.y,ax=ax1)                
         # show
         plt.tight_layout()
         plt.show()
@@ -223,7 +222,7 @@ class Pair:
         self.x, self.y = core.chop(self.x,self.y,window=window)
         
         
-    def genwindow(self,time_centre,time_width,tukey=None):
+    def getWindow(self,time_centre,time_width,tukey=None):
         """
         Return a window object about time_centre with time_width.
         """
@@ -232,7 +231,9 @@ class Pair:
         # convert time to nsamples -- must be odd
         width = int(time_width / self.delta)
         width = width if width%2==1 else width + 1        
-        return Window(width,offset,tukey=tukey)
+        window = Window(width,offset,tukey=tukey)
+        self.window = window
+        return window
         
     # def autowindow(self,time_centre=None):
     #     """
