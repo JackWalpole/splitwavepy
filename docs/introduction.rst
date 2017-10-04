@@ -1,3 +1,4 @@
+.. _introduction:
 
 ****************************************************
 Introduction
@@ -10,20 +11,28 @@ Get started
 
 Import code, create a synthetic, and plot it, in three lines:
 
->>> import splitwavepy as sw
->>> m = sw.EigenM( fast=50, lag=1.9, delta=0.05, noise=0.03)
->>> m.plot()
+.. nbplot:: 
+	:include-source:
+	
+	import splitwavepy as sw
+	m = sw.EigenM( fast=50, lag=1.9, delta=0.1, noise=0.03)
+	m.plot()
+
+
 
 Silver and Chan (1991) measurement
 ----------------------------------------------------
 
 We've just made a measurement using the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  
 
-The data stored in a measurement *EigenM* object includes:
+The data and the measurement is stored in an *EigenM* object.
 
 - waveform data and analysis window
 
->>> m.data.plot(window=True)
+.. nbplot::
+	:include-source:
+	
+	m.data.plot()
 
 - F-test error surface (using the summation coefficients found by Walsh et al., 2014).
 
