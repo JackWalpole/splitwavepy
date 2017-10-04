@@ -1,4 +1,3 @@
-.. _extensions:
 
 ****************************************************
 Introduction
@@ -15,11 +14,12 @@ Import code, create a synthetic, and plot it, in three lines:
 >>> m = sw.EigenM( fast=50, lag=1.9, delta=0.05, noise=0.03)
 >>> m.plot()
 
-A Silver and Chan (1991) measurement
---------------------------------------
+Silver and Chan (1991) measurement
+----------------------------------------------------
 
-The code uses the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  
-It saves the following information:
+We've just made a measurement using the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  
+
+The data stored in a measurement *EigenM* object includes:
 
 - waveform data and analysis window
 
