@@ -11,7 +11,7 @@ SplitWavePy provides simple to use open source tools to measure shear wave split
 Get started
 ------------
 
-Import code, create a synthetic, and plot it, in three lines:
+Import code, create a synthetic, measure shear-wave spliting, and plot, in just three lines:
 
 .. nbplot:: 
 	:include-source:
@@ -21,11 +21,10 @@ Import code, create a synthetic, and plot it, in three lines:
 	m.plot()
 
 
-
 Silver and Chan (1991) measurement
 ----------------------------------------------------
 
-We've just made a measurement using the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  
+A widely used, powerful, method is the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  
 
 The data and the measurement is stored in an *EigenM* object.  This contains:
 
