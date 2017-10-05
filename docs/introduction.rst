@@ -20,20 +20,42 @@ Import code, create a synthetic, measure shear-wave spliting, and plot, in just 
 	m = sw.EigenM( fast=50, lag=1.9, delta=0.1, noise=0.03)
 	m.plot()
 
+This measures splitting using the powerful eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  
 
-Silver and Chan (1991) measurement
-----------------------------------------------------
+Making a measurement is as easy as instantiating an *EigenM* object.  If no arguments are supplied then the code will automatically produce a synthetic.  Check out the tutorials to see how to use `real data`_.
 
-A widely used, powerful, method is the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  
+Keeping things together
+-------------------------
 
-The data and the measurement is stored in an *EigenM* object.  This contains:
+Each measurement can be saved and backed up.  All information stored in the *EigenM* objected is preserved including the input data, any corrections that were applied as part of the measurement, and the :math:`\lambda_1` and :math:`\lambda_2` surfaces.
 
-- waveform data and analysis window, for easy reproducibility.
+Saving and reloading the data is as easy as:
+
+.. nbplot::
+	
+	m.save('temp.eigm')
+	n = sw.load('temp.eigm')
+	n == m
+
+.. warning::
+
+   Saving will overwrite pre-existing files with the same name.
+
+From the loaded we can have a look at the original input data.
 
 .. nbplot::
 	:include-source:
 	
-	m.data.plot()
+	n.data.plot(window=True)
+	
+Or compare the :math:`\lambda_1` and :math:`\lambda_2` surfaces.
+
+.. .. nbplot::
+	:include-source:
+
+
+
+An "error surface", in the literature, is typically a :math:`\lambda_2` surface with the values normalised so that the value at the confidence level of 95% is equal to 1.
 
 - Error surface from F--test (using the summation coefficients found by Walsh et al., 2014).
 
