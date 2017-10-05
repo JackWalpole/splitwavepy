@@ -252,6 +252,22 @@ class Pair:
     def copy(self):
         return copy.deepcopy(self)
         
+        
+    # Comparison
+    
+    def __eq__(self, other) :
+        # check same class
+        if self.__class__ != other.__class__: return False
+        # check same keys
+        if self.__dict__.keys() != other.__dict__.keys(): return False
+        # check same values
+        for key in self.__dict__.keys():
+            if np.all( self.__dict__[key] != other.__dict__[key]): return False
+        # if reached here then the same
+        return True
+            
+        
+        
 def _synth(**kwargs):
     """return ricker wavelet synthetic data"""
     

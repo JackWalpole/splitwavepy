@@ -13,11 +13,11 @@ from ..core.pair import Pair
 from ..core.window import Window
 from . import eigval
 from ..plotting import plot
+from ..core import io
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import pickle
 
 class EigenM:
     
@@ -220,10 +220,11 @@ class EigenM:
         
         # pformat = 
 
-    # def save():
-    #     """
-    #     Save Measurement for future referral
-    #     """     
+    def save(self,filename):
+        """
+        Save Measurement for future referral
+        """
+        io.save(self,filename)
         
     
     # Plotting
@@ -286,20 +287,22 @@ class EigenM:
 
         plt.show()
 
-    # IO operations
+
+
+    # Comparison
     
-    def save(self,filename):
-        """
-        Save me to a file
-        """       
-        with open(filename, 'wb') as f:
-            pickle.dump(self,f)
+    def __eq__(self, other) :
+        # check same class
+        if self.__class__ != other.__class__: return False
+        # check same keys
+        if self.__dict__.keys() != other.__dict__.keys(): return False
+        # check same values
+        for key in self.__dict__.keys():
+            if np.all( self.__dict__[key] != other.__dict__[key]): return False
+        # if reached here then the same
+        return True
+        
 
 
-def loadEigenM(filename):
-    """
-    Load an EigenM object
-    """
-    with open(filename, 'rb') as f:
-        return pickle.load(f)
+
         
