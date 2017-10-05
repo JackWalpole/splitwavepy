@@ -30,9 +30,12 @@ cross convolution?
 microseismic data
 
 ---code
-add tests (started)
 profile code
 release (beta achieved)
+
+---testing
+get travis working
+write tests
 
 ---distant future
 machine learning
