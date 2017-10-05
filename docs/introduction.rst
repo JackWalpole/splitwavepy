@@ -43,22 +43,28 @@ Saving and reloading the data is as easy as:
    Saving will overwrite pre-existing files with the same name.
 
 
-**All** information stored in an *EigenM* objected is preserved, this includes: * the input data, 
+**All** information stored in an *EigenM* objected is preserved, this includes:
+
+* the input data, 
 * any corrections that were applied as part of the measurement, and 
 * the :math:`\lambda_1` and :math:`\lambda_2` surfaces.
 
-From the loaded we can look at the original input data.
+From the loaded object we can look at the original input data.
 
 .. nbplot::
 	:include-source:
 	
-	n.data.plot(window=True)
+	n.data.plot()
 	
 Or compare the :math:`\lambda_1` and :math:`\lambda_2` surfaces.
 
-.. .. nbplot::
+.. nbplot::
 	:include-source:
 
+	fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(20, 6))
+	n.plot( ax=ax[0], vals=n.lam1, title=r'$\lambda_1$', mode='surf')
+	n.plot( ax=ax[1], vals=n.lam2, title=r'$\lambda_2$', mode='surf', cmap='magma_r')
+	n.plot( ax=ax[2], mode='surf') # by default plots (lam1-lam2)/lam2
 
 
 An "error surface", in the literature, is typically a :math:`\lambda_2` surface with the values normalised so that the value at the confidence level of 95% is equal to 1.
