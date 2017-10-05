@@ -17,6 +17,7 @@ from ..plotting import plot
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import pickle
 
 class EigenM:
     
@@ -285,5 +286,20 @@ class EigenM:
 
         plt.show()
 
+    # IO operations
+    
+    def save(self,filename):
+        """
+        Save me to a file
+        """       
+        with open(filename, 'wb') as f:
+            pickle.dump(self,f)
 
 
+def loadEigenM(filename):
+    """
+    Load an EigenM object
+    """
+    with open(filename, 'rb') as f:
+        return pickle.load(f)
+        
