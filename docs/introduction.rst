@@ -22,26 +22,32 @@ Import code, create a synthetic, measure shear-wave spliting, and plot, in just 
 
 This measures splitting using the powerful eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  
 
-Making a measurement is as easy as instantiating an *EigenM* object.  If no arguments are supplied then the code will automatically produce a synthetic.  Check out the tutorials to see how to use `real data`_.
+Making a measurement is as easy as instantiating an *EigenM* object.  If no arguments are supplied then the code will automatically produce a synthetic.  Check out the tutorials to see how to use :ref:`real_data`.
 
 Keeping things together
 -------------------------
 
-Each measurement can be saved and backed up.  All information stored in the *EigenM* objected is preserved including the input data, any corrections that were applied as part of the measurement, and the :math:`\lambda_1` and :math:`\lambda_2` surfaces.
+Each measurement can be saved and backed up to disk.
 
 Saving and reloading the data is as easy as:
 
 .. nbplot::
 	
-	m.save('temp.eigm')
-	n = sw.load('temp.eigm')
-	n == m
+	>>> m.save('temp.eigm')
+	>>> n = sw.load('temp.eigm')
+	>>> n == m
+	... True
 
 .. warning::
 
    Saving will overwrite pre-existing files with the same name.
 
-From the loaded we can have a look at the original input data.
+
+**All** information stored in an *EigenM* objected is preserved, this includes: * the input data, 
+* any corrections that were applied as part of the measurement, and 
+* the :math:`\lambda_1` and :math:`\lambda_2` surfaces.
+
+From the loaded we can look at the original input data.
 
 .. nbplot::
 	:include-source:

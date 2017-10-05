@@ -94,7 +94,7 @@ With a window selected we are almost ready to meausure shear wave splitting!  We
 
 	If *Window*, *tlags*, or *degs* are unspecified, guesses are made.  It is strongly advised that you set these manually and at the very least check that these parameters look reasonable!
 	
-.. _`real data`:
+.. _real_data:
 
 Real data
 ---------
