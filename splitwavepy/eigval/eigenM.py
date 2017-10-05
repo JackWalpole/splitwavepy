@@ -94,11 +94,8 @@ class EigenM:
         self.tlag = self.lag * self.delta
 
         
-        # generate "squashed" profiles
-        self.fastprofile = np.sum(self.lam1/self.lam2, axis=0)
-        self.lagprofile = np.sum(self.lam1/self.lam2, axis=1)
-        # generate redefined "NI" value
-        self.ni = ni(self)
+
+
         
         # correct the data
         x,y = self.data.x, self.data.y
@@ -190,6 +187,29 @@ class EigenM:
         # return
         return dfast, dtlag
         
+        
+    # "squashed" profiles
+    
+    def fastprofile(self):
+        return np.sum((self.lam1-self.lam2)/self.lam2, axis=0)
+        
+    def lagprofile(self):
+        return np.sum((self.lam1-self.la2)/self.lam2, axis=1)
+    
+    # auto null classification  
+    
+    def ni(self):
+        """
+        measure of self-similarity in measurements at 90 degree shift in fast direction
+        """
+        fastprof = self.fastprofile()
+        halfway = int(self.degs.shape[1]/2)
+        diff = fastprof - np.roll(fastprof,halfway)
+        mult = fastprof * np.roll(fastprof,halfway)
+        sumdiffsq = np.sum(diff**2)
+        summult = np.sum(mult)
+        return summult/sumdiffsq
+    
     # Output
     
     def report(self):
@@ -209,49 +229,61 @@ class EigenM:
 
     def plot(self,**kwargs):
         
-        fig = plt.figure(figsize=(12,6)) 
-        gs = gridspec.GridSpec(2, 3,
-                           width_ratios=[1,1,2]
-                           )
+        if 'mode' not in kwargs:
+            kwargs['mode'] = 'all'
+        
+        # plot only surface    
+        if kwargs['mode'] == 'surf':
 
-        ax0 = plt.subplot(gs[0,0])
-        ax1 = plt.subplot(gs[0,1])
-        ax2 = plt.subplot(gs[1,0])
-        ax3 = plt.subplot(gs[1,1])
-        ax4 = plt.subplot(gs[:,2])
+            if 'vals' not in kwargs:
+                kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2        
+            plot.surf(self,**kwargs)
+
+        # else plot everything   
+        else:    
+            fig = plt.figure(figsize=(12,6)) 
+            gs = gridspec.GridSpec(2, 3,
+                               width_ratios=[1,1,2]
+                               )
     
-        # d1 = self.data.copy()
-        # d1.chop(self.window)
-        # d2 = self.data_corr.copy()
-        # d2.chop(self.window)
-        d1 = self.srcpoldata()
-        d1.chop(self.window)
-        d2 = self.srcpoldata_corr()
-        d2.chop(self.window)
+            ax0 = plt.subplot(gs[0,0])
+            ax1 = plt.subplot(gs[0,1])
+            ax2 = plt.subplot(gs[1,0])
+            ax3 = plt.subplot(gs[1,1])
+            ax4 = plt.subplot(gs[:,2])
+            
+            # d1 = self.data.copy()
+            # d1.chop(self.window)
+            # d2 = self.data_corr.copy()
+            # d2.chop(self.window)
+            d1 = self.srcpoldata()
+            d1.chop(self.window)
+            d2 = self.srcpoldata_corr()
+            d2.chop(self.window)
+            
+            # get axis scaling
+            lim = np.abs(np.hstack((d1.xy(),d2.xy()))).max() * 1.1
+            ylim = [-lim,lim]
+    
+            # original
+            plot.trace(d1.x,d1.y,time=d1.t(),ax=ax0,ylim=ylim)
+            plot.particle(d1.x,d1.y,ax=ax1,lim=ylim)
+    
+            # corrected
+            plot.trace(d2.x,d2.y,time=d2.t(),ax=ax2,ylim=ylim)
+            plot.particle(d2.x,d2.y,ax=ax3,lim=ylim)
+    
+            # error surface
+            if 'vals' not in kwargs:
+                kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
+                kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
         
-        # original
-        plot.trace(d1.x,d1.y,time=d1.t(),ax=ax0)
-        plot.particle(d1.x,d1.y,ax=ax1)
+            plot.surf(self,ax=ax4,**kwargs)
         
-        # corrected
-        plot.trace(d2.x,d2.y,time=d2.t(),ax=ax2)
-        plot.particle(d2.x,d2.y,ax=ax3)
-        
-        # error surface
-        plot.surf(self,ax=ax4,**kwargs)
-        
-        # neaten and show
-        plt.tight_layout()
+            # neaten
+            plt.tight_layout()
+
         plt.show()
 
 
-def ni(M):
-    """
-    measure of self-similarity in measurements at 90 degree shift in fast direction
-    """
-    halfway = int(M.degs.shape[1]/2)
-    diff = M.fastprofile - np.roll(M.fastprofile,halfway)
-    mult = M.fastprofile * np.roll(M.fastprofile,halfway)
-    sumdiffsq = np.sum(diff**2)
-    summult = np.sum(mult)
-    return sumdiffsq/summult
+

@@ -36,15 +36,17 @@ def trace(*args,**kwargs):
         ax.plot(kwargs['time'],args[ii])
         
     # set limit
-    lim = np.abs(args).max() * 1.1
-    ax.set_ylim([-lim,lim])    
+    if 'ylim' not in kwargs:
+        lim = np.abs(args).max() * 1.1
+        kwargs['ylim'] = [-lim,lim]
+    
+    ax.set_ylim(kwargs['ylim'])    
         
     # set label
-    if 'units' in kwargs:
-        units = kwargs['units']
-    else:
-        units = 's'    
-    ax.set_xlabel('Time (' + units +')')  
+    if 'units' not in kwargs:
+        kwargs['units'] = 's'  
+          
+    ax.set_xlabel('Time (' + kwargs['units'] +')')  
     
     # plot window markers
     if 'window' in kwargs:
@@ -72,10 +74,13 @@ def particle(*args,**kwargs):
             kwargs['ax'] = plt.subplot(111)
         ax = kwargs['ax']
         ax.plot(args[1],args[0])
-        lim = np.abs(args).max() * 1.1
+        # set limit
+        if 'lim' not in kwargs:
+            lim = np.abs(args).max() * 1.1
+            kwargs['lim'] = [-lim,lim]
         ax.set_aspect('equal')
-        ax.set_xlim([-lim,lim])
-        ax.set_ylim([-lim,lim])
+        ax.set_xlim(kwargs['lim'])
+        ax.set_ylim(kwargs['lim'])
         ax.set_xlabel(kwargs['labels'][1])
         ax.set_ylabel(kwargs['labels'][0])
         ax.axes.xaxis.set_ticklabels([])
@@ -142,6 +147,10 @@ def surf(M,**kwargs):
 
     ax.set_xlim([M.tlags[0,0], M.tlags[-1,0]])
     ax.set_ylim([M.degs[0,0], M.degs[0,-1]])
+    
+    # optional title
+    if 'title' in kwargs:
+        ax.set_title(kwargs['title'])
 
     return ax
 
