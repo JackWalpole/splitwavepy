@@ -1,12 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-Test the fundamental routines - based on the MSAT test cases
-"""
 
-# help run this code without installation
-import sys
-sys.path.append("..")
+"""
+Test the fundamental routines
+"""
 
 import unittest
 import numpy as np
