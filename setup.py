@@ -10,7 +10,7 @@ setup(
     url = 'https://github.com/JackWalpole/splitwavepy',
     packages = find_packages(),
     install_requires = [
-        'matplotlib >= 1.1',
-        'numpy >= 1.1',
+        'matplotlib',
+        'numpy',
         'scipy']
 )
