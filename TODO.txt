@@ -6,7 +6,7 @@ geometry (started)
 add window picker
 polarisation analysis (let user control this but offer a solution if asked)
 
--- documentation
+-- documentation (started)
 introduction
 tutorial
 commands
@@ -21,8 +21,8 @@ receiver + source correction scanning
 bandpass filter selection methods
 
 ---methods
-add transverse minimisation method
-add cross correlation method
+add transverse minimisation method (easy)
+add cross correlation method (easy?)
 add splitting intensity method
 cross convolution?
 
@@ -30,10 +30,9 @@ cross convolution?
 microseismic data
 
 ---code
-add tests
-documentation
+add tests (started)
 profile code
-release
+release (beta achieved)
 
 ---distant future
 machine learning
