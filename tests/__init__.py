@@ -1,1 +1,0 @@
-import splitwavepy as sw
