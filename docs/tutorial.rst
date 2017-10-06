@@ -46,7 +46,7 @@ Sometimes we might want to do a *correction* and apply the *inverse* splitting o
 	data.plot()
 
 .. note::
-    Every time a lag operation is applied the traces are shortened.  This is fine so long as your traces extend far beyond your analysis *Window*.
+    Every time a lag operation is applied the traces are shortened.  This is fine so long as your traces extend far enough beyond your analysis *Window*.
 
 Window picking
 ----------------------------

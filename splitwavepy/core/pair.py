@@ -106,44 +106,6 @@ class Pair:
     
     def xy(self):
         return np.vstack((self.x,self.y))
-
-    def plot(self,**kwargs):
-        """
-        Plot trace data and particle motion
-        """
-        from matplotlib import gridspec
-        fig = plt.figure(figsize=(12, 3)) 
-               
-        if 'window' in kwargs:                        
-            if kwargs['window'] is True:
-                kwargs['window'] = self.window
-            window = kwargs['window']
-            gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
-            # trace with window markers
-            ax0 = plt.subplot(gs[0])
-            plot.trace(self.x,self.y,time=self.t(),window=window,ax=ax0)
-            # windowed data
-            nsamps = self.nsamps()
-            wbeg = window.start(nsamps)*self.delta
-            d2 = self.copy()
-            d2.chop(window)
-            ax1 = plt.subplot(gs[1])
-            plot.trace(d2.x,d2.y,time=d2.t()+wbeg,ax=ax1)
-            # particle  motion
-            ax2 = plt.subplot(gs[2])
-            # ax2.axis('equal')
-            plot.particle(d2.x,d2.y,ax=ax2)                        
-        else:
-            gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
-            # trace
-            ax0 = plt.subplot(gs[0])
-            plot.trace(self.x,self.y,time=self.t(),ax=ax0)
-            # particle  motion
-            ax1 = plt.subplot(gs[1])
-            plot.particle(self.x,self.y,ax=ax1)                
-        # show
-        plt.tight_layout()
-        plt.show()
     
     
     def pt(self,**kwargs):
@@ -265,8 +227,52 @@ class Pair:
             if np.all( self.__dict__[key] != other.__dict__[key]): return False
         # if reached here then the same
         return True
+    
+    # plotting
+           
+    def plot(self,**kwargs):
+        """
+        Plot trace data and particle motion
+        """
+        from matplotlib import gridspec
+        fig = plt.figure(figsize=(12, 3)) 
+               
+        if 'window' in kwargs:                        
+            if kwargs['window'] is True:
+                kwargs['window'] = self.window
+            window = kwargs['window']
+            gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
+            # trace with window markers
+            ax0 = plt.subplot(gs[0])
+            plot.trace(self.x,self.y,time=self.t(),window=window,ax=ax0)
+            # windowed data
+            nsamps = self.nsamps()
+            wbeg = window.start(nsamps)*self.delta
+            d2 = self.copy()
+            d2.chop(window)
+            ax1 = plt.subplot(gs[1])
+            plot.trace(d2.x,d2.y,time=d2.t()+wbeg,ax=ax1)
+            # particle  motion
+            ax2 = plt.subplot(gs[2])
+            # ax2.axis('equal')
+            plot.particle(d2.x,d2.y,ax=ax2)                        
+        else:
+            gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+            # trace
+            ax0 = plt.subplot(gs[0])
+            plot.trace(self.x,self.y,time=self.t(),ax=ax0)
+            # particle  motion
+            ax1 = plt.subplot(gs[1])
+            plot.particle(self.x,self.y,ax=ax1)
             
-        
+        # interaction
+        if 'inter' in kwargs and kwargs['inter'] is True:
+            windowpicker = plot.WindowPicker(fig,ax0,**kwargs)
+            windowpicker.connect()
+                     
+        # show
+        plt.tight_layout()
+        plt.show()      
         
 def _synth(**kwargs):
     """return ricker wavelet synthetic data"""
@@ -318,4 +324,6 @@ def _synth(**kwargs):
     x,y = core.split(x,y,fast,lag)
     
     return x,y
+    
+
 

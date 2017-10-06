@@ -20,6 +20,7 @@ mpl.rcParams['axes.titlesize'] = 24
 mpl.rcParams['axes.labelsize'] = 14
 mpl.rcParams['axes.titlepad'] = 12.0
 
+
 def trace(*args,**kwargs):
     """Return axis with trace data.
     
@@ -71,7 +72,7 @@ def particle(*args,**kwargs):
     - ax
     """
     if not ('labels' in kwargs):
-        kwargs['labels'] = ['x','y','z']
+        kwargs['labels'] = ['comp1','comp2','comp3']
     
     # 2D particle motion
     if len(args) == 2:
@@ -160,6 +161,124 @@ def surf(M,**kwargs):
     return ax
 
 
+# Interaction
+ 
+class WindowPicker:
+    """
+    Pick a Window
+    """
+    
+    def __init__(self,fig,ax,**kwargs):
+        
+        self.canvas = fig.canvas
+        self.ax = ax
+        
+        self.press = None
 
+        # window limit lines
+        self.wbegline = self.ax.axvline(0,linewidth=1,color='k',visible=False)
+        self.wendline = self.ax.axvline(0,linewidth=1,color='k',visible=False)
+        self.cursorline = self.ax.axvline(0,linewidth=1,color='0.5',visible=False)
+        _,self.origydat = self.wbegline.get_data()
+        
+        
+        ### free up the keys I want to use so pyplot doesn't do funky things.
+        ### probably a neater way to do this?
+        neededkeys=['c','a','f']
+        keymap = dict(plt.rcParams.find_all('keymap'))
+        for key in keymap.keys():
+            overlap = list(set(neededkeys) & set(keymap[key]))
+            [ mpl.rcParams[key].remove(wantedkey) for wantedkey in overlap ]
+                
+        # mpl.rcParams['keymap.back'].remove('c')
+        # mpl.rcParams['keymap.all_axes'].remove('a')
+        # mpl.rcParams['keymap.fullscreen'].remove('f')
+        
+        
+        #
+        # # the window
+        # self.wbeg = None
+        # self.wend = None
+        # if 'window' in kwargs:
+        #     self.wbeg = kwargs['window'].start()
+        #     self.wend = kwargs['window'].end()
 
+    def connect(self):
+        # mouse interaction
+        self.cidclick = self.canvas.mpl_connect('button_press_event', self.click)
+        self.cidmotion = self.canvas.mpl_connect('motion_notify_event', self.motion)
+        self.cidrelease = self.canvas.mpl_connect('button_release_event', self.release)
+        self.cidenter = self.canvas.mpl_connect('axes_enter_event', self.enter)
+        self.cidleave = self.canvas.mpl_connect('axes_leave_event', self.leave)
+        # # keyboard interaction
+        self.cidkeypress = self.canvas.mpl_connect('key_press_event', self.keypress)
+        # self.cidkeyrelease = self.canvas.mpl_connect('key_release_event', self.keyrelease)
+    
+               
+    def click(self,event):
+        if event.inaxes is not self.ax: return
+        x = event.xdata
+        self.wbegline.set_data([x,x],self.origydat)
+        self.wbegline.set_visible(True)
+        self.canvas.draw()
 
+    def release(self,event):
+        if event.inaxes is not self.ax: return
+        x = event.xdata
+        self.wendline.set_data([x,x],self.origydat)
+        self.wendline.set_visible(True)
+        self.canvas.draw()
+                
+    def enter(self,event):
+        if event.inaxes is not self.ax: return
+        x = event.xdata
+        self.cursorline.set_data([x,x],self.origydat)
+        self.cursorline.set_visible(True)
+        self.canvas.draw()
+
+    def leave(self,event):
+        if event.inaxes is not self.ax: return
+        self.cursorline.set_visible(False)
+        self.canvas.draw()
+
+    def motion(self,event):
+        if event.inaxes is not self.ax: return
+        x = event.xdata
+        self.cursorline.set_data([x,x],self.origydat)
+        self.canvas.draw()
+
+    def keypress(self,event):
+        
+        if event.inaxes is not self.ax: return
+        if event.key == 'c':
+            self.wbegline.set_visible(False)
+            self.wendline.set_visible(False)
+        # establish which line is which
+        xbeg = self.wbegline.get_data()[0][0]
+        xend = self.wendline.get_data()[0][0]
+        x = event.xdata
+        if xbeg < xend: 
+            leftline = self.wbegline
+            rightline = self.wendline
+        else:
+            leftline = self.wendline
+            rightline = self.wbegline
+        if event.key == 'a':
+            leftline.set_data([x,x],self.origydat)
+            leftline.set_visible(True)
+        if event.key == 'f':
+            rightline.set_data([x,x],self.origydat)
+            rightline.set_visible(True)
+        if event.key == ' ':
+            print('halleluja!')
+
+            
+        
+    # def keyrelease(self,event):
+    #     if event.inaxes is self.ax: return
+            
+    # def disconnect(self):
+    #     'disconnect all the stored connection ids'
+    #     self.canvas.mpl_disconnect(self.cidclick)
+    #     # self.canvas.mpl_disconnect(self.cidrelease)
+    #     # self.canvas.mpl_disconnect(self.cidmotion)
