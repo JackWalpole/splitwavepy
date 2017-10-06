@@ -24,13 +24,25 @@ class EigenM:
     """
     Silver and Chan (1991) eigenvalue method measurement.
     
-    >>> EigenM(**kwargs) returns a synthetic measurement
-    
-    >>> EigenM(Pair,**kwargs) returns a measurement on data contained in Pair
+    args:
+    None = create synthetic
+    Pair = Measure splitting on Pair object
+    x, y = Measure splitting on traces x, and y.
     
     kwargs:
-    rcvcorr = (fast,tlag) | tuple
-    srccorr = (fast,tlag) | tuple
+    
+    window = Window
+    
+    lags -- None | defaults: minlag=0, maxlag=win.width/10, nlags=30. 
+         -- tuple = (maxlag,)  
+         -- tuple = (maxlag,Nlags) 
+         -- tuple = (minlag,maxlag,Nlags)
+    
+    degs -- None | defaults: Ndegs=60
+         -- int = Ndegs
+    
+    rcvcorr = (fast,tlag) | tuple | Receiver Correction
+    srccorr = (fast,tlag) | tuple | Source Correction
     
     kwargs for synthetic generation:
     fast = 0.    | float
@@ -54,29 +66,79 @@ class EigenM:
         # convert times to nsamples
         self.delta = self.data.delta
         
-        # other stuff
-        self.units = self.data.units
+
         
         # process kwargs
-              
-        if ('tlags' in kwargs):
+        
+        
+        # window
+        default_width = self.data.x.size / 2
+        default_offset = 0
+        default_tukey = None
+        
+        if 'window' not in kwargs:
+            self.window = Window(default_width,default_offset,default_tukey)
+        else:
+            if not isinstance(kwargs['window'],Window):
+                raise TypeError('window must be a Window type')
+            else:
+                self.window = kwargs['window']
+        
+        # lags        
+        default_minlag = 0
+        default_maxlag = self.window.width / 10
+        default_nlags  = 30
+        
+        if 'lags' not in kwargs:
+            lags = np.linspace(default_minlag,default_maxlag,default_nlags)
+        else:
+            if not isinstance(kwargs['lags'],tuple):
+                raise TypeError('lags must be a tuple')
+            elif len(kwargs['lags']) == 1:
+                lags = np.linspace(default_minlag,kwargs['lags'],default_nlags)
+            elif len(kwargs['lags']) == 2:
+                lags = np.linspace(default_minlag,*kwargs['lags'])
+            elif len(kwargs['lags']) == 3:
+                lags = np.linspace(*kwargs['lags'])
+            else:
+                raise Exception('Too much info in lags keyword')
+                
             # round to nearest 2
-            lags = 2 * np.rint( 0.5 * kwargs['tlags'] / self.delta )
-            kwargs['lags'] = np.unique(lags).astype(int)
-                      
+            samplelags = 2 * np.rint( 0.5 * lags / self.delta )
+            # a bit messy to reuse kwargs['lags'] in this way but eigval expects this name 
+            kwargs['lags'] = np.unique(samplelags).astype(int)
+            
+        # degs
+        default_mindeg = 0
+        default_maxdeg = 180
+        default_ndegs = 60
+        
+        if 'degs' not in kwargs:
+            degs = np.linspace(default_mindeg,default_maxdeg,default_ndegs,endpoint=False)
+        else:
+            if not isinstance(kwargs['degs'],int):
+                raise TypeError('degs must be an integer')
+            degs = np.linspace(default_mindeg,default_maxdeg,kwargs['degs'],endpoint=False)
+                
+        # receiver correction            
         if ('rcvcorr' in kwargs):
+            if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
+            if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
             # convert time shift to nsamples -- must be even
-            degree = kwargs['rcvcorr'][0]
-            nsamps = int(2 * np.rint( 0.5 * kwargs['rcvcorr'][1] / self.delta ))
-            kwargs['rcvcorr'] = (degree, nsamps)
-            self.rcvcorr = ( degree, nsamps * self.delta)
-                   
+            deg, lag = kwargs['rcvcorr']
+            nsamps = int(2 * np.rint( 0.5 * lag / self.delta ))
+            kwargs['rcvcorr'] = (deg, nsamps)
+            self.rcvcorr = ( deg, nsamps * self.delta)
+        
+        # source correction                  
         if ('srccorr' in kwargs):
+            if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
+            if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
             # convert time shift to nsamples -- must be even
-            degree = kwargs['srccorr'][0]
-            nsamps = int(2 * np.rint( 0.5 * kwargs['srccorr'][1] / self.delta ))
-            kwargs['srccorr'] = (degree, nsamps)
-            self.srccorr = (degree,nsamps * self.delta)
+            deg, lag = kwargs['srccorr']
+            nsamps = int(2 * np.rint( 0.5 * lag / self.delta ))
+            kwargs['srccorr'] = (deg, nsamps)
+            self.srccorr = (deg, nsamps * self.delta)
 
             
         # ensure trace1 at zero angle
@@ -84,7 +146,7 @@ class EigenM:
         
         # grid search splitting
         self.degs, self.samplags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.x,self.data.y,**kwargs)
-            
+        # convert sample lags to meaningful time lags
         self.lags = self.samplags * self.delta
                 
         # get some measurement attributes
@@ -93,26 +155,29 @@ class EigenM:
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
         
-        # correct the data
-        x,y = self.data.x, self.data.y
+        # correct the data     
+        self.data_corr = self.data.copy()
+        # x,y = self.data.x, self.data.y
         # rcv side      
         if 'rcvcorr' in kwargs:
-            x,y = core.unsplit(x,y,*kwargs['rcvcorr'])
+            self.data_corr.unsplit(*kwargs['rcvcorr'])    
         # target layer
-        x,y = core.unsplit(x,y,self.fast,self.lag)
+        self.data_corr.unsplit(self.fast,self.lag)  
         # src side
         if 'srccorr' in kwargs:
-            x,y = core.unsplit(x,y,*kwargs['srccorr'])
+            self.data_corr.unsplit(*kwargs['srccorr'])
         
-        self.data_corr = Pair(x,y,**kwargs)
+        # recover source polarisation
+        self.srcpol = self.data_corr.pca()
         
-        self.srcpol = core.pca(self.data_corr.x,self.data_corr.y)
-        
-        # signal to noise calculation   
+        # estimate signal to noise   
         self.snr = np.max((self.lam1-self.lam2)/(self.lam2))
         
         # error estimations
-        self.Fdfast, self.Fdlag = self.f_errors()
+        self.fdfast, self.fdlag = self.f_errors()
+        
+        # other stuff
+        self.units = self.data.units
     
     def srcpoldata(self):
         return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol))
@@ -146,25 +211,25 @@ class EigenM:
     def f_errors(self):
         """
         Return dfast and dtlag.
-        
+
         These errors correspond to one sigma in the parameter estimate.
-        
+
         Calculated by taking a quarter of the width of 95% confidence region (found using F-test).
         """
-        
+
         # search interval steps
-        tlag_step = self.tlags[1,0]-self.tlags[0,0]
+        lag_step = self.lags[1,0]-self.lags[0,0]
         fast_step = self.degs[0,1]-self.degs[0,0]
-        
+
         # Find nodes where we fall within the 95% confidence region
-        confbool = self.lam2 <= self.lam2_95() 
-        
+        confbool = self.lam2 <= self.lam2_95()
+
         # tlag error
-        tlagbool = confbool.any(axis=1)
+        lagbool = confbool.any(axis=1)
         # last true value - first true value
-        truth = np.where(tlagbool)[0]
-        dtlag = (truth[-1] - truth[0] + 1) * tlag_step * 0.25   
-          
+        truth = np.where(lagbool)[0]
+        fdlag = (truth[-1] - truth[0] + 1) * lag_step * 0.25
+
         # fast error
         fastbool = confbool.any(axis=0)
         # trickier to handle due to cyclicity of angles
@@ -173,10 +238,10 @@ class EigenM:
         lengthFalse = np.diff(np.where(cyclic)).max()
         # shortest line that contains ALL true values is then:
         lengthTrue = fastbool.size - lengthFalse
-        dfast = lengthTrue * fast_step * 0.25 
-               
+        fdfast = lengthTrue * fast_step * 0.25
+
         # return
-        return dfast, dtlag
+        return fdfast, fdlag
         
         
     # "squashed" profiles

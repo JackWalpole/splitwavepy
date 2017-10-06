@@ -117,7 +117,7 @@ def surf(M,**kwargs):
     
     **kwargs
     - cmap = 'magma'
-    - vals = M.lam1 / M.lam2
+    - vals = (M.lam1-M.lam2) / M.lam2
     - ax = None (creates new)
     """
     
@@ -125,7 +125,7 @@ def surf(M,**kwargs):
         kwargs['cmap'] = 'magma'
     
     if 'vals' not in kwargs:
-        kwargs['vals'] = M.lam1 / M.lam2
+        kwargs['vals'] = (M.lam1-M.lam2) / M.lam2
             
     if 'ax' not in kwargs:         
         kwargs['ax'] = plt.subplot(111)
@@ -133,19 +133,19 @@ def surf(M,**kwargs):
     ax = kwargs['ax']
         
     # error surface
-    cax = ax.contourf(M.tlags,M.degs,kwargs['vals'],26,cmap=kwargs['cmap'])
+    cax = ax.contourf(M.lags,M.degs,kwargs['vals'],26,cmap=kwargs['cmap'])
     cbar = plt.colorbar(cax)
     ax.set_yticks(np.linspace(-90,90,6,endpoint=False))
     ax.set_ylabel('Fast Direction (degs)')
     ax.set_xlabel('Delay Time (' + M.units + ')')
     
     # marker
-    ax.errorbar(M.tlag,M.fast,xerr=M.dtlag,yerr=M.dfast,fmt='o')
+    ax.errorbar(M.lag,M.fast,xerr=M.fdlag,yerr=M.fdfast,fmt='o')
     
     # confidence region
-    ax.contour(M.tlags,M.degs,M.lam2,levels=[M.lam2_95()])
+    ax.contour(M.lags,M.degs,M.lam2,levels=[M.lam2_95()])
 
-    ax.set_xlim([M.tlags[0,0], M.tlags[-1,0]])
+    ax.set_xlim([M.lags[0,0], M.lags[-1,0]])
     ax.set_ylim([M.degs[0,0], M.degs[0,-1]])
     
     # optional title
