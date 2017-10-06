@@ -184,18 +184,35 @@ class Pair:
         self.x, self.y = core.chop(self.x,self.y,window=window)
         
         
-    def getWindow(self,time_centre,time_width,tukey=None):
+    # def getWindow(self,time_centre,time_width,tukey=None):
+    #     """
+    #     Return a window object about time_centre with time_width.
+    #     """
+    #     tcs = int(time_centre / self.delta)
+    #     offset = tcs - self.centre()
+    #     # convert time to nsamples -- must be odd
+    #     width = int(time_width / self.delta)
+    #     width = width if width%2==1 else width + 1
+    #     window = Window(width,offset,tukey=tukey)
+    #     self.window = window
+    #     return window
+        
+    def setWindow(self,start,end,tukey=None):
         """
-        Return a window object about time_centre with time_width.
+        Return a window object at user defined start and end times.
+        
+        The window will be adjusted to ensure it occupies an odd number 
+        of samples.
         """
+        time_centre = (start + end)/2
+        time_width = end - start
         tcs = int(time_centre / self.delta)
         offset = tcs - self.centre()
         # convert time to nsamples -- must be odd
         width = int(time_width / self.delta)
         width = width if width%2==1 else width + 1        
-        window = Window(width,offset,tukey=tukey)
-        self.window = window
-        return window
+        self.window = Window(width,offset,tukey=tukey)
+
         
     # def autowindow(self,time_centre=None):
     #     """

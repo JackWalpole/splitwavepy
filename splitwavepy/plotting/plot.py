@@ -184,7 +184,7 @@ class WindowPicker:
         
         ### free up the keys I want to use so pyplot doesn't do funky things.
         ### probably a neater way to do this?
-        neededkeys=['c','a','f']
+        neededkeys=['c','a','f',' ']
         keymap = dict(plt.rcParams.find_all('keymap'))
         for key in keymap.keys():
             overlap = list(set(neededkeys) & set(keymap[key]))
@@ -271,6 +271,7 @@ class WindowPicker:
             rightline.set_visible(True)
         if event.key == ' ':
             print('halleluja!')
+        print(event.key)
 
             
         
