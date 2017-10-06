@@ -10,7 +10,7 @@ Second, install **SplitWavePy** with the following terminal command.
 
 ``pip install splitwavepy``
 
-.. sidebar::
+.. tip::
 	Ensure you have the latest release.
 	
 	``pip upgrade splitwavepy``
@@ -32,9 +32,13 @@ Save your measurement to disk.
 	>>> m.save('temp.eigm')
 
 
-Check your working directory for a file called ``temp.eigm``.  Is it there?  How big is it?
+Check your working directory for a file called ``temp.eigm``.  Is it there?  How big is it?  It should be less than 100K.  It's a backup of your measurement together with the input data.
+
+.. hint::
+	To check your file size in a Unix style operating system:
+	``du -sh temp.eigm``
 	
-Without closing your kernel load the data from the disk and check it's the same as the original measurement on memory.
+Without closing your python session, load the data from the disk and check it's the same as that on memory.
 
 .. nbplot::
 	:include-source:
@@ -46,7 +50,7 @@ Without closing your kernel load the data from the disk and check it's the same 
 	... False
 
 	
-Try plotting ``n``.
+Try plotting ``n``.  Does it look the same as ``m``?
 	
 If you've made it to here, great, you seem to have a working version of SplitWavePy.
 

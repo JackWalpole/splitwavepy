@@ -14,7 +14,7 @@ Assuming you have the code setup it's time to see what it can do.  Fire up an in
 Synthetic data
 ---------------------
 
-To make synthetics is easy.  It's also pretty easy with :ref:`real_data`.
+By default, if no data is provided, SplitWavePy will make some synthetic data.  Data is stored in a *Pair* object.
 
 .. .. autoclass:: splitwavepy.core.pair.Pair
 
