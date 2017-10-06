@@ -83,20 +83,15 @@ class EigenM:
         self.data.rotateto(0)        
         
         # grid search splitting
-        self.degs, self.lags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.x,self.data.y,**kwargs)
+        self.degs, self.samplags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.x,self.data.y,**kwargs)
             
-        self.tlags = self.lags * self.delta
+        self.lags = self.samplags * self.delta
                 
         # get some measurement attributes
         # uses ratio lam1/lam2 to find optimal fast and lag parameters
-        maxloc = core.max_idx(self.lam1/self.lam2)
+        maxloc = core.max_idx((self.lam1-self.lam2)/self.lam2)
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
-        self.tlag = self.lag * self.delta
-
-        
-
-
         
         # correct the data
         x,y = self.data.x, self.data.y
@@ -113,16 +108,11 @@ class EigenM:
         
         self.srcpol = core.pca(self.data_corr.x,self.data_corr.y)
         
-        # signal to noise calculation
-        ### if total energy = signal + noise = lam1 + lam2
-        ### lam1 = signal + 1/2 noise
-        ### lam2 = 1/2 noise
-        ### then signal = lam1 - lam2
-        ###       noise = 2 * lam2        
-        self.snr = np.max((self.lam1-self.lam2)/(2*self.lam2))
+        # signal to noise calculation   
+        self.snr = np.max((self.lam1-self.lam2)/(self.lam2))
         
         # error estimations
-        self.dfast, self.dtlag = self.f_errors()
+        self.Fdfast, self.Fdlag = self.f_errors()
     
     def srcpoldata(self):
         return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol))
@@ -201,6 +191,7 @@ class EigenM:
     
     def ni(self):
         """
+        development.
         measure of self-similarity in measurements at 90 degree shift in fast direction
         """
         fastprof = self.fastprofile()
