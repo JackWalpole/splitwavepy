@@ -23,6 +23,10 @@ mpl.rcParams['axes.titlepad'] = 12.0
 
 def trace(*args,**kwargs):
     """Return axis with trace data.
+    args:
+    - x
+    - y
+    - z (optional)
     
     kwargs:
     - time
@@ -184,7 +188,7 @@ class WindowPicker:
         
         ### free up the keys I want to use so pyplot doesn't do funky things.
         ### probably a neater way to do this?
-        neededkeys=['c','a','f',' ']
+        neededkeys=['c','a','f',' ','enter']
         keymap = dict(plt.rcParams.find_all('keymap'))
         for key in keymap.keys():
             overlap = list(set(neededkeys) & set(keymap[key]))
@@ -270,8 +274,10 @@ class WindowPicker:
             rightline.set_data([x,x],self.origydat)
             rightline.set_visible(True)
         if event.key == ' ':
-            print('halleluja!')
-        print(event.key)
+            # chop the data and replot particle motion
+            return 'halleluja!'
+        # if event.key == 'q':
+            # save window and quit
 
             
         
