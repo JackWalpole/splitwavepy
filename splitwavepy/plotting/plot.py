@@ -8,12 +8,17 @@ from __future__ import division
 from __future__ import print_function
 
 # matplotlib stuff
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from mpl_toolkits.mplot3d import Axes3D
 
 import numpy as np
 
+#### rcParams ####
+mpl.rcParams['axes.titlesize'] = 24
+mpl.rcParams['axes.labelsize'] = 14
+mpl.rcParams['axes.titlepad'] = 12.0
 
 def trace(*args,**kwargs):
     """Return axis with trace data.
