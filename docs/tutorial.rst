@@ -55,7 +55,10 @@ The window should be designed in such a way as to maximise the energy of a singl
 
 Interactive plotting is supported by ``plot(interactive=True)``.  Click and drag to pick a window, or mouse hover and use the ``a`` and ``f`` keys to open and close the window (sac, anyone?), use the arrow keys to fine tune the window.  When you're ready to measure, hit the space bar.
 
-
+.. tip::
+	If the interactive plotting is not working you might need to add the following line 
+	to your ``~/.matplotlib/matplotlibrc`` file.	
+	``backend      : TkAgg``
 
 *Windows* are parameterised by two (or three) parameters:
 

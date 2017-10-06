@@ -16,9 +16,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
 #### rcParams ####
-mpl.rcParams['axes.titlesize'] = 24
-mpl.rcParams['axes.labelsize'] = 14
-mpl.rcParams['axes.titlepad'] = 12.0
+# mpl.rcParams['axes.titlesize'] = 24
+# mpl.rcParams['axes.labelsize'] = 14
+# mpl.rcParams['axes.titlepad'] = 12.0
 
 
 def trace(*args,**kwargs):
@@ -180,9 +180,10 @@ class WindowPicker:
         self.press = None
 
         # window limit lines
-        self.wbegline = self.ax.axvline(0,linewidth=1,color='k',visible=False)
-        self.wendline = self.ax.axvline(0,linewidth=1,color='k',visible=False)
-        self.cursorline = self.ax.axvline(0,linewidth=1,color='0.5',visible=False)
+        minx, maxx = self.ax.get_xlim()
+        self.wbegline = self.ax.axvline(minx,linewidth=1,color='k',visible=False)
+        self.wendline = self.ax.axvline(maxx,linewidth=1,color='k',visible=False)
+        self.cursorline = self.ax.axvline((minx+maxx)/2,linewidth=1,color='0.5',visible=False)
         _,self.origydat = self.wbegline.get_data()
         
         
