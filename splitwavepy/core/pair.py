@@ -21,42 +21,45 @@ class Pair:
     
     Keyword Arguments:
         - delta = 1. (sample interval) [default] | float
-        - units = 's' (for labelling) | string
-        - cmplabels = ['component 1','component 2'] | list of strings
     
-    Advanced Keyword Arguments (if in doubt don't use):
-        - geom = 'geo' (N,E) / 'ray' (SV,SH) / 'cart' (x,y)
-        - cmpvectors = np.eye(2) | float
+    Naming Keyword Arguments:
+        - name = 'untitled' (should be unique identifier) | string
+        - units = 's' (for labelling) | string
+    
+    Geometry Keyword Arguments (if in doubt don't use):
+        - geom = 'geo' (N,E) / 'ray' (SV,SH) / 'cart' (X,Y)
+        - cmpvectors = np.eye(2)
         - rcvloc = (lat,lon,r) / (x,y,z)
-        - srcloc = (lat,lon,r) / (x,y,z)    
+        - srcloc =  (lat,lon,r) / (x,y,z)
+        - rayloc =  rcvloc # must be somewhere on a sensible raypath
+        - rayvector = [0,0,1] 
 
     Methods:
         - plot()
+        - plot(pickMode)
     """
     def __init__(self,*args,**kwargs):
         
-        if ('delta' in kwargs):
-            self.delta = kwargs['delta']
-        else:
-            self.delta = 1.
-            
-        if ('units' in kwargs):
-            self.units = kwargs['units']
-        else:
-            self.units = 's'
-            
-        if ('angle' in kwargs):
-            self.angle = kwargs['angle']
-        else:
-            self.angle = 0.
+        # defaults
+        self.delta = 1.
+        if ('delta' in kwargs): self.delta = kwargs['delta']
         
+        # labels
+        self.units = 's'   
+        if ('units' in kwargs): self.units = kwargs['units']
+        
+        # A user defined name
+        kwargs['name'] = 'untitled'
+        if ('name' in kwargs): self.name = kwargs['name']
+        
+        # make synthetic
         if len(args) == 0:
-            if ('lag' in kwargs):
-                # convert time shift to nsamples -- must be even
-                nsamps = int(kwargs['lag']/self.delta)
-                nsamps = nsamps if nsamps%2==0 else nsamps + 1
-                kwargs['lag'] = nsamps                                      
-            self.x, self.y = _synth(**kwargs)                   
+            # convert time2samps -- must be even
+            if ('lag' in kwargs): 
+                kwargs['lag'] = core.time2samps(kwargs['lag'])
+            # generate                                                       
+            self.x, self.y = _synth(**kwargs)   
+        # read in data                
         elif len(args) == 2:            
             self.x, self.y = args[0], args[1]
         else: 
@@ -69,53 +72,34 @@ class Pair:
             raise Exception('data must have odd number of samples')
         if (self.x.size != self.y.size):
             raise Exception('x and y must be the same length')
-            
-        # add geometry info
-        if ('geom' in kwargs):
-            self.geom = kwargs['geom']
-        else:
-            # if using 2-component data I'll guess the user wants geo coordinates.
-            self.geom = 'geo'
-            
-        if ('srcloc' in kwargs):
-            self.srcloc = kwargs['srcloc']
-            
-        if ('rcvloc' in kwargs):
-            self.rcvloc = kwargs['rcvloc']
-            
-        # if ('xyz' in kwargs):
-        #     self.xyz = kargs['xyz']
-        # else:
-        #     self.xyz = np.ones(3)
+        
+        # add geometry info 
+        self.geom = 'geo'
+        if ('geom' in kwargs): self.geom = kwargs['geom']
+           
+        self.cmpvectors = np.eye(2)  
+        if ('cmpvectors' in kwargs): self.cmpvectors = kwargs['cmpvectors']
+        
+        self.rayvector = [0,0,1] # normal to shear plane, along Z-axis
+        
+        if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']     
+        if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
+        self.rayloc = self.rcvloc
+        if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
+
 
     # methods
-    
-    # time from start
+
     def t(self):
         return np.arange(self.x.size) * self.delta
-        
-    def nsamps(self):
-        return self.x.size
-
-    def power(self):
-        return self.x**2+self.y**2
-        
-    def centre(self):
-        return int(self.x.size/2)
-    
+  
     def data(self):
         return np.vstack((self.x,self.y))
     
-    
-    def pt(self,**kwargs):
-        """Plot traces"""
-        ax = plot.trace(self.x,self.y,time=self.t(),**kwargs)
-        plt.show()
-    
-    def ppm(self,**kwargs):
-        """Plot particle motion"""
-        ax = plot.particle(self.x,self.y,**kwargs)
-        plt.show()
+    def get_labels(self):
+        if self.geom == 'geo': return ['North','East']
+        if self.geom == 'ray': return ['Vertical','Horizontal']
+        if self.geom == 'cart': return ['X','Y']
     
     def pca(self):
         """Return orientation of principal component"""
@@ -137,8 +121,7 @@ class Pair:
         rangle = degrees - self.angle
         # apply splitting
         self.x, self.y = core.split(self.x,self.y,rangle,nsamps)
-        
-    
+           
     def unsplit(self,degrees,tlag):
         """
         Applies reverse splitting operator (phi,dt) to Pair.
@@ -155,7 +138,6 @@ class Pair:
         rangle = degrees - self.angle
         self.x, self.y = core.unsplit(self.x,self.y,rangle,nsamps)
         
-            
     def rotateto(self,degrees):
         """
         Rotate data so that trace1 lines up with *degrees*
@@ -164,38 +146,8 @@ class Pair:
         rangle = degrees - self.angle 
         self.x, self.y = core.rotate(self.x,self.y,rangle)
         self.angle = degrees
-        
-             
-    def lag(self,tlag):
-        """
-        Relative shift trace1 and trace2 by tlag seconds
-        """
-        # convert time shift to nsamples -- must be even
-        nsamps = int(tlag / self.delta)
-        nsamps = nsamps if nsamps%2==0 else nsamps + 1
-        self.x, self.y = core.lag(self.x,self.y,nsamps)
-        
-     
-    def chop(self,window):
-        """
-        Chop data around window
-        """
-        self.x, self.y = core.chop(self.x,self.y,window=window)
-        
-        
-    # def getWindow(self,time_centre,time_width,tukey=None):
-    #     """
-    #     Return a window object about time_centre with time_width.
-    #     """
-    #     tcs = int(time_centre / self.delta)
-    #     offset = tcs - self.centre()
-    #     # convert time to nsamples -- must be odd
-    #     width = int(time_width / self.delta)
-    #     width = width if width%2==1 else width + 1
-    #     window = Window(width,offset,tukey=tukey)
-    #     self.window = window
-    #     return window
-        
+                    
+
     def setWindow(self,start,end,tukey=None):
         """
         Return a window object at user defined start and end times.
@@ -210,7 +162,30 @@ class Pair:
         # convert time to nsamples -- must be odd
         width = int(time_width / self.delta)
         width = width if width%2==1 else width + 1        
-        self.window = Window(width,offset,tukey=tukey)
+        self.window = Window(width,offset,tukey=tukey)        
+     
+    def chop(self,window):
+        """
+        Chop data around window
+        """
+        self.x, self.y = core.chop(self.x,self.y,window=window)
+        
+
+
+    # useful?
+    def nsamps(self):
+        return self.x.size
+    
+    def centresamp(self):
+        return int(self.x.size/2)
+        
+    def centretime(self):
+        return int(self.x.size/2) * self.delta
+        
+    def power(self):
+        return self.x**2+self.y**2
+                
+
 
         
     # def autowindow(self,time_centre=None):
@@ -245,6 +220,16 @@ class Pair:
         return True
     
     # plotting
+    
+    def pt(self,**kwargs):
+        """Plot traces"""
+        ax = plot.trace(self.x,self.y,time=self.t(),**kwargs)
+        plt.show()
+    
+    def ppm(self,**kwargs):
+        """Plot particle motion"""
+        ax = plot.particle(self.x,self.y,**kwargs)
+        plt.show()
            
     def plot(self,*args,**kwargs):
         """

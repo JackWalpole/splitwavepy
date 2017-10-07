@@ -16,27 +16,42 @@ from .window import Window
 import numpy as np
 from scipy import signal
 
-def lag(x,y,nsamps):
+def time2samps(t,delta,mode='nearest'):
     """
-    Lag x nsamps/2 to the left and
-    lag y nsamps/2 to the right.
-    nsamps must be even.
-    If nsamps is negative x shifted to the right and y to the left.
-    This process truncates trace length by nsamps and preserves centrality.
+    convert a time to number of samples given the sampling interval.
+    """
+    rat = float(t / delta)        
+    if mode == 'near': return int(np.rint(rat))
+    if mode == 'even': return int(2 * np.rint(rat/2))
+    if mode == 'odd' : return int(2 * np.rint(np.ceil(rat/2)) - 1)
+
+def samps2time(samps,delta):
+    """
+    convert a number of samples to time given the sampling interval.
+    """
+    return samps * delta
+
+def lag(x,y,samps):
+    """
+    Lag x samps/2 to the left and
+    lag y samps/2 to the right.
+    samps must be even.
+    If samps is negative x shifted to the right and y to the left.
+    This process truncates trace length by samps and preserves centrality.
     Therefore windowing must be used after this process 
     to ensure even trace lengths when measuring splitting.
     """
-    if nsamps == 0:
+    if samps == 0:
         return x,y
-    elif nsamps%2 != 0:
-        raise Exception('nsamps must be even')
+    elif samps%2 != 0:
+        raise Exception('samps must be even')
 
-    if nsamps > 0:
+    if samps > 0:
         # positive shift
-        return x[nsamps:], y[:-nsamps]
+        return x[samps:], y[:-samps]
     else:
         # negative shift
-        return x[:nsamps], y[-nsamps:]
+        return x[:samps], y[-samps:]
 
         
 def rotate(x,y,degrees):
@@ -49,21 +64,18 @@ def rotate(x,y,degrees):
     xy = np.dot(rot,np.vstack((x,y)))
     return xy[0], xy[1]
 
-# def rotate_and_lag(data,degrees,nsamps):
-#     return lag(rotate(data,degrees), nsamps)
-
-def split(x,y,degrees,nsamps):
+def split(x,y,degrees,samps):
     """Apply forward splitting and rotate back"""
-    if nsamps == 0:
+    if samps == 0:
         return x,y
     x,y = rotate(x,y,degrees)
-    x,y = lag(x,y,nsamps)
+    x,y = lag(x,y,samps)
     x,y = rotate(x,y,-degrees)
     return x,y
 
-def unsplit(x,y,degrees,nsamps):
+def unsplit(x,y,degrees,samps):
     """Apply inverse splitting and rotate back"""
-    return split(x,y,degrees,-nsamps)
+    return split(x,y,degrees,-samps)
 
 def chop(*args,**kwargs):
     """Chop trace, or traces, using window"""
@@ -115,7 +127,7 @@ def pca(x,y):
 #     """
 #     Returns signal to noise ratio assuming signal on trace1 and noise on trace2
 #     Calculates on each trace by sum of squares and then takes the ratio
-#     """
+#     """samps
 #     signal = np.sum(data[0,:]**2)
 #     noise = np.sum(data[1,:]**2)
 #     return signal / noise
@@ -134,7 +146,7 @@ def snrRH(data):
     
 def noise(size,amp,smooth):
     """Gaussian noise convolved with a (normalised) gaussian wavelet.
-       nsamps = size,
+       samps = size,
        sigma  = amp,
        width of gaussian = smooth.
     """
@@ -143,14 +155,14 @@ def noise(size,amp,smooth):
     n = np.random.normal(0,amp,size)
     return np.convolve(n,gauss,'same')  
     
-def min_idx(vals):
-    """
-    return indices of min value in vals grid
-    """
-    return np.unravel_index(np.argmin(vals),vals.shape)
-    
-def max_idx(vals):
-    """
-    return indice of max value in vals grid
-    """
-    return np.unravel_index(np.argmax(vals),vals.shape)
+# def min_idx(vals):
+#     """
+#     return indices of min value in vals grid
+#     """
+#     return np.unravel_index(np.argmin(vals),vals.shape)
+#
+# def max_idx(vals):
+#     """
+#     return indice of max value in vals grid
+#     """
+#     return np.unravel_index(np.argmax(vals),vals.shape)
