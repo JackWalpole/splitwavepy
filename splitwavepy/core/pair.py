@@ -25,7 +25,7 @@ class Pair:
     
     Naming Keyword Arguments:
         - name = 'untitled' (should be unique identifier) | string
-        - cmplabels = ['Comp1','Comp2'] | list of strings
+        - cmplabels = ['Cmp 0.0','Cmp 90.0'] | list of strings
         - units = 's' (for labelling) | string
     
     Geometry Keyword Arguments (if in doubt don't use):
@@ -34,11 +34,30 @@ class Pair:
         - rcvloc = (lat,lon,r) / (x,y,z)
         - srcloc =  (lat,lon,r) / (x,y,z)
         - rayloc =  rcvloc # must be somewhere on a sensible raypath
-        - rayvector = [0,0,1] 
+        - rayvec = [0,0,1] 
 
     Methods:
-        - plot()
-        - plot(pickMode)
+        # display
+            - plot()
+            - ppm() # plot only particle motion
+            - pt() # plot only trace data
+        # splitting
+            - split(fast,lag)
+            - unsplit(fast,lag)
+        # useful
+            - t()           # time
+            - data()        # both x and y in one array
+            - rotateto()
+            - pca()         # principal component analysis
+            - suggest_labels()
+        # windowing
+            - set_window(start,end,Tukey=None)
+            - chop(window)
+        # io
+            - copy()
+            - save()
+        # in development
+            - plot(pickMode) # pickmode in development
     """
     def __init__(self,*args,**kwargs):
         
@@ -67,9 +86,7 @@ class Pair:
             raise Exception('data must have odd number of samples')
         if (self.x.size != self.y.size):
             raise Exception('x and y must be the same length')
-            
-        
-        
+                    
         # add geometry info 
         self.geom = 'geo'
         if ('geom' in kwargs): self.geom = kwargs['geom']
@@ -77,8 +94,10 @@ class Pair:
         self.cmpvecs = np.eye(2)  
         if ('cmpvecs' in kwargs): self.cmpvectors = kwargs['cmpvecs']
         
-        self.rayvector = [0,0,1] # normal to shear plane, along Z-axis
+        self.rayvec = [0,0,1] # normal to shear plane, along Z-axis
+        if ('rayvec' in kwargs): self.rayvec = kwargs['rayvec']
         
+        # source and receiver location info
         if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']     
         if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
         if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
@@ -86,9 +105,10 @@ class Pair:
         # labels
         self.units = 's'   
         if ('units' in kwargs): self.units = kwargs['units']      
-        self.cmplabels = ['Comp1','Comp2']
+        lab1,lab2 = self.cmpangs()
+        self.cmplabels = self.set_labels()
         if ('cmplabels' in kwargs): self.cmplabels = kwargs['cmplabels']   
-        # A user defined name
+        # A user defined name # maybe useful?
         self.name = 'untitled'
         if ('name' in kwargs): self.name = kwargs['name']    
         # Backup the command used to produce this object
@@ -103,45 +123,51 @@ class Pair:
     def data(self):
         return np.vstack((self.x,self.y))
     
-    def get_labels(self):
-        if self.geom == 'geo': return ['North','East']
-        if self.geom == 'ray': return ['Vertical','Horizontal']
-        if self.geom == 'cart': return ['X','Y']
-    
-    def pca(self):
-        """Return orientation of principal component"""
-        return core.pca(self.x,self.y)
-    
-    def split(self,degrees,lag):
-        """
-        Applies splitting operator (phi,dt) to Pair.
+    def set_labels(self):
+        if np.allclose(self.cmpvecs,np.eye(2)):
+            if self.geom == 'geo': self.cmplabels = ['North','East']
+            if self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
+            if self.geom == 'cart': self.cmplabels = ['X','Y']
+            return
+        # if reached here use the default label
+        lab1,lab2 = self.cmpangs()
+        self.cmplabels = ['Cmp '+str(round(lab1)),'Cmp ' +str(round(lab2))]
         
-        Rotates data so that trace1 is lined up with degrees (and trace2 90 degrees clockwise).
-        Applies a relative time shift by the nearest even number of samples to tlag,
-        trace1 is shifted tlag/2 forward in time, and trace2 tlag/2 backward in time.
-        Then undoes the original rotation.
+        
+    def split(self,fast,lag):
+        """
+        Applies splitting operator.
+        
+        .. warning:: shortens trace length by *lag*.
         """
         # convert time shift to nsamples -- must be even
         samps = core.time2samps(lag,self.delta,mode='even')
         # find appropriate rotation angle
-        rangle = degrees - self.cmpangles()[0]
+        ang = np.deg2rad(fast)
+        fastcmps = np.array([[np.cos(ang),-np.sin(ang)],
+                             [np.sin(ang), np.cos(ang)]])       
+        rot = np.dot(fastcmps,self.cmpvecs.T)
+        # rangle = np.rad2deg(np.arccos(rot[0,0]))
+        rangle = np.rad2deg(np.arccos((rot.trace()-1)/2))
         # apply splitting
-        self.x, self.y = core.split(self.x,self.y,rangle,nsamps)
+        self.x, self.y = core.split(self.x,self.y,rangle,samps)
            
-    def unsplit(self,degrees,lag):
+    def unsplit(self,fast,lag):
         """
-        Applies reverse splitting operator (phi,dt) to Pair.
+        Reverses splitting operator.
         
-        Rotates data so that trace1 is lined up with degrees (and trace2 90 degrees clockwise).
-        Applies a relative time shift by the nearest even number of samples to tlag,
-        trace1 is shifted tlag/2 backward in time, and trace2 tlag/2 forward in time.
-        Then undoes the original rotation.
+        .. warning:: shortens trace length by *lag*.
         """
         # convert time shift to nsamples -- must be even
         samps = core.time2samps(lag,self.delta,mode='even')
         # find appropriate rotation angle
-        rangle = degrees - self.cmpangs()[0]
-        self.x, self.y = core.unsplit(self.x,self.y,rangle,nsamps)
+        ang = np.deg2rad(fast)
+        fastcmps = np.array([[np.cos(ang),-np.sin(ang)],
+                             [np.sin(ang), np.cos(ang)]])       
+        rot = np.dot(fastcmps,self.cmpvecs.T)
+        # rangle = np.rad2deg(np.arccos(rot[0,0]))
+        rangle = np.rad2deg(np.arccos((rot.trace()-1)/2))
+        self.x, self.y = core.unsplit(self.x,self.y,rangle,samps)
         
     def rotateto(self,degrees):
         """
@@ -150,22 +176,38 @@ class Pair:
         # find appropriate rotation matrix
         ang = np.deg2rad(degrees)
         # define the new cmpvecs
-        newcmpvecs = np.array([[np.cos(ang),-np.sin(ang)],
-                        [np.sin(ang), np.cos(ang)]])
+        rotcmpvecs = np.array([[np.cos(ang),-np.sin(ang)],
+                            [np.sin(ang), np.cos(ang)]])
         # find the rotation matrix. 
         # Linear algebra: if a and b are rotation matrices, 
         # which have the useful property: a.T = inv(a)
         # then: dot(a.T,a) = dot(b.T,b) = I
         # and (multiply by b): dot(dot(b,a.T),a) = b.
         # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
-        rot = np.dot(newcmpvecs,self.cmpvecs.T)
+        rot = np.dot(rotcmpvecs,self.cmpvecs.T)
         # rotate data to suit
         xy = np.dot(rot,self.data())
         self.x, self.y = xy[0],xy[1]
-        self.cmpvecs = newcmpvecs
+        self.cmpvecs = rotcmpvecs
+        self.set_labels()
+        
+        
+    def pca(self):
+        """Return orientation of principal component"""
+        return core.pca(self.x,self.y)
 
+    def cmpangs(self):
+        cmp1 = self.cmpvecs[:,0]
+        cmp2 = self.cmpvecs[:,1]
+        def getang(c) : return np.rad2deg(np.arctan2(c[1],c[0]))
+        return getang(cmp1),getang(cmp2)
+
+# Geometry stuff
+
+
+# Windowing
                 
-    def setWindow(self,start,end,tukey=None):
+    def set_window(self,start,end,tukey=None):
         """
         Return a window object at user defined start and end times.
         
@@ -186,12 +228,19 @@ class Pair:
         Chop data around window
         """
         self.x, self.y = core.chop(self.x,self.y,window=window)
-        
-    def cmpangs(self):
-        cmp1 = self.cmpvecs[:,0]
-        cmp2 = self.cmpvecs[:,1]
-        def getang(c) : return np.rad2deg(np.arctan2(c[1],c[0]))
-        return getang(cmp1),getang(cmp2)
+
+    # def autowindow(self,time_centre=None):
+    #     """
+    #     Makes a guess based on energy near *time_centre* about a suitable window
+    #
+    #     *time centre* should be the shear wave pick at the centre of the energy packet.
+    #     By default will use centre sample.
+    #     """
+    #     if time_centre is None:
+    #         t0 = self.centre()
+    #     else:
+    #         t0 = int(time_centre / self.delta)        
+
 
     # useful?
     def nsamps(self):
@@ -209,17 +258,7 @@ class Pair:
 
 
         
-    # def autowindow(self,time_centre=None):
-    #     """
-    #     Makes a guess based on energy near *time_centre* about a suitable window
-    #
-    #     *time centre* should be the shear wave pick at the centre of the energy packet.
-    #     By default will use centre sample.
-    #     """
-    #     if time_centre is None:
-    #         t0 = self.centre()
-    #     else:
-    #         t0 = int(time_centre / self.delta)
+
             
         
                
@@ -249,7 +288,7 @@ class Pair:
     
     def ppm(self,**kwargs):
         """Plot particle motion"""
-        ax = plot.particle(self.x,self.y,**kwargs)
+        ax = plot.particle(self.x,self.y,cmplabels=self.cmplabels,**kwargs)
         plt.show()
            
     def plot(self,**kwargs):
@@ -305,7 +344,7 @@ def _synth(**kwargs):
     delta = 1.
     fast = 0.
     lag = 0.
-    noise = 0.03
+    noise = 0.001
     nsamps = 501
     width = 16.
     
