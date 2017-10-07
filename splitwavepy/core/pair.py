@@ -44,7 +44,8 @@ class Pair:
         
         # important to do first
         self.delta = 1.
-        if ('delta' in kwargs): self.delta = kwargs['delta']
+        if ('delta' in kwargs): self.delta = kwargs['delta']        
+        if ('window' in kwargs): self.window = kwargs['window']
                         
         # make synthetic
         if len(args) == 0:
@@ -52,7 +53,9 @@ class Pair:
             self.x, self.y = _synth(**kwargs)  
              
         # read in data                
-        elif len(args) == 2:            
+        elif len(args) == 2:
+            if not (isinstance(args[0],np.ndarray) & isinstance(args[0],np.ndarray)):
+                raise TypeError('expecting numpy arrays')         
             self.x, self.y = args[0], args[1]
         else: 
             raise Exception('Unexpected number of arguments')
@@ -109,7 +112,7 @@ class Pair:
         """Return orientation of principal component"""
         return core.pca(self.x,self.y)
     
-    def split(self,degrees,tlag):
+    def split(self,degrees,lag):
         """
         Applies splitting operator (phi,dt) to Pair.
         
@@ -137,7 +140,7 @@ class Pair:
         # convert time shift to nsamples -- must be even
         samps = core.time2samps(lag,self.delta,mode='even')
         # find appropriate rotation angle
-        rangle = degrees - self.cmpangles()[0]
+        rangle = degrees - self.cmpangs()[0]
         self.x, self.y = core.unsplit(self.x,self.y,rangle,nsamps)
         
     def rotateto(self,degrees):
@@ -146,13 +149,20 @@ class Pair:
         """
         # find appropriate rotation matrix
         ang = np.deg2rad(degrees)
-        rot = np.array([[np.cos(ang),-np.sin(ang)],
+        # define the new cmpvecs
+        newcmpvecs = np.array([[np.cos(ang),-np.sin(ang)],
                         [np.sin(ang), np.cos(ang)]])
-        # rotate component vectors
-        self.cmpvecs = np.dot(rot,self.cmpvecs)
+        # find the rotation matrix. 
+        # Linear algebra: if a and b are rotation matrices, 
+        # which have the useful property: a.T = inv(a)
+        # then: dot(a.T,a) = dot(b.T,b) = I
+        # and (multiply by b): dot(dot(b,a.T),a) = b.
+        # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
+        rot = np.dot(newcmpvecs,self.cmpvecs.T)
         # rotate data to suit
-        xy = np.dot(self.cmpvecs.T,self.data())
+        xy = np.dot(rot,self.data())
         self.x, self.y = xy[0],xy[1]
+        self.cmpvecs = newcmpvecs
 
                 
     def setWindow(self,start,end,tukey=None):
@@ -177,10 +187,10 @@ class Pair:
         """
         self.x, self.y = core.chop(self.x,self.y,window=window)
         
-    def cmpangles(self):
+    def cmpangs(self):
         cmp1 = self.cmpvecs[:,0]
-        cmp2 = self.cmpvecs[;,1]
-        def getang(cmp) : return np.rad2deg(np.arctan2(self.cmp1[1],self.cmp1[0]))
+        cmp2 = self.cmpvecs[:,1]
+        def getang(c) : return np.rad2deg(np.arctan2(c[1],c[0]))
         return getang(cmp1),getang(cmp2)
 
     # useful?
@@ -298,7 +308,6 @@ def _synth(**kwargs):
     noise = 0.03
     nsamps = 501
     width = 16.
-    window = Window(width*3)
     
     # override defaults
     if ('pol' in kwargs): pol = kwargs['pol']   
@@ -308,12 +317,14 @@ def _synth(**kwargs):
     if ('noise' in kwargs): noise = kwargs['noise']   
     if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
     if ('width' in kwargs): width = kwargs['width']   
-    if ('window' in kwargs): window = kwargs['window']
 
     nsamps = int(nsamps)  
     x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,int(width/4))
     y = core.noise(nsamps,noise,width/4)    
-    # rotate to polarisation
+    # rotate to polarisation 
+    # negative because we are doing the active rotation of data, whereas
+    #core.rotate does the passive transormation of the co-ordinate system
+    # (generally more common in splitting).
     x,y = core.rotate(x,y,-pol)    
     # add any splitting -- lag samples must be even
     slag = core.time2samps(lag,delta,mode='even')
