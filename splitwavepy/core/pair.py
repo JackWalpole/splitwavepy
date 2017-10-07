@@ -247,7 +247,7 @@ class Pair:
     
     # plotting
            
-    def plot(self,**kwargs):
+    def plot(self,*args,**kwargs):
         """
         Plot trace data and particle motion
         """
@@ -282,10 +282,11 @@ class Pair:
             ax1 = plt.subplot(gs[1])
             plot.particle(self.x,self.y,ax=ax1)
             
-        # interaction
-        if 'inter' in kwargs and kwargs['inter'] is True:
+        # plot mode
+        if args[0] == 'pickmode':            
             windowpicker = plot.WindowPicker(fig,ax0,**kwargs)
             windowpicker.connect()
+            # self.getWindow()
                      
         # show
         plt.tight_layout()

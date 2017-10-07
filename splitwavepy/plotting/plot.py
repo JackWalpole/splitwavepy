@@ -13,6 +13,10 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from mpl_toolkits.mplot3d import Axes3D
 
+# splitwavepy stuff
+from ..core.pair import Pair
+
+# other stuff
 import numpy as np
 
 #### rcParams ####
@@ -27,6 +31,8 @@ def trace(*args,**kwargs):
     - x
     - y
     - z (optional)
+    
+    better to use Pair and Trio?
     
     kwargs:
     - time
@@ -194,10 +200,7 @@ class WindowPicker:
         for key in keymap.keys():
             overlap = list(set(neededkeys) & set(keymap[key]))
             [ mpl.rcParams[key].remove(wantedkey) for wantedkey in overlap ]
-                
-        # mpl.rcParams['keymap.back'].remove('c')
-        # mpl.rcParams['keymap.all_axes'].remove('a')
-        # mpl.rcParams['keymap.fullscreen'].remove('f')
+        
         
         
         #
