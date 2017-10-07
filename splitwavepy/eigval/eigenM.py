@@ -64,12 +64,7 @@ class EigenM:
             self.data = Pair(*args,**kwargs)
         
         # convert times to nsamples
-        self.delta = self.data.delta
-        
-
-        
-        # process kwargs
-        
+        self.delta = self.data.delta 
         
         # window
         default_width = self.data.x.size / 2
@@ -126,9 +121,9 @@ class EigenM:
             if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['rcvcorr']
-            nsamps = int(2 * np.rint( 0.5 * lag / self.delta ))
-            kwargs['rcvcorr'] = (deg, nsamps)
-            self.rcvcorr = ( deg, nsamps * self.delta)
+            samps = core.time2samps(lag,self.delta,'even')
+            kwargs['rcvcorr'] = (deg, samps)
+            self.rcvcorr = ( deg, samps * self.delta)
         
         # source correction                  
         if ('srccorr' in kwargs):
@@ -136,9 +131,9 @@ class EigenM:
             if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['srccorr']
-            nsamps = int(2 * np.rint( 0.5 * lag / self.delta ))
-            kwargs['srccorr'] = (deg, nsamps)
-            self.srccorr = (deg, nsamps * self.delta)
+            samps = core.time2samps(lag,self.delta,'even')
+            kwargs['srccorr'] = (deg, samps)
+            self.srccorr = (deg, samps * self.delta)
 
             
         # ensure trace1 at zero angle
@@ -157,7 +152,6 @@ class EigenM:
         
         # correct the data     
         self.data_corr = self.data.copy()
-        # x,y = self.data.x, self.data.y
         # rcv side      
         if 'rcvcorr' in kwargs:
             self.data_corr.unsplit(*kwargs['rcvcorr'])    

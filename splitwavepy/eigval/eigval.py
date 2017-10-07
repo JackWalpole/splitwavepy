@@ -37,23 +37,21 @@ def grideigval(x, y, **kwargs):
     """
         
     if 'lags' not in kwargs:
-        # default search
-        maxlag = int(x.size / 10)
-        maxlag = maxlag if maxlag%2==0 else maxlag + 1
-        lags = 2 * np.rint(np.linspace(0,0.5*maxlag,30))
-        kwargs['lags'] = np.unique(lags).astype(int)
+        # a tenth the trace
+        maxlag = core.even( x.size / 10)
+        lags = core.even(np.linspace(0,maxlag,30))
+        kwargs['lags'] = np.unique(lags)
         
     if 'degs' not in kwargs:
-        # default search
+        # 3 degree increments
         stepang = 3
         kwargs['degs'] = np.arange(-90,90,stepang)
         
     if 'window' not in kwargs:
-        # make a window by guessing
-        nsamps = int(x.size/2)
-        nsamps = nsamps if nsamps%2==1 else nsamps + 1
+        # half the trace
+        samps = core.odd( x.size / 2)
         offset = 0
-        kwargs['window'] = Window(nsamps,offset,tukey=None)
+        kwargs['window'] = Window(samps,offset,tukey=None)
                     
     # grid of degs and lags to search over
     degs, lags = np.meshgrid(kwargs['degs'],kwargs['lags'])

@@ -16,20 +16,30 @@ from .window import Window
 import numpy as np
 from scipy import signal
 
-def time2samps(t,delta,mode='nearest'):
+##############
+
+def even(x): 
+    return int(2*np.rint(x/2))
+    
+def odd(x):
+    return int(2 * np.rint(np.ceil(rat/2)) - 1)
+
+def time2samps(t,delta,mode='near'):
     """
     convert a time to number of samples given the sampling interval.
     """
     rat = float(t / delta)        
     if mode == 'near': return int(np.rint(rat))
-    if mode == 'even': return int(2 * np.rint(rat/2))
-    if mode == 'odd' : return int(2 * np.rint(np.ceil(rat/2)) - 1)
+    if mode == 'even': return even(rat)
+    if mode == 'odd' : return odd(rat)
 
 def samps2time(samps,delta):
     """
     convert a number of samples to time given the sampling interval.
     """
     return samps * delta
+    
+################
 
 def lag(x,y,samps):
     """
