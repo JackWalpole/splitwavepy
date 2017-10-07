@@ -30,7 +30,7 @@ class Pair:
     
     Geometry Keyword Arguments (if in doubt don't use):
         - geom = 'geo' (N,E) / 'ray' (SV,SH) / 'cart' (X,Y)
-        - cmpvectors = np.eye(2)
+        - cmpvecs = np.eye(2)
         - rcvloc = (lat,lon,r) / (x,y,z)
         - srcloc =  (lat,lon,r) / (x,y,z)
         - rayloc =  rcvloc # must be somewhere on a sensible raypath
@@ -42,24 +42,9 @@ class Pair:
     """
     def __init__(self,*args,**kwargs):
         
-        # defaults
+        # important to do first
         self.delta = 1.
         if ('delta' in kwargs): self.delta = kwargs['delta']
-        
-        # labels
-        self.units = 's'   
-        if ('units' in kwargs): self.units = kwargs['units']
-        
-        self.cmplabels = ['Comp1','Comp2']
-        if ('cmplabels' in kwargs): self.cmplabels = kwargs['cmplabels']
-        
-        # A user defined name
-        self.name = 'untitled'
-        if ('name' in kwargs): self.name = kwargs['name']
-        
-        # Backup the command used to produce this object
-        self.args = args
-        self.kwargs = kwargs
                         
         # make synthetic
         if len(args) == 0:
@@ -79,13 +64,15 @@ class Pair:
             raise Exception('data must have odd number of samples')
         if (self.x.size != self.y.size):
             raise Exception('x and y must be the same length')
+            
+        
         
         # add geometry info 
         self.geom = 'geo'
         if ('geom' in kwargs): self.geom = kwargs['geom']
            
-        self.cmpvectors = np.eye(2)  
-        if ('cmpvectors' in kwargs): self.cmpvectors = kwargs['cmpvectors']
+        self.cmpvecs = np.eye(2)  
+        if ('cmpvecs' in kwargs): self.cmpvectors = kwargs['cmpvecs']
         
         self.rayvector = [0,0,1] # normal to shear plane, along Z-axis
         
@@ -93,7 +80,17 @@ class Pair:
         if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
         if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
 
-
+        # labels
+        self.units = 's'   
+        if ('units' in kwargs): self.units = kwargs['units']      
+        self.cmplabels = ['Comp1','Comp2']
+        if ('cmplabels' in kwargs): self.cmplabels = kwargs['cmplabels']   
+        # A user defined name
+        self.name = 'untitled'
+        if ('name' in kwargs): self.name = kwargs['name']    
+        # Backup the command used to produce this object
+        self.args = args
+        self.kwargs = kwargs
 
     # methods
 
@@ -122,14 +119,13 @@ class Pair:
         Then undoes the original rotation.
         """
         # convert time shift to nsamples -- must be even
-        nsamps = int(tlag / self.delta)
-        nsamps = nsamps if nsamps%2==0 else nsamps + 1
+        samps = core.time2samps(lag,self.delta,mode='even')
         # find appropriate rotation angle
-        rangle = degrees - self.angle
+        rangle = degrees - self.cmpangles()[0]
         # apply splitting
         self.x, self.y = core.split(self.x,self.y,rangle,nsamps)
            
-    def unsplit(self,degrees,tlag):
+    def unsplit(self,degrees,lag):
         """
         Applies reverse splitting operator (phi,dt) to Pair.
         
@@ -139,22 +135,26 @@ class Pair:
         Then undoes the original rotation.
         """
         # convert time shift to nsamples -- must be even
-        nsamps = int(tlag / self.delta)
-        nsamps = nsamps if nsamps%2==0 else nsamps + 1
+        samps = core.time2samps(lag,self.delta,mode='even')
         # find appropriate rotation angle
-        rangle = degrees - self.angle
+        rangle = degrees - self.cmpangles()[0]
         self.x, self.y = core.unsplit(self.x,self.y,rangle,nsamps)
         
     def rotateto(self,degrees):
         """
         Rotate data so that trace1 lines up with *degrees*
         """
-        # find appropriate rotation angle
-        rangle = degrees - self.angle 
-        self.x, self.y = core.rotate(self.x,self.y,rangle)
-        self.angle = degrees
-                    
+        # find appropriate rotation matrix
+        ang = np.deg2rad(degrees)
+        rot = np.array([[np.cos(ang),-np.sin(ang)],
+                        [np.sin(ang), np.cos(ang)]])
+        # rotate component vectors
+        self.cmpvecs = np.dot(rot,self.cmpvecs)
+        # rotate data to suit
+        xy = np.dot(self.cmpvecs.T,self.data())
+        self.x, self.y = xy[0],xy[1]
 
+                
     def setWindow(self,start,end,tukey=None):
         """
         Return a window object at user defined start and end times.
@@ -177,7 +177,11 @@ class Pair:
         """
         self.x, self.y = core.chop(self.x,self.y,window=window)
         
-
+    def cmpangles(self):
+        cmp1 = self.cmpvecs[:,0]
+        cmp2 = self.cmpvecs[;,1]
+        def getang(cmp) : return np.rad2deg(np.arctan2(self.cmp1[1],self.cmp1[0]))
+        return getang(cmp1),getang(cmp2)
 
     # useful?
     def nsamps(self):
@@ -238,7 +242,7 @@ class Pair:
         ax = plot.particle(self.x,self.y,**kwargs)
         plt.show()
            
-    def plot(self,*args,**kwargs):
+    def plot(self,**kwargs):
         """
         Plot trace data and particle motion
         """
@@ -272,12 +276,12 @@ class Pair:
             # particle  motion
             ax1 = plt.subplot(gs[1])
             plot.particle(self.x,self.y,ax=ax1)
-            
-        # plot mode
-        if args[0] == 'pickmode':            
-            windowpicker = plot.WindowPicker(fig,ax0,**kwargs)
-            windowpicker.connect()
-            # self.getWindow()
+        #
+        # # plot mode
+        # if args[0] == 'pickmode':
+        #     windowpicker = plot.WindowPicker(fig,ax0,**kwargs)
+        #     windowpicker.connect()
+        #     # self.getWindow()
                      
         # show
         plt.tight_layout()
@@ -306,13 +310,13 @@ def _synth(**kwargs):
     if ('width' in kwargs): width = kwargs['width']   
     if ('window' in kwargs): window = kwargs['window']
 
-    nsamps = np.rint(nsamps)  
-    x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,width/4)
+    nsamps = int(nsamps)  
+    x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,int(width/4))
     y = core.noise(nsamps,noise,width/4)    
     # rotate to polarisation
     x,y = core.rotate(x,y,-pol)    
-    # add any splitting -- this will reduce nsamps
-    slag = core.time2samps(lag)
+    # add any splitting -- lag samples must be even
+    slag = core.time2samps(lag,delta,mode='even')
     x,y = core.split(x,y,fast,slag)
     
     return x,y
