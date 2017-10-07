@@ -22,7 +22,7 @@ def even(x):
     return int(2*np.rint(x/2))
     
 def odd(x):
-    return int(2 * np.rint(np.ceil(rat/2)) - 1)
+    return int(2 * np.rint(np.ceil(x/2)) - 1)
 
 def time2samps(t,delta,mode='near'):
     """

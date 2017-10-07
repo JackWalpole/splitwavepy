@@ -15,7 +15,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 # splitwavepy stuff
 # from ..core import core
-from ..core import pair.Pair
+# from ..core import pair.Pair
 
 # other stuff
 import numpy as np
@@ -82,9 +82,7 @@ def particle(*args,**kwargs):
     
     # suck in the argument
     a = args[0]
-        
-
-    
+  
     if isinstance(a,Pair):
     
         # accept an axis, or initiate new 

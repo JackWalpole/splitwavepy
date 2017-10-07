@@ -85,8 +85,8 @@ class Pair:
         
         if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']     
         if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
-        self.rayloc = self.rcvloc
         if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
+
 
 
     # methods
