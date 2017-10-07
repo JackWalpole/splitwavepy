@@ -26,3 +26,9 @@ def load(filename):
     """
     with open(filename, 'rb') as f:
         return pickle.load(f)
+        
+
+# Would be good to incorporte this info in files:
+# version tracking ... e.g..
+# version = None
+# git = None

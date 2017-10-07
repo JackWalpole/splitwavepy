@@ -13,10 +13,6 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from mpl_toolkits.mplot3d import Axes3D
 
-# splitwavepy stuff
-# from ..core import core
-# from ..core import pair.Pair
-
 # other stuff
 import numpy as np
 
@@ -28,42 +24,42 @@ import numpy as np
 
 def trace(*args,**kwargs):
     """Return axis with trace data.
-
     args:
-    -Pair/Trio 
+    - x
+    - y
+    - z (optional)
     
     kwargs:
+    - time
     - ax = mpl axis
     """
-    
-    # Pairs or Trios only
-    if not isinstance(args[0],Pair): 
-        if not instance(args[0],Trio):
-            raise(TypeError)
-    
-    # suck in the argument
-    a = args[0]
-        
-    # accept an axis, or initiate or  
-    if 'ax' not in kwargs: kwargs['ax'] = plt.subplot(111)          
+         
+    if 'ax' not in kwargs: kwargs['ax'] = plt.subplot(111)    
     ax = kwargs['ax']
-        
+
+    if 'time' not in kwargs: kwargs['time'] = np.arange(args[0].size)   
+    
     # plot data
-    ax.plot(a.t(),a.data())
+    for ii in range(len(args)):
+        ax.plot(kwargs['time'],args[ii])
         
-    # set limit
+    # set limits
     lim = np.abs(args).max() * 1.1
-    if 'ylim' not in kwargs: kwargs['ylim'] = [-lim,lim]   
-    ax.set_ylim(kwargs['ylim'])    
+    if 'ylim' not in kwargs: kwargs['ylim'] = [-lim,lim]
+    ax.set_ylim(kwargs['ylim'])
+    if 'xlim' in kwargs: ax.set_xlim(kwargs['xlim'])
         
     # set label
-    if 'units' not in kwargs: kwargs['units'] = 's'           
-    ax.set_xlabel('Time (' + kwargs['units'] +')')  
+    if 'units' not in kwargs: kwargs['units'] = 's'            
+    ax.set_xlabel('Time (' + kwargs['units'] +')')
     
     # plot window markers
     if 'window' in kwargs:
-        ax.axvline(a.window.start(),linewidth=1,color='k')
-        ax.axvline(a.window.end(),linewidth=1,color='k')        
+        samps = args[0].size
+        wbeg = kwargs['window'].start(samps)*kwargs['time'][1]
+        wend = kwargs['window'].end(samps)*kwargs['time'][1]
+        ax.axvline(wbeg,linewidth=1,color='k')
+        ax.axvline(wend,linewidth=1,color='k')        
     
     return ax
     
@@ -75,63 +71,64 @@ def particle(*args,**kwargs):
     - ax
     """
     
-    # Pairs or Trios only
-    if not isinstance(args[0],Pair): 
-        if not instance(args[0],Trio):
-            raise(TypeError)
-    
-    # suck in the argument
-    a = args[0]
-  
-    if isinstance(a,Pair):
-    
-        # accept an axis, or initiate new 
-        if 'ax' not in kwargs: kwargs['ax'] = plt.subplot(111)          
+    # Labels
+    if not ('cmplabels' in kwargs):
+        kwargs['cmplabels'] = ['Comp1','Comp2','Comp3']
+        
+    # 2D particle motion
+    if len(args) == 2:
+        
+        if 'ax' not in kwargs: kwargs['ax'] = plt.subplot(111)
         ax = kwargs['ax']
-    
-        ax.plot(a.y,a.x)
-    
+        
+        # set data
+        ax.plot(args[1],args[0])
+        
         # set limit
         lim = np.abs(args).max() * 1.1
         if 'lim' not in kwargs: kwargs['lim'] = [-lim,lim]
-    
-        # axis properties
         ax.set_aspect('equal')
         ax.set_xlim(kwargs['lim'])
         ax.set_ylim(kwargs['lim'])
-        ax.set_xlabel(kwargs['labels'][1])
-        ax.set_ylabel(kwargs['labels'][0])
+        
+        # set labels
+        ax.set_xlabel(kwargs['cmplabels'][1])
+        ax.set_ylabel(kwargs['cmplabels'][0])
+            
+        # turn off tick annotation
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
 
         return ax
     
     # 3D particle motion
-    if isinstance(a,Trio):
-    
-        if 'ax' not in kwargs:
-            kwargs['ax'] = plt.subplot(111,projection='3d')
+    if len(args) == 3:
+        
+        if 'ax' not in kwargs: kwargs['ax'] = plt.subplot(111,projection='3d')
         ax = kwargs['ax']
         
-        # main data
-        ax.plot(a.x,a.y,a.z)
+        # set data
+        ax.plot(args[0],args[1],args[2])
         
-        # fix limits
-        lim = np.abs(a.all()).max() * 1.1
+        # set limit
+        lim = np.abs(args).max() * 1.1
+        if 'lim' not in kwargs: kwargs['lim'] = [-lim,lim]
         ax.set_aspect('equal')
-        ax.set_xlim([-lim,lim])
-        ax.set_ylim([-lim,lim])
-        ax.set_zlim([-lim,lim])
+        ax.set_xlim(kwargs['lim'])
+        ax.set_ylim(kwargs['lim'])
+        ax.set_zlim(kwargs['lim'])
         
-        # side panels
-        ax.plot(a.x,a.y,-lim,zdir='z',alpha=0.3,color='g')
-        ax.plot(a.x,a.z,lim,zdir='y',alpha=0.3,color='g')
-        ax.plot(a.y,a.z,-lim,zdir='x',alpha=0.3,color='g')
+        # side panel data
+        ax.plot(args[0],args[1],-lim,zdir='z',alpha=0.3,color='g')
+        ax.plot(args[0],args[2],lim,zdir='y',alpha=0.3,color='g')
+        ax.plot(args[1],args[2],-lim,zdir='x',alpha=0.3,color='g')
         
-        # axis properties
-        ax.set_xlabel(kwargs['labels'][0])
-        ax.set_ylabel(kwargs['labels'][1])
-        ax.set_zlabel(kwargs['labels'][2])
+        # set labels
+        ax.set_xlabel(kwargs['cmplabels'][0])
+        ax.set_ylabel(kwargs['cmplabels'][1])
+        ax.set_zlabel(kwargs['cmplabels'][2])
+        
+        # torun off tick annotation
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
         ax.axes.zaxis.set_ticklabels([])

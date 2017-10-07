@@ -25,6 +25,7 @@ class Pair:
     
     Naming Keyword Arguments:
         - name = 'untitled' (should be unique identifier) | string
+        - cmplabels = ['Comp1','Comp2'] | list of strings
         - units = 's' (for labelling) | string
     
     Geometry Keyword Arguments (if in doubt don't use):
@@ -49,17 +50,22 @@ class Pair:
         self.units = 's'   
         if ('units' in kwargs): self.units = kwargs['units']
         
+        self.cmplabels = ['Comp1','Comp2']
+        if ('cmplabels' in kwargs): self.cmplabels = kwargs['cmplabels']
+        
         # A user defined name
-        kwargs['name'] = 'untitled'
+        self.name = 'untitled'
         if ('name' in kwargs): self.name = kwargs['name']
         
+        # Backup the command used to produce this object
+        self.args = args
+        self.kwargs = kwargs
+                        
         # make synthetic
         if len(args) == 0:
-            # convert time2samps -- must be even
-            if ('lag' in kwargs): 
-                kwargs['lag'] = core.time2samps(kwargs['lag'])
             # generate                                                       
-            self.x, self.y = _synth(**kwargs)   
+            self.x, self.y = _synth(**kwargs)  
+             
         # read in data                
         elif len(args) == 2:            
             self.x, self.y = args[0], args[1]
@@ -280,51 +286,34 @@ class Pair:
 def _synth(**kwargs):
     """return ricker wavelet synthetic data"""
     
-    if ('pol' in kwargs):
-        pol = kwargs['pol']
-    else:
-        pol = 0.
-        
-    if ('fast' in kwargs):
-        fast = kwargs['fast']
-    else:
-        fast = 0.
-        
-    if ('lag' in kwargs):
-        lag = kwargs['lag']
-    else:
-        lag = 0
-        
-    if ('noise' in kwargs):
-        noise = kwargs['noise']
-    else:
-        noise = 0.03
-        
-    if ('nsamps' in kwargs):
-        nsamps = kwargs['nsamps']
-    else:
-        nsamps = 501
-        
-    if ('width' in kwargs):
-        width = kwargs['width']
-    else:
-        width = 16.
-        
-    if ('window' in kwargs):
-        window = kwargs['window']
-    else:
-        window = Window(width*3)
+    # defaults
+    pol = 0.
+    delta = 1.
+    fast = 0.
+    lag = 0.
+    noise = 0.03
+    nsamps = 501
+    width = 16.
+    window = Window(width*3)
+    
+    # override defaults
+    if ('pol' in kwargs): pol = kwargs['pol']   
+    if ('delta' in kwargs): delta = kwargs['delta']  
+    if ('fast' in kwargs): fast = kwargs['fast']
+    if ('lag' in kwargs): lag = kwargs['lag']   
+    if ('noise' in kwargs): noise = kwargs['noise']   
+    if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
+    if ('width' in kwargs): width = kwargs['width']   
+    if ('window' in kwargs): window = kwargs['window']
 
-    nsamps = int(nsamps)
-    
+    nsamps = np.rint(nsamps)  
     x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,width/4)
-    y = core.noise(nsamps,noise,width/4)
-    
+    y = core.noise(nsamps,noise,width/4)    
     # rotate to polarisation
-    x,y = core.rotate(x,y,-pol)
-    
+    x,y = core.rotate(x,y,-pol)    
     # add any splitting -- this will reduce nsamps
-    x,y = core.split(x,y,fast,lag)
+    slag = core.time2samps(lag)
+    x,y = core.split(x,y,fast,slag)
     
     return x,y
     
