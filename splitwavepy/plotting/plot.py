@@ -14,7 +14,8 @@ from matplotlib import gridspec
 from mpl_toolkits.mplot3d import Axes3D
 
 # splitwavepy stuff
-from ..core.pair import Pair
+# from ..core import core
+from ..core import pair.Pair
 
 # other stuff
 import numpy as np
@@ -27,50 +28,42 @@ import numpy as np
 
 def trace(*args,**kwargs):
     """Return axis with trace data.
+
     args:
-    - x
-    - y
-    - z (optional)
-    
-    better to use Pair and Trio?
+    -Pair/Trio 
     
     kwargs:
-    - time
-    - ax
+    - ax = mpl axis
     """
     
-    if 'time' not in kwargs:
-        kwargs['time'] = np.arange(args[0].size)   
+    # Pairs or Trios only
+    if not isinstance(args[0],Pair): 
+        if not instance(args[0],Trio):
+            raise(TypeError)
     
-    if 'ax' not in kwargs:        
-        # initiate axis  
-        kwargs['ax'] = plt.subplot(111)    
+    # suck in the argument
+    a = args[0]
+        
+    # accept an axis, or initiate or  
+    if 'ax' not in kwargs: kwargs['ax'] = plt.subplot(111)          
     ax = kwargs['ax']
         
     # plot data
-    for ii in range(len(args)):
-        ax.plot(kwargs['time'],args[ii])
+    ax.plot(a.t(),a.data())
         
     # set limit
-    if 'ylim' not in kwargs:
-        lim = np.abs(args).max() * 1.1
-        kwargs['ylim'] = [-lim,lim]
-    
+    lim = np.abs(args).max() * 1.1
+    if 'ylim' not in kwargs: kwargs['ylim'] = [-lim,lim]   
     ax.set_ylim(kwargs['ylim'])    
         
     # set label
-    if 'units' not in kwargs:
-        kwargs['units'] = 's'  
-          
+    if 'units' not in kwargs: kwargs['units'] = 's'           
     ax.set_xlabel('Time (' + kwargs['units'] +')')  
     
     # plot window markers
     if 'window' in kwargs:
-        nsamps = args[0].size
-        wbeg = kwargs['window'].start(nsamps)*kwargs['time'][1]
-        wend = kwargs['window'].end(nsamps)*kwargs['time'][1]
-        ax.axvline(wbeg,linewidth=1,color='k')
-        ax.axvline(wend,linewidth=1,color='k')        
+        ax.axvline(a.window.start(),linewidth=1,color='k')
+        ax.axvline(a.window.end(),linewidth=1,color='k')        
     
     return ax
     
@@ -81,19 +74,30 @@ def particle(*args,**kwargs):
     kwargs:
     - ax
     """
-    if not ('labels' in kwargs):
-        kwargs['labels'] = ['comp1','comp2','comp3']
     
-    # 2D particle motion
-    if len(args) == 2:
-        if 'ax' not in kwargs:         
-            kwargs['ax'] = plt.subplot(111)
+    # Pairs or Trios only
+    if not isinstance(args[0],Pair): 
+        if not instance(args[0],Trio):
+            raise(TypeError)
+    
+    # suck in the argument
+    a = args[0]
+        
+
+    
+    if isinstance(a,Pair):
+    
+        # accept an axis, or initiate new 
+        if 'ax' not in kwargs: kwargs['ax'] = plt.subplot(111)          
         ax = kwargs['ax']
-        ax.plot(args[1],args[0])
+    
+        ax.plot(a.y,a.x)
+    
         # set limit
-        if 'lim' not in kwargs:
-            lim = np.abs(args).max() * 1.1
-            kwargs['lim'] = [-lim,lim]
+        lim = np.abs(args).max() * 1.1
+        if 'lim' not in kwargs: kwargs['lim'] = [-lim,lim]
+    
+        # axis properties
         ax.set_aspect('equal')
         ax.set_xlim(kwargs['lim'])
         ax.set_ylim(kwargs['lim'])
@@ -101,29 +105,39 @@ def particle(*args,**kwargs):
         ax.set_ylabel(kwargs['labels'][0])
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
-        # ax.grid()
+
         return ax
     
     # 3D particle motion
-    if len(args) == 3:
+    if isinstance(a,Trio):
+    
         if 'ax' not in kwargs:
             kwargs['ax'] = plt.subplot(111,projection='3d')
         ax = kwargs['ax']
-        ax.plot(args[0],args[1],args[2])
-        lim = np.abs(args).max() * 1.1
+        
+        # main data
+        ax.plot(a.x,a.y,a.z)
+        
+        # fix limits
+        lim = np.abs(a.all()).max() * 1.1
         ax.set_aspect('equal')
         ax.set_xlim([-lim,lim])
         ax.set_ylim([-lim,lim])
         ax.set_zlim([-lim,lim])
-        ax.plot(args[0],args[1],-lim,zdir='z',alpha=0.3,color='g')
-        ax.plot(args[0],args[2],lim,zdir='y',alpha=0.3,color='g')
-        ax.plot(args[1],args[2],-lim,zdir='x',alpha=0.3,color='g')
+        
+        # side panels
+        ax.plot(a.x,a.y,-lim,zdir='z',alpha=0.3,color='g')
+        ax.plot(a.x,a.z,lim,zdir='y',alpha=0.3,color='g')
+        ax.plot(a.y,a.z,-lim,zdir='x',alpha=0.3,color='g')
+        
+        # axis properties
         ax.set_xlabel(kwargs['labels'][0])
         ax.set_ylabel(kwargs['labels'][1])
         ax.set_zlabel(kwargs['labels'][2])
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
         ax.axes.zaxis.set_ticklabels([])
+        
         return ax
         
         

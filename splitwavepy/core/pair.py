@@ -22,17 +22,16 @@ class Pair:
     Keyword Arguments:
         - delta = 1. (sample interval) [default] | float
         - units = 's' (for labelling) | string
-        - angle = 0. (component 1 angle) | float
+        - cmplabels = ['component 1','component 2'] | list of strings
     
     Advanced Keyword Arguments (if in doubt don't use):
-        - geom = 'geo' (N,E) [default] | 'ray' (SV,SH)
-        - xy = np.ones(2) | custom numpy array
-        - rcvloc = None
-        - srcloc = None    
+        - geom = 'geo' (N,E) / 'ray' (SV,SH) / 'cart' (x,y)
+        - cmpvectors = np.eye(2) | float
+        - rcvloc = (lat,lon,r) / (x,y,z)
+        - srcloc = (lat,lon,r) / (x,y,z)    
 
     Methods:
         - plot()
-        -
     """
     def __init__(self,*args,**kwargs):
         
@@ -104,7 +103,7 @@ class Pair:
     def centre(self):
         return int(self.x.size/2)
     
-    def xy(self):
+    def data(self):
         return np.vstack((self.x,self.y))
     
     
