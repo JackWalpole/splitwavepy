@@ -6,6 +6,7 @@ from __future__ import print_function
 from . import core
 from ..plotting import plot
 from .window import Window
+from ..core import io
 
 import numpy as np
 from scipy import signal

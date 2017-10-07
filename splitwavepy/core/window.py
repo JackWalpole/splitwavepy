@@ -95,4 +95,8 @@ class Window:
         if self.__class__ != other.__class__: return False
         return self.__dict__ == other.__dict__
 
-
+    def save(self,filename):
+        """
+        Save just the data for future referral
+        """
+        io.save(self,filename)
