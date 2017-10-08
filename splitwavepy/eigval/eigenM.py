@@ -161,7 +161,7 @@ class EigenM:
             self.data_corr.unsplit(*kwargs['srccorr'])
         
         # recover source polarisation
-        self.srcpol = self.data_corr.pca()
+        self.srcpol = self.data_corr.pol()
         
         # estimate signal to noise   
         self.snr = np.max((self.lam1-self.lam2)/(self.lam2))
@@ -173,17 +173,20 @@ class EigenM:
         self.units = self.data.units
     
     def srcpoldata(self):
-        return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol))
+        srcpoldata = self.data.copy()
+        return srcpoldata.rotateto(self.srcpol)
+        # return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol))
         
     def srcpoldata_corr(self):
-        # data_corr = self.data_corr
-        return Pair(*core.rotate(self.data_corr.x,self.data_corr.y,self.srcpol))
+        srcpoldata_corr = self.data_corr.copy()
+        return srcpoldata_corr.rotateto(self.srcpol)
+        # return Pair(*core.rotate(self.data_corr.x,self.data_corr.y,self.srcpol))
         
-    def fastslowdata(self):
-        return Pair(*core.rotate(self.data.x,self.data.y,self.fast))
-        
-    def fastslowdata_corr(self):
-        return Pair(*core.rotate(self.data_corr.x,self.data_corr.y,self.fast))
+    # def fastslowdata(self):
+    #     return Pair(*core.rotate(self.data.x,self.data.y,self.fast))
+    #
+    # def fastslowdata_corr(self):
+    #     return Pair(*core.rotate(self.data_corr.x,self.data_corr.y,self.fast))
     
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
