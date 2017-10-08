@@ -7,6 +7,7 @@ from . import core
 from ..plotting import plot
 from .window import Window
 from ..core import io
+from . import geom
 
 import numpy as np
 from scipy import signal
@@ -65,8 +66,7 @@ class Pair:
         # important to do first
         self.delta = 1.
         if ('delta' in kwargs): self.delta = kwargs['delta']
-               
-                         
+                       
         # if no args make synthetic
         if len(args) == 0: 
             self.x, self.y = _synth(**kwargs)               
@@ -94,7 +94,7 @@ class Pair:
         if ('geom' in kwargs): self.geom = kwargs['geom']
            
         self.cmpvecs = np.eye(2)  
-        if ('cmpvecs' in kwargs): self.cmpvectors = kwargs['cmpvecs']
+        if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']
         
         self.rayvec = [0,0,1] # normal to shear plane, along Z-axis
         if ('rayvec' in kwargs): self.rayvec = kwargs['rayvec']
@@ -107,8 +107,8 @@ class Pair:
         # labels
         self.units = 's'   
         if ('units' in kwargs): self.units = kwargs['units']      
-        self.cmplabels = self.set_labels()
-        if ('cmplabels' in kwargs): self.cmplabels = kwargs['cmplabels']   
+        self.set_labels()
+        if ('cmplabels' in kwargs): self.cmplabels = kwargs['cmplabels']
         # A user defined name # maybe useful?
         self.name = 'untitled'
         if ('name' in kwargs): self.name = kwargs['name']    
@@ -125,14 +125,17 @@ class Pair:
         return np.vstack((self.x,self.y))
     
     def set_labels(self):
-        if np.allclose(self.cmpvecs,np.eye(2)):
-            if self.geom == 'geo': self.cmplabels = ['North','East']
-            if self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
-            if self.geom == 'cart': self.cmplabels = ['X','Y']
-            return
+        # if np.allclose(self.cmpvecs,np.eye(2)):
+        if self.geom == 'geo': self.cmplabels = ['North','East']
+        elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
+        elif self.geom == 'cart': self.cmplabels = ['X','Y']
+        else self.cmplabel = ['Comp1','Comp2']
+        return
         # if reached here use the default label
-        lab1,lab2 = self.cmpangs()
-        self.cmplabels = ['Cmp '+str(round(lab1)),'Cmp ' +str(round(lab2))]
+        # a1,a2 = self.cmpangs()
+        # lbl1 = str(round(a1))
+        # lbl2 = str(round(a2))
+        # self.cmplabels = [lbl1,lbl2]
         
         
     def split(self,fast,lag):
@@ -202,6 +205,9 @@ class Pair:
         xy = np.dot(rot,self.data())
         self.x, self.y = xy[0],xy[1]
         self.cmpvecs = rotcmpvecs
+        # reset label
+        # if reached here use the default label
+        lab1,lab2 = self.cmpangs()
         self.set_labels()
         
         

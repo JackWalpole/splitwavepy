@@ -62,19 +62,71 @@ Sometimes we might want to do a *correction* and apply the *inverse* splitting o
 Real data
 ---------
 
-If you've got real data you need to get it into a `numpy <http://www.numpy.org/>`_ array.  `Obspy <https://github.com/obspy/obspy/wiki>`_ is extremely useful for that.  For the purposes of this tutorial, let's use obspy to download some data from the `<IRIS <https://www.iris.edu/hq/>`_ servers.
+If you've got real data you need to get it into a `numpy <http://www.numpy.org/>`_ array.    For the purposes of this tutorial, let's use `Obspy <https://github.com/obspy/obspy/wiki>`_  to download some data from the `IRIS <https://www.iris.edu/hq/>`_ servers.
 
+.. .. nbplot::
+.. 	:include-source:
+..
+.. 	# Get waveforms of event plotted in my G3,2014 paper
+.. 	# (I discovered that I got the event time wrong in the paper -- but this is correct.)
+.. 	from obspy import read
+.. 	from obspy.clients.fdsn import Client
+.. 	from obspy import UTCDateTime
+..
+.. 	client = Client("IRIS")
+.. 	t = UTCDateTime("2000-08-15T04:30:0.000")
+.. 	st = client.get_waveforms("IU", "CCM", "00", "BH?", t, t + 60 * 60,attach_response=True)
+..
+.. 	# filter the data
+.. 	st.filter("bandpass",freqmin=0.01,freqmax=0.5)
+..
+.. 	# select horizontal components
+.. 	st.select(component="[N,E]")
+..
+.. 	st.plot()
 
->>> import obspy
+.. With real data it's worth doing a bit of pre-processing which at minimum will involve removing the mean from data, and might also involve bandpass filtering, interpolation, and/or rotating the components.  It is also necessary to pick the shear arrival of interest.  All of this is achievable in Obspy.
 
-With real data it's worth doing a bit of pre-processing which at minimum will involve removing the mean from data, and might also involve bandpass filtering, interpolation, and/or rotating the components.  It is also necessary to pick the shear arrival of interest.  All of this is achievable in Obspy.
+We can use the obspy taup module to find the SKS arrival.
 
->>> # remove mean etc.
+.. .. nbplot::
+.. 	:include-source:
+..
+.. 	from obspy.taup import TauPyModel
+..
+.. 	# from location and time, get event information
+.. 	lat=-31.56
+.. 	lon=179.74
+..
+.. 	# server does not accept longitude greater than 180.
+.. 	cat = client.get_events(starttime=t-60,endtime=t+60,minlatitude=lat-1,
+.. 	                  maxlatitude=lat+1,minlongitude=lon-1,maxlongitude=180)
+.. 	evtime = cat.events[0].origins[0].time
+.. 	evdepth = cat.events[0].origins[0].depth/1000
+.. 	evlat = cat.events[0].origins[0].latitude
+.. 	evlon = cat.events[0].origins[0].longitude
+..
+.. 	# station information
+.. 	inventory = client.get_stations(network="IU",station="CCM",starttime=t-60,endtime=t+60)
+.. 	stlat = inventory[0][0].latitude
+.. 	stlon = inventory[0][0].longitude
+..
+.. 	# find arrival times
+.. 	model = TauPyModel('iasp91')
+.. 	arrivals = model.get_travel_times_geo(evdepth,evlat,evlon,stlat,stlon,phase_list=['SKS'])
+.. 	skstime = evtime + arrivals[0].time
+..
+.. 	# trim around SKS
+.. 	st.trim( skstime-30, skstime+30)
+..
+.. 	# get data into Pair object and plot
+.. 	realdata = s.Pair( d[0].data, d[1].data, delta=d[0].stats.delta)
+.. 	realdata.plot()
+	
 
-
-We have 3-component data,in this example we are looking at SKS which has a very steep (near vertical) incidence angle, so we will assume that the shear plane is horizontal, and limit the analysis to the horizontal componenents.
-
->>> # get 2-component data into Pair and plot
+.. .. nbplot::
+	:include-source:
+	
 
 
 .. _window:
@@ -84,32 +136,22 @@ Setting the window
 	
 The window should be designed in such a way as to maximise the energy of a single pulse of shear energy relative to noise and other arrivals.
 
-Interactive plotting is supported by ``plot(interactive=True)``.  Click and drag to pick a window, or mouse hover and use the ``a`` and ``f`` keys to open and close the window (sac, anyone?), use the arrow keys to fine tune the window.  When you're ready to measure, hit the space bar.
+.. note::
+    By default the window will be centred on the middle of the trace with width 1/3 of the trace length.
+
+Interactive plotting window picking is supported by ``plot(interactive=True)``.  Left click to pick the window and right click to set the window and close the plot.
 
 .. tip::
 	If the interactive plotting is not working you might need to add ``backend : TkAgg`` as a line 
 	in your ``~/.matplotlib/matplotlibrc`` file.	
 
-
-*Windows* are parameterised by two (or three) parameters:
-
-- *centre* time centre of window,
-- *width* time length of window,
-- *tukey* (optional) fraction of window to cosine taper (from 0 to 1).
-
-.. note::
-    By default the window will be centred on the middle of the trace with width 1/3 of the trace length.
-
-
-.. .. autoclass:: splitwavepy.core.window.Window
-
-A *Window* can be generate using the *set_window(start,end)* method, and you can see the *Window* on the data by using `plot(window=True)`.
+Alternatively the window can be set using the ``set_window(start,end)`` method.
 
 .. nbplot::
 	:include-source:
 
 	wind = data.set_window( 15, 32) # start, end 
-	data.plot(window=True)
+	data.plot()
 	
 	
 .. .. note::
@@ -132,29 +174,11 @@ To use this method on your data.
 	measure = sw.EigenM(data)
 	measure.plot()
 
-How to do it
-``````````````
-
-With a window selected we are almost ready to meausure shear wave splitting!  We can tell the algorithm which splitting operators to trial using the *degs* and *tlags* keywords.  The measurement is made by instantiating an *EigenM* object.
-
-.. .. autoclass:: splitwavepy.EigenM
-
->>> m = 60 # default 
->>>
->>> measurement = sw.EigenM( data, tlags=(mint,maxt,n))
-
-.. note::
-
-	If *Window*, *tlags*, or *degs* are unspecified, guesses are made.  It is strongly advised that you set these manually and at the very least check that these parameters look reasonable!
-	
-Making a measurement is as easy as instantiating an *EigenM* object.  If no arguments are supplied then the code will automatically produce a synthetic.  Check out the tutorials to see how to use :ref:`real_data`.
-
-
-How it works
-``````````````
 
 Error Estimation
 -----------------
+
+To report the 
 
 F--test
 ````````
@@ -236,52 +260,52 @@ With optional geometry information appended to the right:
 +------------+------------+-----------+ 
 
 
-Saving and loading
+.. Saving and loading
 -------------------
 
 
 
 
 
-Transverse minimisation method
--------------------------------
-
-Rotation correlation method
-----------------------------
-
- 
-Null detection
---------------
-
-
-Error surface stacking
-----------------------
-
-
-Self normalised SNR :math:`(\lambda_1 - \lambda_2)/\lambda_2` surface stacking
-````````````````````````````````````````````````````````````````````````````````
-
-If :math:`\lambda_1 = \text{signal} + \text{noise}` and :math:`\lambda_2 = \text{noise}`, then the signal to noise ratio, :math:`\text{SNR} = (\lambda_1 - \lambda_2)/\lambda_2`. 
+.. Transverse minimisation method
+.. -------------------------------
+..
+.. Rotation correlation method
+.. ----------------------------
+..
+..
+.. Null detection
+.. --------------
+..
+..
+.. Error surface stacking
+.. ----------------------
 
 
-
-Receiver correction
--------------------
-
-Source correction
------------------
-
-
-Bootstrap correction error estimation
--------------------------------------
-
-
-
-
-
-
-3--component data
---------------------
+.. Self normalised SNR :math:`(\lambda_1 - \lambda_2)/\lambda_2` surface stacking
+.. ````````````````````````````````````````````````````````````````````````````````
+..
+.. If :math:`\lambda_1 = \text{signal} + \text{noise}` and :math:`\lambda_2 = \text{noise}`, then the signal to noise ratio, :math:`\text{SNR} = (\lambda_1 - \lambda_2)/\lambda_2`.
+..
+..
+..
+.. Receiver correction
+.. -------------------
+..
+.. Source correction
+.. -----------------
+..
+..
+.. Bootstrap correction error estimation
+.. -------------------------------------
+..
+..
+..
+..
+..
+..
+.. 3--component data
+.. --------------------
 
 
 

@@ -7,7 +7,7 @@ from . import core
 from . import core3d
 from .pair import Pair
 from .window import Window
-from ..plotting import plot
+from ..plotting import plot3d as plot
 
 import numpy as np
 from scipy import signal

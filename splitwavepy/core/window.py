@@ -12,7 +12,17 @@ from . import core
 class Window:
     """
     Instantiate a Window defined relative to centre of a window of flexible size.
+    
+    args
+
+    - width    | nsamps length of window,
+    - offset   | nsamps offset from centre of window,    
+    
+    kwargs
+    
+    - tukey   | fraction of window to cosine taper (from 0 to 1).
     """
+    
     def __init__(self,width,offset=0,tukey=None):
         # ensure width is odd 
         self.width = core.odd(width)

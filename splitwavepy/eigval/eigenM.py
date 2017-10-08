@@ -296,6 +296,10 @@ class EigenM:
 
     def plot(self,**kwargs):
         
+        
+        if 'cmplabels' not in kwargs:
+            kwargs['cmplabels'] = self.data.cmplabels
+        
         if 'mode' not in kwargs:
             kwargs['mode'] = 'all'
         
@@ -334,12 +338,12 @@ class EigenM:
 ## TODO fix times so they are equal at centre sample
     
             # original
-            plot.trace(d1d[0],d1d[1],time=d1t,ax=ax0,ylim=ylim)
-            plot.particle(d1d[0],d1d[1],ax=ax1,lim=ylim)
+            plot.trace(d1d[0],d1d[1],time=d1t,ax=ax0,ylim=ylim,**kwargs)
+            plot.particle(d1d[0],d1d[1],ax=ax1,lim=ylim,**kwargs)
     
             # corrected
-            plot.trace(d2d[0],d2d[1],time=d2t,ax=ax2,ylim=ylim)
-            plot.particle(d2d[0],d2d[1],ax=ax3,lim=ylim)
+            plot.trace(d2d[0],d2d[1],time=d2t,ax=ax2,ylim=ylim,**kwargs)
+            plot.particle(d2d[0],d2d[1],ax=ax3,lim=ylim,**kwargs)
     
             # error surface
             if 'vals' not in kwargs:
