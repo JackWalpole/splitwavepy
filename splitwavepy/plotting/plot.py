@@ -163,12 +163,12 @@ def surf(M,**kwargs):
     ax.set_yticks(np.linspace(-90,90,6,endpoint=False))
     ax.set_ylabel('Fast Direction (degs)')
     ax.set_xlabel('Delay Time (' + M.units + ')')
-    
-    # marker
-    ax.errorbar(M.lag,M.fast,xerr=M.fdlag,yerr=M.fdfast,fmt='o')
-    
-    # confidence region
-    ax.contour(M.lags,M.degs,M.lam2,levels=[M.lam2_95()])
+    #
+    # # marker
+    # ax.errorbar(M.lag,M.fast,xerr=M.fdlag,yerr=M.fdfast,fmt='o')
+    #
+    # # confidence region
+    # ax.contour(M.lags,M.degs,M.lam2,levels=[M.lam2_95()])
 
     ax.set_xlim([M.lags[0,0], M.lags[-1,0]])
     ax.set_ylim([M.degs[0,0], M.degs[0,-1]])

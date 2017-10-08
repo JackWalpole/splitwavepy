@@ -144,14 +144,20 @@ class Pair:
         # convert time shift to nsamples -- must be even
         samps = core.time2samps(lag,self.delta,mode='even')
         # find appropriate rotation angle
-        ang = np.deg2rad(fast)
-        fastcmps = np.array([[np.cos(ang),-np.sin(ang)],
-                             [np.sin(ang), np.cos(ang)]])       
-        rot = np.dot(fastcmps,self.cmpvecs.T)
-        # rangle = np.rad2deg(np.arccos(rot[0,0]))
-        rangle = np.rad2deg(np.arccos((rot.trace()-1)/2))
+        origangs=self.cmpangs()
+        self.rotateto(0)
         # apply splitting
-        self.x, self.y = core.split(self.x,self.y,rangle,samps)
+        self.x, self.y = core.split(self.x,self.y,fast,samps)
+        self.rotateto(origangs[0])
+        
+        # ang = np.deg2rad(fast)
+        # fastcmps = np.array([[np.cos(ang),-np.sin(ang)],
+        #                      [np.sin(ang), np.cos(ang)]])
+        # rot = np.dot(fastcmps,self.cmpvecs.T)
+        # rangle = np.rad2deg(np.arccos(rot[0,0]))
+        # print(rangle,samps)
+        # apply splitting
+        # self.x, self.y = core.split(self.x,self.y,rangle,samps)
            
     def unsplit(self,fast,lag):
         """
@@ -162,13 +168,19 @@ class Pair:
         # convert time shift to nsamples -- must be even
         samps = core.time2samps(lag,self.delta,mode='even')
         # find appropriate rotation angle
-        ang = np.deg2rad(fast)
-        fastcmps = np.array([[np.cos(ang),-np.sin(ang)],
-                             [np.sin(ang), np.cos(ang)]])       
-        rot = np.dot(fastcmps,self.cmpvecs.T)
+        origangs=self.cmpangs()
+        self.rotateto(0)
+        # apply splitting
+        self.x, self.y = core.unsplit(self.x,self.y,fast,samps)
+        self.rotateto(origangs[0])
+        
+        # ang = np.deg2rad(fast)
+        # fastcmps = np.array([[np.cos(ang),-np.sin(ang)],
+        #                      [np.sin(ang), np.cos(ang)]])
+        # rot = np.dot(fastcmps,self.cmpvecs.T)
         # rangle = np.rad2deg(np.arccos(rot[0,0]))
-        rangle = np.rad2deg(np.arccos((rot.trace()-1)/2))
-        self.x, self.y = core.unsplit(self.x,self.y,rangle,samps)
+        # print(rangle,samps)
+        # self.x, self.y = core.unsplit(self.x,self.y,rangle,samps)
         
     def rotateto(self,degrees):
         """
@@ -181,7 +193,7 @@ class Pair:
                             [np.sin(ang), np.cos(ang)]])
         # find the rotation matrix. 
         # Linear algebra: if a and b are rotation matrices, 
-        # which have the useful property: a.T = inv(a)
+        # then: a.T = inv(a) and b.T = inv(b)
         # then: dot(a.T,a) = dot(b.T,b) = I
         # and (multiply by b): dot(dot(b,a.T),a) = b.
         # i.e., dot(b,a.T) is the rotation matrix that converts a to b.

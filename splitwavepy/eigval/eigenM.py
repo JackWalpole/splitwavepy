@@ -64,7 +64,8 @@ class EigenM:
             self.data = Pair(*args,**kwargs)
         
         # convert times to nsamples
-        self.delta = self.data.delta 
+        self.delta = self.data.delta
+        self.units = self.data.units
         
         # window default parameters
         width = self.data.x.size / 2
@@ -144,42 +145,49 @@ class EigenM:
         self.lags = self.samplags * self.delta
                 
         # get some measurement attributes
-        # uses ratio lam1/lam2 to find optimal fast and lag parameters
-        maxloc = core.max_idx((self.lam1-self.lam2)/self.lam2)
+        # maximise lam1/lam2
+        maxloc = core.max_idx(self.lam1/self.lam2)
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
+        # estimate signal to noise level
+        self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
         
-        # correct the data     
-        self.data_corr = self.data.copy()
-        # rcv side      
-        if 'rcvcorr' in kwargs:
-            self.data_corr.unsplit(*kwargs['rcvcorr'])    
-        # target layer
-        self.data_corr.unsplit(self.fast,self.lag)  
-        # src side
-        if 'srccorr' in kwargs:
-            self.data_corr.unsplit(*kwargs['srccorr'])
+        # data corrections
+        self.rcvcorr = None
+        if 'rcvcorr' in kwargs: self.rcvcorr = kwargs['rcvcorr']
+        self.srccorr = None
+        if 'srccorr' in kwargs: self.rcvcorr = kwargs['srccorr'] 
         
-        # recover source polarisation
-        self.srcpol = self.data_corr.pol()
-        
-        # estimate signal to noise   
-        self.snr = np.max((self.lam1-self.lam2)/(self.lam2))
-        
-        # error estimations
-        self.fdfast, self.fdlag = self.f_errors()
-        
-        # other stuff
-        self.units = self.data.units
+
+    # methods
     
+    def srcpol(self):
+        # recover source polarisation
+        return self.data_corr().pol()
+        
+    def data_corr(self):        
+        # copy data     
+        data_corr = self.data.copy()
+        # rcv side correction     
+        if self.rcvcorr is not None:
+            data_corr.unsplit(*self.rcvcorr)    
+        # target layer correction
+        data_corr.unsplit(self.fast,self.lag)  
+        # src side correction
+        if self.srccorr is not None:
+            data_corr.unsplit(*self.srccorr)
+        return data_corr
+
     def srcpoldata(self):
         srcpoldata = self.data.copy()
-        return srcpoldata.rotateto(self.srcpol)
+        srcpoldata.rotateto(self.srcpol())
+        return srcpoldata
         # return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol))
         
     def srcpoldata_corr(self):
-        srcpoldata_corr = self.data_corr.copy()
-        return srcpoldata_corr.rotateto(self.srcpol)
+        srcpoldata_corr = self.data_corr()        
+        srcpoldata_corr.rotateto(self.srcpol())
+        return srcpoldata_corr
         # return Pair(*core.rotate(self.data_corr.x,self.data_corr.y,self.srcpol))
         
     # def fastslowdata(self):
@@ -306,33 +314,33 @@ class EigenM:
             ax3 = plt.subplot(gs[1,1])
             ax4 = plt.subplot(gs[:,2])
             
-            # d1 = self.data.copy()
-            # d1.chop(self.window)
-            # d2 = self.data_corr.copy()
-            # d2.chop(self.window)
             d1 = self.srcpoldata()
-            d1.chop(self.window)
             d2 = self.srcpoldata_corr()
-            d2.chop(self.window)
+            
+            d1d = d1.chop()
+            d1t = d1.chopt()            
+            d2d = d2.chop()
+            d2t = d2.chopt()
             
             # get axis scaling
-            lim = np.abs(np.hstack((d1.data(),d2.data()))).max() * 1.1
+            lim = np.abs(np.hstack((d1d,d2d))).max() * 1.1
             ylim = [-lim,lim]
+            
+## TODO fix times so they are equal at centre sample
     
             # original
-            plot.trace(d1.x,d1.y,time=d1.t(),ax=ax0,ylim=ylim)
-            plot.particle(d1.x,d1.y,ax=ax1,lim=ylim)
+            plot.trace(d1d[0],d1d[1],time=d1t,ax=ax0,ylim=ylim)
+            plot.particle(d1d[0],d1d[1],ax=ax1,lim=ylim)
     
             # corrected
-            plot.trace(d2.x,d2.y,time=d2.t(),ax=ax2,ylim=ylim)
-            plot.particle(d2.x,d2.y,ax=ax3,lim=ylim)
+            plot.trace(d2d[0],d2d[1],time=d2t,ax=ax2,ylim=ylim)
+            plot.particle(d2d[0],d2d[1],ax=ax3,lim=ylim)
     
             # error surface
             if 'vals' not in kwargs:
                 kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
                 kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
 
-        
             plot.surf(self,ax=ax4,**kwargs)
         
             # neaten
