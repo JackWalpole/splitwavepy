@@ -66,13 +66,13 @@ class EigenM:
         # convert times to nsamples
         self.delta = self.data.delta 
         
-        # window
-        default_width = self.data.x.size / 2
-        default_offset = 0
-        default_tukey = None
+        # window default parameters
+        width = self.data.x.size / 2
+        offset = 0
+        tukey = None
         
         if 'window' not in kwargs:
-            self.window = Window(default_width,default_offset,default_tukey)
+            self.window = Window( width, offset, tukey)
         else:
             if not isinstance(kwargs['window'],Window):
                 raise TypeError('window must be a Window type')
@@ -80,40 +80,39 @@ class EigenM:
                 self.window = kwargs['window']
         
         # lags        
-        default_minlag = 0
-        default_maxlag = self.window.width / 10
-        default_nlags  = 30
+        minlag = 0
+        maxlag = self.window.width / 10
+        nlags  = 30
         
         if 'lags' not in kwargs:
-            lags = np.linspace(default_minlag,default_maxlag,default_nlags)
+            lags = np.linspace( minlag, maxlag, nlags)
         else:
             if not isinstance(kwargs['lags'],tuple):
                 raise TypeError('lags must be a tuple')
             elif len(kwargs['lags']) == 1:
-                lags = np.linspace(default_minlag,kwargs['lags'],default_nlags)
+                lags = np.linspace( minlag, kwargs['lags'], nlags)
             elif len(kwargs['lags']) == 2:
-                lags = np.linspace(default_minlag,*kwargs['lags'])
+                lags = np.linspace( minlag, *kwargs['lags'])
             elif len(kwargs['lags']) == 3:
-                lags = np.linspace(*kwargs['lags'])
+                lags = np.linspace( *kwargs['lags'])
             else:
                 raise Exception('Too much info in lags keyword')
-                
-            # round to nearest 2
-            samplelags = 2 * np.rint( 0.5 * lags / self.delta )
+            
+            # lags must be even
             # a bit messy to reuse kwargs['lags'] in this way but eigval expects this name 
-            kwargs['lags'] = np.unique(samplelags).astype(int)
+            kwargs['lags'] = np.unique( core.time2samps( lags, delta, mode='even')).astype(int)
             
         # degs
-        default_mindeg = 0
-        default_maxdeg = 180
-        default_ndegs = 60
+        mindeg = 0
+        maxdeg = 180
+        ndegs = 60
         
         if 'degs' not in kwargs:
-            degs = np.linspace(default_mindeg,default_maxdeg,default_ndegs,endpoint=False)
+            degs = np.linspace( mindeg, maxdeg, ndegs, endpoint=False)
         else:
             if not isinstance(kwargs['degs'],int):
                 raise TypeError('degs must be an integer')
-            degs = np.linspace(default_mindeg,default_maxdeg,kwargs['degs'],endpoint=False)
+            degs = np.linspace( mindeg, maxdeg, kwargs['degs'], endpoint=False)
                 
         # receiver correction            
         if ('rcvcorr' in kwargs):
@@ -121,8 +120,8 @@ class EigenM:
             if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['rcvcorr']
-            samps = core.time2samps(lag,self.delta,'even')
-            kwargs['rcvcorr'] = (deg, samps)
+            samps = core.time2samps( lag,self.delta, 'even')
+            kwargs['rcvcorr'] = ( deg, samps)
             self.rcvcorr = ( deg, samps * self.delta)
         
         # source correction                  
@@ -131,9 +130,9 @@ class EigenM:
             if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['srccorr']
-            samps = core.time2samps(lag,self.delta,'even')
-            kwargs['srccorr'] = (deg, samps)
-            self.srccorr = (deg, samps * self.delta)
+            samps = core.time2samps( lag, self.delta, 'even')
+            kwargs['srccorr'] = ( deg, samps)
+            self.srccorr = ( deg, samps * self.delta)
 
             
         # ensure trace1 at zero angle
@@ -314,7 +313,7 @@ class EigenM:
             d2.chop(self.window)
             
             # get axis scaling
-            lim = np.abs(np.hstack((d1.xy(),d2.xy()))).max() * 1.1
+            lim = np.abs(np.hstack((d1.data(),d2.data()))).max() * 1.1
             ylim = [-lim,lim]
     
             # original
@@ -329,6 +328,7 @@ class EigenM:
             if 'vals' not in kwargs:
                 kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
                 kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
+
         
             plot.surf(self,ax=ax4,**kwargs)
         

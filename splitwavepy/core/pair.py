@@ -25,7 +25,7 @@ class Pair:
     
     Naming Keyword Arguments:
         - name = 'untitled' (should be unique identifier) | string
-        - cmplabels = ['Cmp 0.0','Cmp 90.0'] | list of strings
+        - cmplabels = ['cmp1','cmp2'] | list of strings
         - units = 's' (for labelling) | string
     
     Geometry Keyword Arguments (if in doubt don't use):
@@ -33,26 +33,27 @@ class Pair:
         - cmpvecs = np.eye(2)
         - rcvloc = (lat,lon,r) / (x,y,z)
         - srcloc =  (lat,lon,r) / (x,y,z)
-        - rayloc =  rcvloc # must be somewhere on a sensible raypath
-        - rayvec = [0,0,1] 
+        - rayloc =  rcvloc # arbirary point specified by user
+        - rayvec = [0,0,1] # wave plane normal
 
     Methods:
         # display
-            - plot()
-            - ppm() # plot only particle motion
-            - pt() # plot only trace data
+            - p()
+            - p_pm() # plot particle motion
+            - p_tr() # plot waveform trace
         # splitting
             - split(fast,lag)
             - unsplit(fast,lag)
         # useful
             - t()           # time
             - data()        # both x and y in one array
+            - chop()        # windowed data
             - rotateto()
             - pca()         # principal component analysis
             - suggest_labels()
         # windowing
             - set_window(start,end,Tukey=None)
-            - chop(window)
+            
         # io
             - copy()
             - save()
@@ -63,15 +64,13 @@ class Pair:
         
         # important to do first
         self.delta = 1.
-        if ('delta' in kwargs): self.delta = kwargs['delta']        
-        if ('window' in kwargs): self.window = kwargs['window']
-                        
-        # make synthetic
-        if len(args) == 0:
-            # generate                                                       
-            self.x, self.y = _synth(**kwargs)  
-             
-        # read in data                
+        if ('delta' in kwargs): self.delta = kwargs['delta']
+               
+                         
+        # if no args make synthetic
+        if len(args) == 0: 
+            self.x, self.y = _synth(**kwargs)               
+        # otherwise read in data                
         elif len(args) == 2:
             if not (isinstance(args[0],np.ndarray) & isinstance(args[0],np.ndarray)):
                 raise TypeError('expecting numpy arrays')         
@@ -86,7 +85,10 @@ class Pair:
             raise Exception('data must have odd number of samples')
         if (self.x.size != self.y.size):
             raise Exception('x and y must be the same length')
-                    
+                   
+        # Pair must have a window
+        self.set_window(**kwargs)
+         
         # add geometry info 
         self.geom = 'geo'
         if ('geom' in kwargs): self.geom = kwargs['geom']
@@ -105,7 +107,6 @@ class Pair:
         # labels
         self.units = 's'   
         if ('units' in kwargs): self.units = kwargs['units']      
-        lab1,lab2 = self.cmpangs()
         self.cmplabels = self.set_labels()
         if ('cmplabels' in kwargs): self.cmplabels = kwargs['cmplabels']   
         # A user defined name # maybe useful?
@@ -192,42 +193,91 @@ class Pair:
         self.set_labels()
         
         
-    def pca(self):
-        """Return orientation of principal component"""
-        return core.pca(self.x,self.y)
+    def pol(self):
+        """Return principal component orientation"""
+        # rotate to zero
+        rot = self.cmpvecs.T
+        xy = np.dot(rot,self.chop())
+        _,eigvecs = core.eigcov(xy)
+        x,y = eigvecs[:,0]
+        pol = np.rad2deg(np.arctan2(y,x))
+        return pol
+
+        
+    def eigen(self,window=None):
+        self.eigvals, self.eigvecs = core.eigcov(self.data())
+
+
+        
 
     def cmpangs(self):
         cmp1 = self.cmpvecs[:,0]
         cmp2 = self.cmpvecs[:,1]
         def getang(c) : return np.rad2deg(np.arctan2(c[1],c[0]))
         return getang(cmp1),getang(cmp2)
+        
+    
 
 # Geometry stuff
 
 
 # Windowing
                 
-    def set_window(self,start,end,tukey=None):
+    def set_window(self,*args,**kwargs):
         """
         Return a window object at user defined start and end times.
+        
+        args
+        - Window
+        - start,end
+        
+        kwargs
+        - tukey
         
         The window will be adjusted to ensure it occupies an odd number 
         of samples.
         """
-        time_centre = (start + end)/2
-        time_width = end - start
-        tcs = int(time_centre / self.delta)
-        offset = tcs - self.centre()
-        # convert time to nsamples -- must be odd
-        width = int(time_width / self.delta)
-        width = width if width%2==1 else width + 1        
-        self.window = Window(width,offset,tukey=tukey)        
-     
-    def chop(self,window):
+                
+        # if Window provided
+        if 'window' in kwargs:  
+            if isinstance(kwargs['window'],Window):
+                self.window = kwargs['window']
+                return
+            else:
+                raise TypeError('expecting a window')
+        
+        # if no arguments provided
+        if len(args) == 0:
+            width = self.nsamps() / 3
+            self.window = Window(width)
+            return
+        # if start/end given
+        if len(args) == 2:
+            start, end = args 
+            time_centre = (start + end)/2
+            time_width = end - start
+            tcs = core.time2samps(time_centre)
+            offset = tcs - self.centre()
+            # convert time to nsamples -- must be odd
+            width = core.time2samps(time_width,delta,'odd')       
+            self.window = Window(width,offset,**kwargs) 
+            return
+        else:
+            raise Exception ('unexpected number of arguments')     
+    
+    def chop(self):
         """
-        Chop data around window
+        Chop data to window
         """
-        self.x, self.y = core.chop(self.x,self.y,window=window)
+        x,y = core.chop(self.x,self.y,window=self.window)
+        return x,y
+        
+    def chopt(self):
+        """
+        Chop time to window
+        """        
+        t = core.chop(self.t(),window=self.window)
+        return t
 
     # def autowindow(self,time_centre=None):
     #     """
@@ -281,12 +331,12 @@ class Pair:
     
     # plotting
     
-    def pt(self,**kwargs):
+    def p_tr(self,**kwargs):
         """Plot traces"""
         ax = plot.trace(self.x,self.y,time=self.t(),**kwargs)
         plt.show()
     
-    def ppm(self,**kwargs):
+    def p_pm(self,**kwargs):
         """Plot particle motion"""
         ax = plot.particle(self.x,self.y,cmplabels=self.cmplabels,**kwargs)
         plt.show()
@@ -298,25 +348,20 @@ class Pair:
         from matplotlib import gridspec
         fig = plt.figure(figsize=(12, 3)) 
                
-        if 'window' in kwargs:                        
-            if kwargs['window'] is True:
-                kwargs['window'] = self.window
-            window = kwargs['window']
+        if 'window' in kwargs and kwargs['window'] is True:                        
             gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
             # trace with window markers
             ax0 = plt.subplot(gs[0])
-            plot.trace(self.x,self.y,time=self.t(),window=window,ax=ax0)
+            plot.trace(self.x,self.y,time=self.t(),window=self.window,ax=ax0)
             # windowed data
-            nsamps = self.nsamps()
-            wbeg = window.start(nsamps)*self.delta
-            d2 = self.copy()
-            d2.chop(window)
             ax1 = plt.subplot(gs[1])
-            plot.trace(d2.x,d2.y,time=d2.t()+wbeg,ax=ax1)
+            chopx, chopy = self.chop()
+            chopt = self.chopt()
+            plot.trace( chopx, chopy, time=chopt, ax=ax1)
             # particle  motion
             ax2 = plt.subplot(gs[2])
             # ax2.axis('equal')
-            plot.particle(d2.x,d2.y,ax=ax2)                        
+            plot.particle( chopx, chopy, ax=ax2)                        
         else:
             gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
             # trace

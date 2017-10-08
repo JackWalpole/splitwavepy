@@ -18,9 +18,9 @@ from scipy import signal
 
 ##############
 
-def even(x): return int(2*np.rint(x/2))
+def even(x): return 2*np.rint(x/2).astype(int)
     
-def odd(x): return int(2 * np.rint(np.ceil(x/2)) - 1)
+def odd(x): return (2*np.rint(np.ceil(x/2))-1).astype(int)
 
 def time2samps(t,delta,mode='near'):
     """
@@ -122,14 +122,16 @@ def chop(*args,**kwargs):
         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
 
     
-def pca(x,y):
+def eigcov(data):
     """
-    Principal component analysis
-    Returns direction of strongest component in degrees anti-clockwise from x
+    Return eigen values and vectors of covariance matrix
     """
-    w,v = np.linalg.eig(np.cov(np.vstack((x,y))))
-    m = np.argmax(w)
-    return np.rad2deg(np.arctan2(v[1,m],v[0,m]))
+    eigenValues, eigenVectors = np.linalg.eig(np.cov(data))
+    idx = eigenValues.argsort()[::-1]   
+    eigenValues = eigenValues[idx]
+    eigenVectors = eigenVectors[:,idx]
+    return eigenValues, eigenVectors
+    
     
 # def snr(data):
 #     """
@@ -163,14 +165,14 @@ def noise(size,amp,smooth):
     n = np.random.normal(0,amp,size)
     return np.convolve(n,gauss,'same')  
     
-# def min_idx(vals):
-#     """
-#     return indices of min value in vals grid
-#     """
-#     return np.unravel_index(np.argmin(vals),vals.shape)
-#
-# def max_idx(vals):
-#     """
-#     return indice of max value in vals grid
-#     """
-#     return np.unravel_index(np.argmax(vals),vals.shape)
+def min_idx(vals):
+    """
+    return indices of min value in vals grid
+    """
+    return np.unravel_index(np.argmin(vals),vals.shape)
+
+def max_idx(vals):
+    """
+    return indice of max value in vals grid
+    """
+    return np.unravel_index(np.argmax(vals),vals.shape)
