@@ -1,5 +1,7 @@
 .. _tutorial:
 
+.. toctree and include source files
+
 ****************************************************
 Tutorial
 ****************************************************
@@ -21,13 +23,16 @@ By default, if no data is provided, SplitWavePy will make some synthetic data.  
 .. nbplot::
 	:include-source:
 
-	data = sw.Pair(fast=30, lag=1.4, noise=0.03, pol=-29, delta=0.1)
+	data = sw.Pair(fast=30, lag=1.4, noise=0.01, pol=-15.8, delta=0.1)
 	data.plot()
 
 You specify the *fast* direction, *lag* time, *noise*, and source *pol* -arisation as shown above.  Order is not important.
 
 .. note::
     Don't forget to set the sample interval *delta* appropriately (defaults to 1), it determines how your *lag* time is interpreted. 
+
+Adding and removing splitting
+``````````````````````````````
 
 The data are already split, but that doesn't mean they can't be split again! You can add more splitting using the *split()* method.
 
@@ -45,10 +50,36 @@ Sometimes we might want to do a *correction* and apply the *inverse* splitting o
 	data.unsplit( -12, 1.3)
 	data.plot()
 
-.. note::
-    Every time a lag operation is applied the traces are shortened.  This is fine so long as your traces extend far enough beyond your analysis *Window*.
+.. note::  
+	Every time a lag operation is applied the traces are shortened.  
+	This is fine so long as your traces extend far enough beyond your window.  Jump to :ref:`window`.
 
-Window picking
+
+-------------------------------
+	
+.. _real_data:
+
+Real data
+---------
+
+If you've got real data you need to get it into a `numpy <http://www.numpy.org/>`_ array.  `Obspy <https://github.com/obspy/obspy/wiki>`_ is extremely useful for that.  For the purposes of this tutorial, let's use obspy to download some data from the `<IRIS <https://www.iris.edu/hq/>`_ servers.
+
+
+>>> import obspy
+
+With real data it's worth doing a bit of pre-processing which at minimum will involve removing the mean from data, and might also involve bandpass filtering, interpolation, and/or rotating the components.  It is also necessary to pick the shear arrival of interest.  All of this is achievable in Obspy.
+
+>>> # remove mean etc.
+
+
+We have 3-component data,in this example we are looking at SKS which has a very steep (near vertical) incidence angle, so we will assume that the shear plane is horizontal, and limit the analysis to the horizontal componenents.
+
+>>> # get 2-component data into Pair and plot
+
+
+.. _window:
+
+Setting the window
 ----------------------------
 	
 The window should be designed in such a way as to maximise the energy of a single pulse of shear energy relative to noise and other arrivals.
@@ -56,9 +87,9 @@ The window should be designed in such a way as to maximise the energy of a singl
 Interactive plotting is supported by ``plot(interactive=True)``.  Click and drag to pick a window, or mouse hover and use the ``a`` and ``f`` keys to open and close the window (sac, anyone?), use the arrow keys to fine tune the window.  When you're ready to measure, hit the space bar.
 
 .. tip::
-	If the interactive plotting is not working you might need to add the following line 
-	to your ``~/.matplotlib/matplotlibrc`` file.	
-	``backend      : TkAgg``
+	If the interactive plotting is not working you might need to add ``backend : TkAgg`` as a line 
+	in your ``~/.matplotlib/matplotlibrc`` file.	
+
 
 *Windows* are parameterised by two (or three) parameters:
 
@@ -67,17 +98,17 @@ Interactive plotting is supported by ``plot(interactive=True)``.  Click and drag
 - *tukey* (optional) fraction of window to cosine taper (from 0 to 1).
 
 .. note::
-    You don't *need* to set the *Window*, the code will make a guess for you (designed to be about right for the synthetic case), but it's not very clever, so it's best to set it yourself.
+    By default the window will be centred on the middle of the trace with width 1/3 of the trace length.
 
 
 .. .. autoclass:: splitwavepy.core.window.Window
 
-A *Window* can be generate using the *getWindow(centre,width)* method, and you can see the *Window* on the data by using `plot(window=True)`.
+A *Window* can be generate using the *set_window(start,end)* method, and you can see the *Window* on the data by using `plot(window=True)`.
 
 .. nbplot::
 	:include-source:
 
-	wind = data.getWindow( 22, 15) # centre, width 
+	wind = data.set_window( 15, 32) # start, end 
 	data.plot(window=True)
 	
 	
@@ -93,7 +124,13 @@ Silver and Chan (1991) eigenvalue method
 
 A powerful and popular method for measuring splitting is the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.
 
+To use this method on your data.
 
+.. nbplot::
+	:include-source:
+	
+	measure = sw.EigenM(data)
+	measure.plot()
 
 How to do it
 ``````````````
@@ -204,22 +241,7 @@ Saving and loading
 
 
 
-.. _real_data:
 
-Real data
----------
-
-If you've got real data you need to get it into a `numpy <http://www.numpy.org/>`_ array.  `Obspy <https://github.com/obspy/obspy/wiki>`_ is extremely useful for that.  For the purposes of this tutorial, let's use obspy to download some data from the `<IRIS <https://www.iris.edu/hq/>`_ servers.
-
-
->>> import obspy
-
-With real data it's worth doing a bit of pre-processing which at minimum will involve removing the mean from data, and might also involve bandpass filtering, interpolation, or rotating the components.  All of this is achievable in Obspy.
-
->>> # remove mean etc.
-
-
-Once we're happy we can simply measure splitting by putting the data into a *Pair* and using the *EigenM* class as before
 
 Transverse minimisation method
 -------------------------------
