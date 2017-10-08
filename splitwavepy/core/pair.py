@@ -214,13 +214,9 @@ class Pair:
         x,y = eigvecs[:,0]
         pol = np.rad2deg(np.arctan2(y,x))
         return pol
-
         
     def eigen(self,window=None):
         self.eigvals, self.eigvecs = core.eigcov(self.data())
-
-
-        
 
     def cmpangs(self):
         cmp1 = self.cmpvecs[:,0]
@@ -228,10 +224,11 @@ class Pair:
         def getang(c) : return np.rad2deg(np.arctan2(c[1],c[0]))
         return getang(cmp1),getang(cmp2)
         
-    
-
 # Geometry stuff
 
+    # def geom_to_geo():
+    # def geom_to_ray():
+    # def geom_to
 
 # Windowing
                 
@@ -282,7 +279,7 @@ class Pair:
         Chop data to window
         """
         x,y = core.chop(self.x,self.y,window=self.window)
-        return x,y
+        return np.vstack((x,y))
         
     def chopt(self):
         """
@@ -316,14 +313,15 @@ class Pair:
         
     def power(self):
         return self.x**2+self.y**2
-                
+      
+    # I/O stuff  
 
-
-        
-
-            
-        
-               
+    def save(self,filename):
+        """
+        Save Measurement for future referral
+        """
+        io.save(self,filename)
+                       
     def copy(self):
         return copy.deepcopy(self)
         
@@ -343,45 +341,86 @@ class Pair:
     
     # plotting
     
-    def p_tr(self,**kwargs):
-        """Plot traces"""
-        ax = plot.trace(self.x,self.y,time=self.t(),**kwargs)
-        plt.show()
-    
-    def p_pm(self,**kwargs):
-        """Plot particle motion"""
-        ax = plot.particle(self.x,self.y,cmplabels=self.cmplabels,**kwargs)
-        plt.show()
+    # def p_tr(self,**kwargs):
+    #     """Plot traces"""
+    #     ax = plot.trace(self.x,self.y,time=self.t(),**kwargs)
+    #     plt.show()
+    #
+    # def ppm(self,**kwargs):
+    #     """Plot particle motion"""
+    #     ax = plot.particle(self.x,self.y,cmplabels=self.cmplabels,**kwargs)
+    #     plt.show()
            
+    # def plot(self,**kwargs):
+    #     """
+    #     Plot trace data and particle motion
+    #     """
+    #     from matplotlib import gridspec
+    #     fig = plt.figure(figsize=(12, 3))
+    #
+    #     if 'window' in kwargs and kwargs['window'] is True:
+    #         gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
+    #         # trace with window markers
+    #         ax0 = plt.subplot(gs[0])
+    #         plot.trace(self.x,self.y,time=self.t(),window=self.window,ax=ax0)
+    #         # windowed data
+    #         chopd = self.chop()
+    #         chopt = self.chopt()
+    #         # trace
+    #         ax1 = plt.subplot(gs[1])
+    #         plot.trace( chopd[0], chopd[1], time=chopt, ax=ax1)
+    #         # particle  motion
+    #         ax2 = plt.subplot(gs[2])
+    #         plot.particle( chopd[0], chopd[1], ax=ax2)
+    #     else:
+    #         gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1])
+    #         # trace
+    #         ax0 = plt.subplot(gs[0])
+    #         plot.trace(self.x,self.y,time=self.t(),ax=ax0)
+    #         # particle  motion
+    #         ax1 = plt.subplot(gs[1])
+    #         plot.particle(self.x,self.y,ax=ax1)
+            
     def plot(self,**kwargs):
         """
         Plot trace data and particle motion
         """
         from matplotlib import gridspec
-        fig = plt.figure(figsize=(12, 3)) 
+        fig = plt.figure(figsize=(12, 3))
+        
+        gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+        
+        # parse some keywords
+        if 'window' not in kwargs:
+            kwargs['window'] = self.window
+        
+        if 'cmplabels' not in kwargs:
+            kwargs['cmplabels'] = self.cmplabels
+        
+        # trace
+        ax0 = plt.subplot(gs[0])
+        plot.trace( self.x, self.y, time=self.t(), ax=ax0, **kwargs)
+        # particle  motion
+        ax1 = plt.subplot(gs[1])
+        plot.particle( self.x, self.y, ax=ax1, **kwargs)
                
-        if 'window' in kwargs and kwargs['window'] is True:                        
-            gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
-            # trace with window markers
-            ax0 = plt.subplot(gs[0])
-            plot.trace(self.x,self.y,time=self.t(),window=self.window,ax=ax0)
-            # windowed data
-            ax1 = plt.subplot(gs[1])
-            chopx, chopy = self.chop()
-            chopt = self.chopt()
-            plot.trace( chopx, chopy, time=chopt, ax=ax1)
-            # particle  motion
-            ax2 = plt.subplot(gs[2])
-            # ax2.axis('equal')
-            plot.particle( chopx, chopy, ax=ax2)                        
-        else:
-            gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
-            # trace
-            ax0 = plt.subplot(gs[0])
-            plot.trace(self.x,self.y,time=self.t(),ax=ax0)
-            # particle  motion
-            ax1 = plt.subplot(gs[1])
-            plot.particle(self.x,self.y,ax=ax1)
+        # if 'window' in kwargs and kwargs['window'] is True:
+        #     gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
+        #     # trace with window markers
+        #     ax0 = plt.subplot(gs[0])
+        #     plot.trace(self.x,self.y,time=self.t(),window=self.window,ax=ax0)
+        #     # windowed data
+        #     chopd = self.chop()
+        #     chopt = self.chopt()
+        #     # trace
+        #     ax1 = plt.subplot(gs[1])
+        #     plot.trace( chopd[0], chopd[1], time=chopt, ax=ax1)
+        #     # particle  motion
+        #     ax2 = plt.subplot(gs[2])
+        #     plot.particle( chopd[0], chopd[1], ax=ax2)
+        # else:
+
+            
         #
         # # plot mode
         # if args[0] == 'pickmode':

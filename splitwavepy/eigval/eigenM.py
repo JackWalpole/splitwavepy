@@ -45,10 +45,10 @@ class EigenM:
     srccorr = (fast,tlag) | tuple | Source Correction
     
     kwargs for synthetic generation:
-    fast = 0.    | float
-    tlag = 0.    | float
-    pol = 0.     | float
-    noise = 0.03 | float
+    fast = 0.      | float
+    tlag = 0.      | float
+    pol = 0.       | float
+    noise = 0.001  | float
         
     """
     
@@ -149,7 +149,7 @@ class EigenM:
         maxloc = core.max_idx(self.lam1/self.lam2)
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
-        # estimate signal to noise level
+        # estimate signal to noise level (lam1-lam2)/lam2
         self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
         
         # data corrections
@@ -165,6 +165,14 @@ class EigenM:
         # recover source polarisation
         return self.data_corr().pol()
         
+    def snrRH(self):
+        """Restivo and Helffrich (1999) signal to noise ratio"""
+        d = self.srcpoldata_corr()
+        x,y = d.chop()
+        return core.snrRH(x,y)
+                
+    # possibly useful rotations
+    
     def data_corr(self):        
         # copy data     
         data_corr = self.data.copy()
@@ -182,25 +190,22 @@ class EigenM:
         srcpoldata = self.data.copy()
         srcpoldata.rotateto(self.srcpol())
         return srcpoldata
-        # return Pair(*core.rotate(self.data.x,self.data.y,self.srcpol))
         
     def srcpoldata_corr(self):
         srcpoldata_corr = self.data_corr()        
         srcpoldata_corr.rotateto(self.srcpol())
         return srcpoldata_corr
-        # return Pair(*core.rotate(self.data_corr.x,self.data_corr.y,self.srcpol))
         
-    # def fastslowdata(self):
-    #     return Pair(*core.rotate(self.data.x,self.data.y,self.fast))
-    #
-    # def fastslowdata_corr(self):
-    #     return Pair(*core.rotate(self.data_corr.x,self.data_corr.y,self.fast))
-    
-    def snrRH(self):
-        """Restivo and Helffrich (1999) signal to noise ratio"""
-        d = self.srcpoldata_corr()
-        return core.snrRH(*core.chop(d.x,d.y,window=self.window))
-        
+    def fastdata(self):
+        fastdata = self.data.copy()
+        fastdata.rotateto(self.fast)
+        return fastdata
+
+    def fastdata_corr(self):
+        fastdata_corr = self.data_corr()
+        fastdata_corr.rotateto(self.fast)
+        return fastdata_corr
+            
     # F-test utilities
     
     def ndf(self):

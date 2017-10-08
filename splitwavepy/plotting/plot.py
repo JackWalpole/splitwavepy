@@ -72,8 +72,7 @@ def particle(*args,**kwargs):
     """
     
     # Labels
-    if not ('cmplabels' in kwargs):
-        kwargs['cmplabels'] = ['Comp1','Comp2','Comp3']
+    if 'cmplabels' not in kwargs: kwargs['cmplabels'] = ['Comp1','Comp2','Comp3']
         
     # 2D particle motion
     if len(args) == 2:
