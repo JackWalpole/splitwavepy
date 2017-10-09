@@ -73,7 +73,7 @@ Alternatively the window can be set using the ``set_window(start,end)`` method.
 .. nbplot::
 	:include-source:
 
-	wind = data.set_window( 15, 32) # start, end 
+	data.set_window( 15, 32) # start, end 
 	data.plot()
 	
 	
