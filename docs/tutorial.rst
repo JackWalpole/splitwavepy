@@ -4,6 +4,22 @@
 Tutorial
 ****************************************************
 
+.. nbplot::
+	:include-source:
+
+	from obspy import read
+	from obspy.clients.fdsn import Client
+	from obspy import UTCDateTime
+
+	client = Client("IRIS")
+	t = UTCDateTime("2000-08-15T04:30:0.000")
+	st = client.get_waveforms("IU", "CCM", "00", "BH?", t, t + 60 * 60,attach_response=True)
+
+	# filter the data (this process removes the mean)
+	st.filter("bandpass",freqmin=0.01,freqmax=0.5)
+
+	st.plot()
+
 Assuming you have the code setup it's time to see what it can do.  Fire up an interactive python session such as ``ipython`` and ``import splitwavepy as sw``.
 
 .. nbplot::
