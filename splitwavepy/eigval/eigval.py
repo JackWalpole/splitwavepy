@@ -25,7 +25,7 @@ def eigvalcov(data):
     return np.sort(np.linalg.eigvals(np.cov(data)))
     
     
-def grideigval(x, y, degs, lags, window,**kwargs):
+def grideigval(x, y, degs, slags, window, **kwargs):
     """
     Grid search for splitting parameters applied to data.
     
@@ -37,7 +37,7 @@ def grideigval(x, y, degs, lags, window,**kwargs):
     """
                                  
     # grid of degs and lags to search over
-    degs, lags = np.meshgrid(degs,lags)
+    degs, lags = np.meshgrid(degs,slags)
     shape = degs.shape
     lam1 = np.zeros(shape)
     lam2 = np.zeros(shape)

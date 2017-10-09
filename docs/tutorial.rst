@@ -50,12 +50,7 @@ Sometimes we might want to do a *correction* and apply the *inverse* splitting o
 
 .. note::  
 	Every time a lag operation is applied the traces are shortened.  
-	This is fine so long as your traces extend far enough beyond your window.  Jump to :ref:`window`.
-
-
-
-	
-
+	This is fine so long as your traces extend far enough beyond your window.  
 
 .. _window:
 

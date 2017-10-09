@@ -86,19 +86,19 @@ class EigenM:
                 raise Exception('Can\'t parse lags keyword')
         
         # convert lags to samples (must be even)
-        lags = np.unique( core.time2samps( lags, self.delta, mode='even')).astype(int)
+        slags = np.unique( core.time2samps( lags, self.delta, mode='even')).astype(int)
             
         # degs
         mindeg = -90
         maxdeg = 90
         ndegs = 60
         
-        if 'degs' not in kwargs:
+        if 'ndegs' not in kwargs:
             degs = np.linspace( mindeg, maxdeg, ndegs, endpoint=False)
         else:
-            if not isinstance(kwargs['degs'],int):
-                raise TypeError('degs must be an integer')
-            degs = np.linspace( mindeg, maxdeg, kwargs['degs'], endpoint=False)
+            if not isinstance(kwargs['ndegs'],int):
+                raise TypeError('ndegs must be an integer')
+            degs = np.linspace( mindeg, maxdeg, kwargs['ndegs'], endpoint=False)
                 
         # receiver correction            
         if ('rcvcorr' in kwargs):
@@ -123,10 +123,10 @@ class EigenM:
             
         # ensure trace1 at zero angle
         self.data.rotateto(0)        
-        
+
         # grid search splitting
         window = self.data.window
-        self.degs, self.samplags, self.lam1, self.lam2 = eigval.grideigval(self.data.x,self.data.y,degs,lags,window,**kwargs)
+        self.degs, self.samplags, self.lam1, self.lam2 = eigval.grideigval(self.data.x, self.data.y, degs, slags, window, **kwargs)
         # convert sample lags to meaningful time lags
         self.lags = self.samplags * self.delta
                 

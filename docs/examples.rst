@@ -89,5 +89,17 @@ By chance the window looks not bad.  If you want to change it see :ref:`window`.
 	
 	measure = sw.EigenM(realdata)
 	measure.plot()
+
+Setting the lag time search range
+``````````````````````````````````
+The code automatically sets the maximum lag time to be half the window length.  To set the max search time manually you use the ``lags`` keyword.  This accepts a tuple of length 1, 2, or 3, and will be interpreted differently depending on this length.  The rules are as follows: for a 1-tuple ``lags = (maxlag,)``, a 2-tuple ``lags = (maxlag, nlags)``, and finally a 3-tuple ``(minlag, maxlag, nlags)``.  In the previous example we can see that the solution has a delay time less than 2 seconds, so let's repeat the measurement using a more sensible grid search.
+
+.. nbplot::
+	:include-source:
 	
-The code automatically guesses the lag times to explore in the grid search and will automatically set the maximum lag time to be 
+	measure = sw.EigenM(realdata, lags=(2,))
+	measure.plot()
+
+.. note::
+	The code automatically grid searches every 3 degrees along the fast direction axis.  That's ``ndegs = 60`` nodes in total (180/3).  You can change this number using the ``ndegs`` keyword. 
+	
