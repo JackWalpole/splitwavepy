@@ -12,7 +12,7 @@ from ..core import core
 from ..core.pair import Pair
 from ..core.window import Window
 from . import eigval
-from ..plotting import plot
+# from ..plotting import plot
 from ..core import io
 
 import numpy as np
@@ -293,69 +293,153 @@ class EigenM:
         
     
     # Plotting
-
+    
     def plot(self,**kwargs):
+          
+        # parse kwargs      
         
+        if 'vals' not in kwargs:
+            kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2        
+ 
+        # setup figure and subplots
+        fig = plt.figure(figsize=(12,6)) 
+        gs = gridspec.GridSpec(2, 3,
+                           width_ratios=[1,1,2]
+                           )    
+        ax0 = plt.subplot(gs[0,0])
+        ax1 = plt.subplot(gs[0,1])
+        ax2 = plt.subplot(gs[1,0])
+        ax3 = plt.subplot(gs[1,1])
+        ax4 = plt.subplot(gs[:,2])
         
-        if 'cmplabels' not in kwargs:
-            kwargs['cmplabels'] = self.data.cmplabels
+        # sata to plot
+        d1 = self.data.chop()
+        # d1 = self.fastdata().chop()
+        d2 = self.data_corr().chop()
+        # d3 = self.srcpoldata_corr().chop()
         
-        if 'mode' not in kwargs:
-            kwargs['mode'] = 'all'
-        
-        # plot only surface    
-        if kwargs['mode'] == 'surf':
+        # get axis scaling
+        lim = np.abs(np.hstack((d1.data(),d2.data()))).max() * 1.1
+        ylim = [-lim,lim]
 
-            if 'vals' not in kwargs:
-                kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2        
-            plot.surf(self,**kwargs)
+        # original
+        d1._ptr(ax0,ylim=ylim,**kwargs)
+        d1._ppm(ax1,lims=ylim,**kwargs)
+        # corrected
+        d2._ptr(ax2,ylim=ylim,**kwargs)
+        d2._ppm(ax3,lims=ylim,**kwargs)
 
-        # else plot everything   
-        else:    
-            fig = plt.figure(figsize=(12,6)) 
-            gs = gridspec.GridSpec(2, 3,
-                               width_ratios=[1,1,2]
-                               )
-    
-            ax0 = plt.subplot(gs[0,0])
-            ax1 = plt.subplot(gs[0,1])
-            ax2 = plt.subplot(gs[1,0])
-            ax3 = plt.subplot(gs[1,1])
-            ax4 = plt.subplot(gs[:,2])
-            
-            d1 = self.srcpoldata()
-            d2 = self.srcpoldata_corr()
-            
-            d1d = d1.chop()
-            d1t = d1.chopt()            
-            d2d = d2.chop()
-            d2t = d2.chopt()
-            
-            # get axis scaling
-            lim = np.abs(np.hstack((d1d,d2d))).max() * 1.1
-            ylim = [-lim,lim]
-            
-## TODO fix times so they are equal at centre sample
-    
-            # original
-            plot.trace(d1d[0],d1d[1],time=d1t,ax=ax0,ylim=ylim,**kwargs)
-            plot.particle(d1d[0],d1d[1],ax=ax1,lim=ylim,**kwargs)
-    
-            # corrected
-            plot.trace(d2d[0],d2d[1],time=d2t,ax=ax2,ylim=ylim,**kwargs)
-            plot.particle(d2d[0],d2d[1],ax=ax3,lim=ylim,**kwargs)
-    
-            # error surface
-            if 'vals' not in kwargs:
-                kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
-                kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
+        # error surface
+        if 'vals' not in kwargs:
+            kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
+            kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
 
-            plot.surf(self,ax=ax4,**kwargs)
-        
-            # neaten
-            plt.tight_layout()
-
+        self._psurf(ax4,**kwargs)
+    
+        # neaten
+        plt.tight_layout()
         plt.show()
+        
+    def _psurf(self,ax,**kwargs):
+        """
+        Plot an error surface.
+    
+        **kwargs
+        - cmap = 'magma'
+        - vals = (M.lam1-M.lam2) / M.lam2
+        - ax = None (creates new)
+        """
+    
+        if 'cmap' not in kwargs:
+            kwargs['cmap'] = 'magma'
+    
+        if 'vals' not in kwargs:
+            kwargs['vals'] = (self.lam1-self.lam2) / self.lam2
+            
+        # error surface
+        cax = ax.contourf(self.lags,self.degs,kwargs['vals'],26,cmap=kwargs['cmap'])
+        cbar = plt.colorbar(cax)
+        ax.set_yticks(np.linspace(-90,90,6,endpoint=False))
+        ax.set_ylabel(r'Fast Direction ($^\circ$)')
+        ax.set_xlabel('Delay Time (' + self.units + ')')
+        
+        # # marker
+        # ax.errorbar(M.lag,M.fast,xerr=M.fdlag,yerr=M.fdfast,fmt='o')
+        #
+        # # confidence region
+        # ax.contour(M.lags,M.degs,M.lam2,levels=[M.lam2_95()])
+
+        ax.set_xlim([self.lags[0,0], self.lags[-1,0]])
+        ax.set_ylim([self.degs[0,0], self.degs[0,-1]])
+    
+        # optional title
+        if 'title' in kwargs:
+            ax.set_title(kwargs['title'])
+
+        return ax
+
+#     def plot(self,**kwargs):
+#
+#
+#         if 'cmplabels' not in kwargs:
+#             kwargs['cmplabels'] = self.data.cmplabels
+#
+#         if 'mode' not in kwargs:
+#             kwargs['mode'] = 'all'
+#
+#         # plot only surface
+#         if kwargs['mode'] == 'surf':
+#
+#             if 'vals' not in kwargs:
+#                 kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
+#             plot.surf(self,**kwargs)
+#
+#         # else plot everything
+#         else:
+#             fig = plt.figure(figsize=(12,6))
+#             gs = gridspec.GridSpec(2, 3,
+#                                width_ratios=[1,1,2]
+#                                )
+#
+#             ax0 = plt.subplot(gs[0,0])
+#             ax1 = plt.subplot(gs[0,1])
+#             ax2 = plt.subplot(gs[1,0])
+#             ax3 = plt.subplot(gs[1,1])
+#             ax4 = plt.subplot(gs[:,2])
+#
+#             d1 = self.srcpoldata()
+#             d2 = self.srcpoldata_corr()
+#
+#             d1d = d1.chop()
+#             d1t = d1.chopt()
+#             d2d = d2.chop()
+#             d2t = d2.chopt()
+#
+#             # get axis scaling
+#             lim = np.abs(np.hstack((d1d,d2d))).max() * 1.1
+#             ylim = [-lim,lim]
+#
+# ## TODO fix times so they are equal at centre sample
+#
+#             # original
+#             plot.trace(d1d[0],d1d[1],time=d1t,ax=ax0,ylim=ylim,**kwargs)
+#             plot.particle(d1d[0],d1d[1],ax=ax1,lim=ylim,**kwargs)
+#
+#             # corrected
+#             plot.trace(d2d[0],d2d[1],time=d2t,ax=ax2,ylim=ylim,**kwargs)
+#             plot.particle(d2d[0],d2d[1],ax=ax3,lim=ylim,**kwargs)
+#
+#             # error surface
+#             if 'vals' not in kwargs:
+#                 kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
+#                 kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
+#
+#             plot.surf(self,ax=ax4,**kwargs)
+#
+#             # neaten
+#             plt.tight_layout()
+#
+#         plt.show()
 
 
 

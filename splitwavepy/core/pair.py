@@ -4,7 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core
-from ..plotting import plot
+# from ..plotting import plot
 from .window import Window
 from ..core import io
 from . import geom
@@ -23,6 +23,7 @@ class Pair:
     
     Keyword Arguments:
         - delta = 1. (sample interval) [default] | float
+        # - t0 = 0. (start time) DEVELOPMENT
     
     Naming Keyword Arguments:
         - name = 'untitled' (should be unique identifier) | string
@@ -129,7 +130,7 @@ class Pair:
         if self.geom == 'geo': self.cmplabels = ['North','East']
         elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
         elif self.geom == 'cart': self.cmplabels = ['X','Y']
-        else self.cmplabel = ['Comp1','Comp2']
+        else: self.cmplabel = ['Comp1','Comp2']
         return
         # if reached here use the default label
         # a1,a2 = self.cmpangs()
@@ -215,7 +216,8 @@ class Pair:
         """Return principal component orientation"""
         # rotate to zero
         rot = self.cmpvecs.T
-        xy = np.dot(rot,self.chop())
+        data = self.chop().data()
+        xy = np.dot(rot,data)
         _,eigvecs = core.eigcov(xy)
         x,y = eigvecs[:,0]
         pol = np.rad2deg(np.arctan2(y,x))
@@ -236,7 +238,7 @@ class Pair:
     # def geom_to_ray():
     # def geom_to
 
-# Windowing
+    # Windowing
                 
     def set_window(self,*args,**kwargs):
         """
@@ -284,8 +286,9 @@ class Pair:
         """
         Chop data to window
         """
-        x,y = core.chop(self.x,self.y,window=self.window)
-        return np.vstack((x,y))
+        chop = self.copy()
+        chop.x,chop.y = core.chop(self.x,self.y,window=self.window)
+        return chop
         
     def chopt(self):
         """
@@ -293,20 +296,95 @@ class Pair:
         """        
         t = core.chop(self.t(),window=self.window)
         return t
+    
+    def wbeg(self):
+        """
+        Window start time.
+        """
+        sbeg = self.window.start()
+        return sbeg * self.delta
+    
+    def wend(self):
+        """
+        Window end time.
+        """
+        send = self.window.end()
+        return send * self.delta
+    
+    # plotting
+                
+    def plot(self,**kwargs):
+        """
+        Plot trace data and particle motion
+        """
+        from matplotlib import gridspec
+        fig = plt.figure(figsize=(12, 3))
+        
+        gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+        
+        # trace
+        ax0 = plt.subplot(gs[0])
+        self._ptr( ax0, **kwargs)
+        
+        # particle  motion
+        ax1 = plt.subplot(gs[1])
+        self._ppm( ax1, **kwargs)
+                                 
+        # show
+        plt.tight_layout()
+        plt.show()      
 
-    # def autowindow(self,time_centre=None):
-    #     """
-    #     Makes a guess based on energy near *time_centre* about a suitable window
-    #
-    #     *time centre* should be the shear wave pick at the centre of the energy packet.
-    #     By default will use centre sample.
-    #     """
-    #     if time_centre is None:
-    #         t0 = self.centre()
-    #     else:
-    #         t0 = int(time_centre / self.delta)        
+    def _ptr(self,ax,**kwargs):
+        """Plot trace data on *ax* matplotlib axis object.
+        """    
+        # plot data
+        t = self.t()
+        
+        ax.plot(t,self.x)
+        ax.plot(t,self.y)
+    
+        # set limits
+        lim = np.abs(self.data()).max() * 1.1
+        if 'ylim' not in kwargs: kwargs['ylim'] = [-lim,lim]
+        ax.set_ylim(kwargs['ylim'])
+        if 'xlim' in kwargs: ax.set_xlim(kwargs['xlim'])
+    
+        # set axis label
+        if 'units' not in kwargs: kwargs['units'] = 's'            
+        ax.set_xlabel('Time (' + kwargs['units'] +')')
 
+        # plot window markers
+        if 'window' in kwargs and kwargs['window'] != False:
+            ax.axvline(self.wbeg(),linewidth=1,color='k')
+            ax.axvline(self.wend(),linewidth=1,color='k')        
 
+        return ax
+
+    def _ppm(self,ax,**kwargs):
+        """Plot particle motion on *ax* matplotlib axis object.
+        """
+                
+        # plot data
+        ax.plot(self.y,self.x)
+    
+        # set limit
+        lim = np.abs(self.data()).max() * 1.1
+        if 'lims' not in kwargs: kwargs['lims'] = [-lim,lim] 
+        ax.set_aspect('equal')
+        ax.set_xlim(kwargs['lims'])
+        ax.set_ylim(kwargs['lims'])
+    
+        # set labels
+        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
+        ax.set_xlabel(kwargs['cmplabels'][1])
+        ax.set_ylabel(kwargs['cmplabels'][0])
+        
+        # turn off tick annotation
+        ax.axes.xaxis.set_ticklabels([])
+        ax.axes.yaxis.set_ticklabels([])
+
+        return ax
+        
     # useful?
     def nsamps(self):
         return self.x.size
@@ -329,10 +407,9 @@ class Pair:
         io.save(self,filename)
                        
     def copy(self):
-        return copy.deepcopy(self)
-        
-        
-    # Comparison
+        return copy.deepcopy(self)    
+
+    # In builts
     
     def __eq__(self, other) :
         # check same class
@@ -344,99 +421,6 @@ class Pair:
             if np.all( self.__dict__[key] != other.__dict__[key]): return False
         # if reached here then the same
         return True
-    
-    # plotting
-    
-    # def p_tr(self,**kwargs):
-    #     """Plot traces"""
-    #     ax = plot.trace(self.x,self.y,time=self.t(),**kwargs)
-    #     plt.show()
-    #
-    # def ppm(self,**kwargs):
-    #     """Plot particle motion"""
-    #     ax = plot.particle(self.x,self.y,cmplabels=self.cmplabels,**kwargs)
-    #     plt.show()
-           
-    # def plot(self,**kwargs):
-    #     """
-    #     Plot trace data and particle motion
-    #     """
-    #     from matplotlib import gridspec
-    #     fig = plt.figure(figsize=(12, 3))
-    #
-    #     if 'window' in kwargs and kwargs['window'] is True:
-    #         gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
-    #         # trace with window markers
-    #         ax0 = plt.subplot(gs[0])
-    #         plot.trace(self.x,self.y,time=self.t(),window=self.window,ax=ax0)
-    #         # windowed data
-    #         chopd = self.chop()
-    #         chopt = self.chopt()
-    #         # trace
-    #         ax1 = plt.subplot(gs[1])
-    #         plot.trace( chopd[0], chopd[1], time=chopt, ax=ax1)
-    #         # particle  motion
-    #         ax2 = plt.subplot(gs[2])
-    #         plot.particle( chopd[0], chopd[1], ax=ax2)
-    #     else:
-    #         gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1])
-    #         # trace
-    #         ax0 = plt.subplot(gs[0])
-    #         plot.trace(self.x,self.y,time=self.t(),ax=ax0)
-    #         # particle  motion
-    #         ax1 = plt.subplot(gs[1])
-    #         plot.particle(self.x,self.y,ax=ax1)
-            
-    def plot(self,**kwargs):
-        """
-        Plot trace data and particle motion
-        """
-        from matplotlib import gridspec
-        fig = plt.figure(figsize=(12, 3))
-        
-        gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
-        
-        # parse some keywords
-        if 'window' not in kwargs:
-            kwargs['window'] = self.window
-        
-        if 'cmplabels' not in kwargs:
-            kwargs['cmplabels'] = self.cmplabels
-        
-        # trace
-        ax0 = plt.subplot(gs[0])
-        plot.trace( self.x, self.y, time=self.t(), ax=ax0, **kwargs)
-        # particle  motion
-        ax1 = plt.subplot(gs[1])
-        plot.particle( self.x, self.y, ax=ax1, **kwargs)
-               
-        # if 'window' in kwargs and kwargs['window'] is True:
-        #     gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
-        #     # trace with window markers
-        #     ax0 = plt.subplot(gs[0])
-        #     plot.trace(self.x,self.y,time=self.t(),window=self.window,ax=ax0)
-        #     # windowed data
-        #     chopd = self.chop()
-        #     chopt = self.chopt()
-        #     # trace
-        #     ax1 = plt.subplot(gs[1])
-        #     plot.trace( chopd[0], chopd[1], time=chopt, ax=ax1)
-        #     # particle  motion
-        #     ax2 = plt.subplot(gs[2])
-        #     plot.particle( chopd[0], chopd[1], ax=ax2)
-        # else:
-
-            
-        #
-        # # plot mode
-        # if args[0] == 'pickmode':
-        #     windowpicker = plot.WindowPicker(fig,ax0,**kwargs)
-        #     windowpicker.connect()
-        #     # self.getWindow()
-                     
-        # show
-        plt.tight_layout()
-        plt.show()      
         
 def _synth(**kwargs):
     """return ricker wavelet synthetic data"""
@@ -464,8 +448,7 @@ def _synth(**kwargs):
     y = core.noise(nsamps,noise,width/4)    
     # rotate to polarisation 
     # negative because we are doing the active rotation of data, whereas
-    #core.rotate does the passive transormation of the co-ordinate system
-    # (generally more common in splitting).
+    # core.rotate does the passive transormation of the co-ordinate system
     x,y = core.rotate(x,y,-pol)    
     # add any splitting -- lag samples must be even
     slag = core.time2samps(lag,delta,mode='even')
