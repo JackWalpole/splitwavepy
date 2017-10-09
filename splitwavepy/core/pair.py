@@ -287,8 +287,8 @@ class Pair:
         Chop data to window
         """
         chop = self.copy()
-        chop.x,chop.y = core.chop(self.x,self.y,window=self.window)
-        # self.window = None
+        chop.x, chop.y = core.chop(self.x,self.y,window=self.window)
+        self.window.offset = 0
         return chop
         
     def chopt(self):
