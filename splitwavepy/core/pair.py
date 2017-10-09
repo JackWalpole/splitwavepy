@@ -126,7 +126,7 @@ class Pair:
         return np.vstack((self.x,self.y))
     
     def set_labels(self):
-        if np.allclose(self.cmpvecs,np.eye(2)):
+        if np.allclose(self.cmpvecs,np.eye(2),atol=1e-02):
             if self.geom == 'geo': self.cmplabels = ['North','East']
             elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
             elif self.geom == 'cart': self.cmplabels = ['X','Y']
@@ -134,8 +134,8 @@ class Pair:
             return
         # if reached here we have a non-standard orientation
         a1,a2 = self.cmpangs()
-        lbl1 = str(round(a1))
-        lbl2 = str(round(a2))
+        lbl1 = str(round(a1))+r' ($^\circ$)'
+        lbl2 = str(round(a2))+r' ($^\circ$)'
         self.cmplabels = [lbl1,lbl2]
         
         
@@ -335,14 +335,17 @@ class Pair:
         plt.tight_layout()
         plt.show()      
 
-    def _ptr(self,ax,**kwargs):
+    def _ptr( self, ax, **kwargs):
         """Plot trace data on *ax* matplotlib axis object.
         """    
         # plot data
         t = self.t()
         
-        ax.plot(t,self.x)
-        ax.plot(t,self.y)
+        # set labels
+        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
+        ax.plot( t, self.x, label=kwargs['cmplabels'][0])
+        ax.plot( t, self.y, label=kwargs['cmplabels'][1])
+        ax.legend()
     
         # set limits
         lim = np.abs(self.data()).max() * 1.1

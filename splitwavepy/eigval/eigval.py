@@ -25,7 +25,7 @@ def eigvalcov(data):
     return np.sort(np.linalg.eigvals(np.cov(data)))
     
     
-def grideigval(x, y, **kwargs):
+def grideigval(x, y, degs, lags, window,**kwargs):
     """
     Grid search for splitting parameters applied to data.
     
@@ -35,26 +35,9 @@ def grideigval(x, y, **kwargs):
     rcvcorr = receiver correction parameters in tuple (fast,lag) 
     srccorr = source correction parameters in tuple (fast,lag) 
     """
-        
-    if 'lags' not in kwargs:
-        # a tenth the trace
-        maxlag = core.even( x.size / 10)
-        lags = core.even(np.linspace(0,maxlag,30))
-        kwargs['lags'] = np.unique(lags)
-        
-    if 'degs' not in kwargs:
-        # 3 degree increments
-        stepang = 3
-        kwargs['degs'] = np.arange(-90,90,stepang)
-        
-    if 'window' not in kwargs:
-        # half the trace
-        samps = core.odd( x.size / 2)
-        offset = 0
-        kwargs['window'] = Window(samps,offset,tukey=None)
-                    
+                                 
     # grid of degs and lags to search over
-    degs, lags = np.meshgrid(kwargs['degs'],kwargs['lags'])
+    degs, lags = np.meshgrid(degs,lags)
     shape = degs.shape
     lam1 = np.zeros(shape)
     lam2 = np.zeros(shape)
@@ -90,11 +73,11 @@ def grideigval(x, y, **kwargs):
             # if requested -- post-apply source correction
             ux, uy = srccorr(ux,uy,degs[0,ii])
             # chop to analysis window
-            ux, uy = chop(ux,uy,window=kwargs['window'])
+            ux, uy = chop(ux,uy,window=window)
             # measure eigenvalues of covariance matrix
             lam2[jj,ii], lam1[jj,ii] = eigvalcov(np.vstack((ux,uy)))
             
-    return degs,lags,lam1,lam2,kwargs['window']
+    return degs,lags,lam1,lam2
 
 def ndf(y,window=None,detrend=False):
     """

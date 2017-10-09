@@ -33,13 +33,11 @@ class EigenM:
     
     window = Window
     
-    lags -- None | defaults: minlag=0, maxlag=win.width/10, nlags=30. 
-         -- tuple = (maxlag,)  
+    lags -- tuple = (maxlag,)  
          -- tuple = (maxlag,Nlags) 
          -- tuple = (minlag,maxlag,Nlags)
     
-    degs -- None | defaults: Ndegs=60
-         -- int = Ndegs
+    degs -- int = Ndegs
     
     rcvcorr = (fast,tlag) | tuple | Receiver Correction
     srccorr = (fast,tlag) | tuple | Source Correction
@@ -66,30 +64,18 @@ class EigenM:
         # convert times to nsamples
         self.delta = self.data.delta
         self.units = self.data.units
-        
-        # window default parameters
-        width = self.data.x.size / 2
-        offset = 0
-        tukey = None
-        
-        if 'window' not in kwargs:
-            self.window = Window( width, offset, tukey)
-        else:
-            if not isinstance(kwargs['window'],Window):
-                raise TypeError('window must be a Window type')
-            else:
-                self.window = kwargs['window']
-        
-        # lags        
+                
+        # default lags        
         minlag = 0
-        maxlag = self.window.width / 10
+        maxlag = self.delta * self.data.window.width / 2
         nlags  = 30
         
+        # parse lags
         if 'lags' not in kwargs:
             lags = np.linspace( minlag, maxlag, nlags)
         else:
             if not isinstance(kwargs['lags'],tuple):
-                raise TypeError('lags must be a tuple')
+                raise TypeError('lags keyword must be a tuple')
             elif len(kwargs['lags']) == 1:
                 lags = np.linspace( minlag, kwargs['lags'], nlags)
             elif len(kwargs['lags']) == 2:
@@ -97,11 +83,10 @@ class EigenM:
             elif len(kwargs['lags']) == 3:
                 lags = np.linspace( *kwargs['lags'])
             else:
-                raise Exception('Too much info in lags keyword')
-            
-            # lags must be even
-            # a bit messy to reuse kwargs['lags'] in this way but eigval expects this name 
-            kwargs['lags'] = np.unique( core.time2samps( lags, delta, mode='even')).astype(int)
+                raise Exception('Can\'t parse lags keyword')
+        
+        # convert lags to samples (must be even)
+        lags = np.unique( core.time2samps( lags, self.delta, mode='even')).astype(int)
             
         # degs
         mindeg = 0
@@ -140,7 +125,8 @@ class EigenM:
         self.data.rotateto(0)        
         
         # grid search splitting
-        self.degs, self.samplags, self.lam1, self.lam2, self.window = eigval.grideigval(self.data.x,self.data.y,**kwargs)
+        window = self.data.window
+        self.degs, self.samplags, self.lam1, self.lam2 = eigval.grideigval(self.data.x,self.data.y,degs,lags,window,**kwargs)
         # convert sample lags to meaningful time lags
         self.lags = self.samplags * self.delta
                 
@@ -297,11 +283,6 @@ class EigenM:
     
     def plot(self,**kwargs):
           
-        # parse kwargs      
-        
-        if 'vals' not in kwargs:
-            kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2        
- 
         # setup figure and subplots
         fig = plt.figure(figsize=(12,6)) 
         gs = gridspec.GridSpec(2, 3,
@@ -320,10 +301,12 @@ class EigenM:
         d2s = self.srcpoldata_corr().chop()
         
         # flip polarity of slow wave in panel one if opposite to fast
-        d1f.y = d1f.y * np.sign(np.tan(self.srcpol()-self.fast))
+        # d1f.y = d1f.y * np.sign(np.tan(self.srcpol()-self.fast))
+        d1f.cmplabels = ['fast','slow']
+        d2s.cmplabels = ['srcpol','residual']
         
         # get axis scaling
-        lim = np.abs(np.hstack((d1.data(),d2.data()))).max() * 1.1
+        lim = np.abs(d2s.data()).max() * 1.1
         ylim = [-lim,lim]
 
         # original
@@ -378,8 +361,8 @@ class EigenM:
     
         # optional title
         if 'title' in kwargs:
-            ax.set_title(kwargs['title'])
-
+            ax.set_title(kwargs['title']) 
+        
         return ax
 
 #     def plot(self,**kwargs):

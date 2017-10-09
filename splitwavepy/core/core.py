@@ -18,16 +18,16 @@ from scipy import signal
 
 ##############
 
-def even(x): return 2*np.rint(x/2).astype(int)
-    
+def near(x): return np.rint(x).astype(int)
+def even(x): return 2*np.rint(x/2).astype(int)    
 def odd(x): return (2*np.rint(np.ceil(x/2))-1).astype(int)
 
 def time2samps(t,delta,mode='near'):
     """
     convert a time to number of samples given the sampling interval.
     """
-    rat = float(t / delta)        
-    if mode == 'near': return int(np.rint(rat))
+    rat = t / delta        
+    if mode == 'near': return near(rat)
     if mode == 'even': return even(rat)
     if mode == 'odd' : return odd(rat)
 
