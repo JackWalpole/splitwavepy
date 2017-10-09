@@ -126,17 +126,17 @@ class Pair:
         return np.vstack((self.x,self.y))
     
     def set_labels(self):
-        # if np.allclose(self.cmpvecs,np.eye(2)):
-        if self.geom == 'geo': self.cmplabels = ['North','East']
-        elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
-        elif self.geom == 'cart': self.cmplabels = ['X','Y']
-        else: self.cmplabel = ['Comp1','Comp2']
-        return
-        # if reached here use the default label
-        # a1,a2 = self.cmpangs()
-        # lbl1 = str(round(a1))
-        # lbl2 = str(round(a2))
-        # self.cmplabels = [lbl1,lbl2]
+        if np.allclose(self.cmpvecs,np.eye(2)):
+            if self.geom == 'geo': self.cmplabels = ['North','East']
+            elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
+            elif self.geom == 'cart': self.cmplabels = ['X','Y']
+            else: self.cmplabel = ['Comp1','Comp2']
+            return
+        # if reached here we have a non-standard orientation
+        a1,a2 = self.cmpangs()
+        lbl1 = str(round(a1))
+        lbl2 = str(round(a2))
+        self.cmplabels = [lbl1,lbl2]
         
         
     def split(self,fast,lag):
@@ -288,6 +288,7 @@ class Pair:
         """
         chop = self.copy()
         chop.x,chop.y = core.chop(self.x,self.y,window=self.window)
+        # self.window = None
         return chop
         
     def chopt(self):
@@ -301,14 +302,14 @@ class Pair:
         """
         Window start time.
         """
-        sbeg = self.window.start()
+        sbeg = self.window.start(self.nsamps())
         return sbeg * self.delta
     
     def wend(self):
         """
         Window end time.
         """
-        send = self.window.end()
+        send = self.window.end(self.nsamps())
         return send * self.delta
     
     # plotting
@@ -354,9 +355,10 @@ class Pair:
         ax.set_xlabel('Time (' + kwargs['units'] +')')
 
         # plot window markers
-        if 'window' in kwargs and kwargs['window'] != False:
+        # if 'window' not in kwargs and kwargs['window'] != False:
+        if self.window.width < self.nsamps():
             ax.axvline(self.wbeg(),linewidth=1,color='k')
-            ax.axvline(self.wend(),linewidth=1,color='k')        
+            ax.axvline(self.wend(),linewidth=1,color='k')       
 
         return ax
 
@@ -365,7 +367,7 @@ class Pair:
         """
                 
         # plot data
-        ax.plot(self.y,self.x)
+        ax.plot(self.chop().y,self.chop().x)
     
         # set limit
         lim = np.abs(self.data()).max() * 1.1

@@ -188,22 +188,23 @@ class EigenM:
 
     def srcpoldata(self):
         srcpoldata = self.data.copy()
-        srcpoldata.rotateto(self.srcpol())
+        srcpoldata.rotateto(-self.srcpol())
         return srcpoldata
         
     def srcpoldata_corr(self):
         srcpoldata_corr = self.data_corr()        
-        srcpoldata_corr.rotateto(self.srcpol())
+        srcpoldata_corr.rotateto(-self.srcpol())
         return srcpoldata_corr
         
-    def fastdata(self):
+    def fastdata(self,flipslow=False):
+        """Plot fast/slow data."""
         fastdata = self.data.copy()
-        fastdata.rotateto(self.fast)
+        fastdata.rotateto(-self.fast)
         return fastdata
 
-    def fastdata_corr(self):
+    def fastdata_corr(self,flipslow=False):
         fastdata_corr = self.data_corr()
-        fastdata_corr.rotateto(self.fast)
+        fastdata_corr.rotateto(-self.fast)
         return fastdata_corr
             
     # F-test utilities
@@ -312,21 +313,24 @@ class EigenM:
         ax3 = plt.subplot(gs[1,1])
         ax4 = plt.subplot(gs[:,2])
         
-        # sata to plot
+        # data to plot
         d1 = self.data.chop()
-        # d1 = self.fastdata().chop()
+        d1f = self.fastdata().chop()
         d2 = self.data_corr().chop()
-        # d3 = self.srcpoldata_corr().chop()
+        d2s = self.srcpoldata_corr().chop()
+        
+        # flip polarity of slow wave in panel one if opposite to fast
+        d1f.y = d1f.y * np.sign(np.tan(self.srcpol()-self.fast))
         
         # get axis scaling
         lim = np.abs(np.hstack((d1.data(),d2.data()))).max() * 1.1
         ylim = [-lim,lim]
 
         # original
-        d1._ptr(ax0,ylim=ylim,**kwargs)
+        d1f._ptr(ax0,ylim=ylim,**kwargs)
         d1._ppm(ax1,lims=ylim,**kwargs)
         # corrected
-        d2._ptr(ax2,ylim=ylim,**kwargs)
+        d2s._ptr(ax2,ylim=ylim,**kwargs)
         d2._ppm(ax3,lims=ylim,**kwargs)
 
         # error surface
