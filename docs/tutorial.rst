@@ -1,7 +1,5 @@
 .. _tutorial:
 
-.. toctree and include source files
-
 ****************************************************
 Tutorial
 ****************************************************
@@ -32,7 +30,7 @@ You specify the *fast* direction, *lag* time, *noise*, and source *pol* -arisati
     Don't forget to set the sample interval *delta* appropriately (defaults to 1), it determines how your *lag* time is interpreted. 
 
 Adding and removing splitting
-``````````````````````````````
+------------------------------
 
 The data are already split, but that doesn't mean they can't be split again! You can add more splitting using the *split()* method.
 
@@ -55,77 +53,7 @@ Sometimes we might want to do a *correction* and apply the *inverse* splitting o
 	This is fine so long as your traces extend far enough beyond your window.  Jump to :ref:`window`.
 
 
--------------------------------
-	
-.. _real_data:
 
-Real data
----------
-
-If you've got real data you need to get it into a `numpy <http://www.numpy.org/>`_ array.    For the purposes of this tutorial, let's use `Obspy <https://github.com/obspy/obspy/wiki>`_  to download some data from the `IRIS <https://www.iris.edu/hq/>`_ servers.
-
-.. .. nbplot::
-.. 	:include-source:
-..
-.. 	# Get waveforms of event plotted in my G3,2014 paper
-.. 	# (I discovered that I got the event time wrong in the paper -- but this is correct.)
-.. 	from obspy import read
-.. 	from obspy.clients.fdsn import Client
-.. 	from obspy import UTCDateTime
-..
-.. 	client = Client("IRIS")
-.. 	t = UTCDateTime("2000-08-15T04:30:0.000")
-.. 	st = client.get_waveforms("IU", "CCM", "00", "BH?", t, t + 60 * 60,attach_response=True)
-..
-.. 	# filter the data
-.. 	st.filter("bandpass",freqmin=0.01,freqmax=0.5)
-..
-.. 	# select horizontal components
-.. 	st.select(component="[N,E]")
-..
-.. 	st.plot()
-
-.. With real data it's worth doing a bit of pre-processing which at minimum will involve removing the mean from data, and might also involve bandpass filtering, interpolation, and/or rotating the components.  It is also necessary to pick the shear arrival of interest.  All of this is achievable in Obspy.
-
-We can use the obspy taup module to find the SKS arrival.
-
-.. .. nbplot::
-.. 	:include-source:
-..
-.. 	from obspy.taup import TauPyModel
-..
-.. 	# from location and time, get event information
-.. 	lat=-31.56
-.. 	lon=179.74
-..
-.. 	# server does not accept longitude greater than 180.
-.. 	cat = client.get_events(starttime=t-60,endtime=t+60,minlatitude=lat-1,
-.. 	                  maxlatitude=lat+1,minlongitude=lon-1,maxlongitude=180)
-.. 	evtime = cat.events[0].origins[0].time
-.. 	evdepth = cat.events[0].origins[0].depth/1000
-.. 	evlat = cat.events[0].origins[0].latitude
-.. 	evlon = cat.events[0].origins[0].longitude
-..
-.. 	# station information
-.. 	inventory = client.get_stations(network="IU",station="CCM",starttime=t-60,endtime=t+60)
-.. 	stlat = inventory[0][0].latitude
-.. 	stlon = inventory[0][0].longitude
-..
-.. 	# find arrival times
-.. 	model = TauPyModel('iasp91')
-.. 	arrivals = model.get_travel_times_geo(evdepth,evlat,evlon,stlat,stlon,phase_list=['SKS'])
-.. 	skstime = evtime + arrivals[0].time
-..
-.. 	# trim around SKS
-.. 	st.trim( skstime-30, skstime+30)
-..
-.. 	# get data into Pair object and plot
-.. 	realdata = s.Pair( d[0].data, d[1].data, delta=d[0].stats.delta)
-.. 	realdata.plot()
-	
-
-.. .. nbplot::
-	:include-source:
 	
 
 
