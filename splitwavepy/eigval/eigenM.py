@@ -89,8 +89,8 @@ class EigenM:
         lags = np.unique( core.time2samps( lags, self.delta, mode='even')).astype(int)
             
         # degs
-        mindeg = 0
-        maxdeg = 180
+        mindeg = -90
+        maxdeg = 90
         ndegs = 60
         
         if 'degs' not in kwargs:
