@@ -548,12 +548,12 @@ def _synth(**kwargs):
     
     # defaults
     pol = 0.
-    delta = 1.
+    # delta = 0.01 # not used
     fast = 0.
     lag = 0.
     noise = 0.001
-    nsamps = 501
-    width = 16.
+    nsamps = 1001
+    width = 32.
     
     # override defaults
     if ('pol' in kwargs): pol = kwargs['pol']   
