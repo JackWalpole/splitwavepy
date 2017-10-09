@@ -548,7 +548,7 @@ def _synth(**kwargs):
     
     # defaults
     pol = 0.
-    # delta = 0.01 # not used
+    delta = 1.
     fast = 0.
     lag = 0.
     noise = 0.001

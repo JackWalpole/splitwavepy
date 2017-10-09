@@ -68,7 +68,7 @@ class EigenM:
         # default lags        
         minlag = 0
         maxlag = self.delta * self.data.window.width / 2
-        nlags  = 30
+        nlags  = 40
         
         # parse lags
         if 'lags' not in kwargs:
@@ -91,7 +91,7 @@ class EigenM:
         # degs
         mindeg = -90
         maxdeg = 90
-        ndegs = 60
+        ndegs = 90
         
         if 'ndegs' not in kwargs:
             degs = np.linspace( mindeg, maxdeg, ndegs, endpoint=False)
@@ -197,8 +197,8 @@ class EigenM:
     
     def ndf(self):
         """Number of degrees of freedom."""
-        d = self.srcpoldata_corr()
-        return eigval.ndf(d.y,window=self.window)
+        d = self.srcpoldata_corr().chop()
+        return eigval.ndf(d.y)
     
     def lam2_95(self):
         """Value of lam2 at 95% confidence contour."""
@@ -350,11 +350,14 @@ class EigenM:
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
         ax.set_xlabel('Delay Time (' + self.units + ')')
         
-        # # marker
-        # ax.errorbar(M.lag,M.fast,xerr=M.fdlag,yerr=M.fdfast,fmt='o')
-        #
-        # # confidence region
-        # ax.contour(M.lags,M.degs,M.lam2,levels=[M.lam2_95()])
+        # marker
+        if 'marker' in kwargs and kwargs['marker'] == True:
+            dfast, dlag = self.f_errors()
+            ax.errorbar(self.lag,self.fast,xerr=dlag,yerr=dfast,fmt='o')
+
+        # confidence region
+        if 'conf95' in kwargs and kwargs['conf95'] == True:
+            ax.contour(self.lags,self.degs,self.lam2,levels=[self.lam2_95()])
 
         ax.set_xlim([self.lags[0,0], self.lags[-1,0]])
         ax.set_ylim([self.degs[0,0], self.degs[0,-1]])

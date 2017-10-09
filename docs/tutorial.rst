@@ -21,7 +21,7 @@ By default, if no data is provided, SplitWavePy will make some synthetic data.  
 .. nbplot::
 	:include-source:
 
-	data = sw.Pair(fast=30, lag=1.4, noise=0.01, pol=-15.8, delta=0.1)
+	data = sw.Pair(fast=30, lag=1.4, noise=0.02, pol=-15.8, delta=0.05)
 	data.plot()
 
 You specify the *fast* direction, *lag* time, *noise*, and source *pol* -arisation as shown above.  Order is not important.
@@ -94,9 +94,15 @@ To use this method on your data.
 .. nbplot::
 	:include-source:
 	
-	measure = sw.EigenM(data)
+	measure = sw.EigenM(data,ndegs=90,lags=(4,))
 	measure.plot()
 
+It is common to plot the :math:`\lambda_2` surface.  To do this you use the keyword ``vals = measure.lam2``, the title can be changed ``title = r'$\lambda_2$'``.  Additionally, to add a marker at the max :math:`\lambda_1/\lambda_2` location use ``marker=True`` and to plot the 95\% confidence contour use ``conf95=True``.  To change the colour bar use ``cmap`` to a valid colourmap.
+
+.. nbplot::
+	:include-source:
+	
+	measure.plot(vals=measure.lam2, title=r'$\lambda_2$', marker=True, conf95=True, cmap='viridis_r')
 
 Error Estimation
 -----------------
@@ -106,8 +112,8 @@ To report the
 F--test
 ````````
 
-Bootstrap
-``````````
+.. Bootstrap
+.. ``````````
 
 
 The Results
