@@ -330,6 +330,10 @@ class Pair:
         # particle  motion
         ax1 = plt.subplot(gs[1])
         self._ppm( ax1, **kwargs)
+        
+        if 'interact' in kwargs:
+            windowpicker = WindowPicker(fig,ax0)
+            windowpicker.connect()
                                  
         # show
         plt.tight_layout()
@@ -360,10 +364,10 @@ class Pair:
         # plot window markers
         # if 'window' not in kwargs and kwargs['window'] != False:
         if self.window.width < self.nsamps():
-            ax.axvline(self.wbeg(),linewidth=1,color='k')
-            ax.axvline(self.wend(),linewidth=1,color='k')       
+            ax.axvline(self.wbeg(),linewidth=1,color='k',picker=100)
+            ax.axvline(self.wend(),linewidth=1,color='k',picker=100)       
 
-        return ax
+        return
 
     def _ppm(self,ax,**kwargs):
         """Plot particle motion on *ax* matplotlib axis object.
@@ -427,6 +431,118 @@ class Pair:
         # if reached here then the same
         return True
         
+# Interaction
+
+class WindowPicker:
+    """
+    Pick a Window
+    """
+
+    ### free up the keys I want to use so pyplot doesn't do funky things.
+    ### probably a neater way to do this?
+    # import matplotlib as mpl
+    # neededkeys=['c','a','f',' ','enter']
+    # keymap = dict(plt.rcParams.find_all('keymap'))
+    # for key in keymap.keys():
+    #     overlap = list(set(neededkeys) & set(keymap[key]))
+    #     [ mpl.rcParams[key].remove(wantedkey) for wantedkey in overlap ]
+
+    def __init__(self,fig,ax,**kwargs):
+
+        self.canvas = fig.canvas
+        self.ax = ax
+
+        self.press = None
+
+        # window limit lines
+        minx, maxx = self.ax.get_xlim()
+        self.wbegline = self.ax.axvline(minx,linewidth=1,color='k',visible=False)
+        self.wendline = self.ax.axvline(maxx,linewidth=1,color='k',visible=False)
+        self.cursorline = self.ax.axvline((minx+maxx)/2,linewidth=1,color='0.5',visible=False)
+        _,self.origydat = self.wbegline.get_data()
+
+    def onpick(self,event):
+        ind = event.ind
+        xdata = event.artist.get_xdata()
+        print('this line x:', xdata,)
+        msx = event.mouseevent.xdata
+        dist = abs(msx-xdata)
+        ind = [ind[np.argmin(dist)]]
+        print(dist,ind)
+
+            
+
+    def connect(self):
+        #
+        # # mouse interaction
+        # self.cidclick = self.canvas.mpl_connect('button_press_event', self.click)
+        # self.cidmotion = self.canvas.mpl_connect('motion_notify_event', self.motion)
+        # self.cidrelease = self.canvas.mpl_connect('button_release_event', self.release)
+        # self.cidenter = self.canvas.mpl_connect('axes_enter_event', self.enter)
+        # self.cidleave = self.canvas.mpl_connect('axes_leave_event', self.leave)
+        # # # keyboard interaction
+        # self.cidkeypress = self.canvas.mpl_connect('key_press_event', self.keypress)
+        # # self.cidkeyrelease = self.canvas.mpl_connect('key_release_event', self.keyrelease)
+        self.canvas.mpl_connect('pick_event',self.onpick)
+       
+    def click(self,event):
+        if event.inaxes is not self.ax: return
+        x = event.xdata
+        self.wbegline.set_data([x,x],self.origydat)
+        self.wbegline.set_visible(True)
+        self.canvas.draw()
+
+    def release(self,event):
+        if event.inaxes is not self.ax: return
+        x = event.xdata
+        self.wendline.set_data([x,x],self.origydat)
+        self.wendline.set_visible(True)
+        self.canvas.draw()
+        
+    def enter(self,event):
+        if event.inaxes is not self.ax: return
+        x = event.xdata
+        self.cursorline.set_data([x,x],self.origydat)
+        self.cursorline.set_visible(True)
+        self.canvas.draw()
+
+    def leave(self,event):
+        if event.inaxes is not self.ax: return
+        self.cursorline.set_visible(False)
+        self.canvas.draw()
+
+    def motion(self,event):
+        if event.inaxes is not self.ax: return
+        x = event.xdata
+        self.cursorline.set_data([x,x],self.origydat)
+        self.canvas.draw()
+
+    # def keypress(self,event):
+    #
+    #     if event.inaxes is not self.ax: return
+    #     if event.key == 'c':
+    #         self.wbegline.set_visible(False)
+    #         self.wendline.set_visible(False)
+    #     # establish which line is which
+    #     xbeg = self.wbegline.get_data()[0][0]
+    #     xend = self.wendline.get_data()[0][0]
+    #     x = event.xdata
+    #     if xbeg < xend:
+    #         leftline = self.wbegline
+    #         rightline = self.wendline
+    #     else:
+    #         leftline = self.wendline
+    #         rightline = self.wbegline
+    #     if event.key == 'a':
+    #         leftline.set_data([x,x],self.origydat)
+    #         leftline.set_visible(True)
+    #     if event.key == 'f':
+    #         rightline.set_data([x,x],self.origydat)
+    #         rightline.set_visible(True)
+    #     if event.key == ' ':
+    #         # chop the data and replot particle motion
+    #         return 'halleluja!'
+    
 def _synth(**kwargs):
     """return ricker wavelet synthetic data"""
     

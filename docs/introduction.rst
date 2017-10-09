@@ -21,7 +21,7 @@ Now try the code.
 	:include-source:
 
 	import splitwavepy as sw
-	m = sw.EigenM( fast=50, lag=1.9, delta=0.1, noise=0.03)
+	m = sw.EigenM( fast=50, lag=1.9, delta=0.05, noise=0.04)
 	m.plot()
 
 Save your measurement to disk.
