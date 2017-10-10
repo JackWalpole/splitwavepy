@@ -14,15 +14,15 @@ https://github.com/JackWalpole/splitwavepy
 
 
 .. toctree::
-   introduction
+   get_started
    tutorial
-   examples
+   real_data
 
 
 Acknowledge
 ------------
 
-Feel free to use this code, and if you find it helpful please acknowledge this in your work and don't be shy to let me know, I'd like to hear from you.
+Feel free to use this code, and if you find it helpful please acknowledge this in your work.
 
 
 Contribute!

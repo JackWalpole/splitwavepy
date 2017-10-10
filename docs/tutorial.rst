@@ -15,6 +15,7 @@ Synthetic data
 ---------------------
 
 By default, if no data is provided, SplitWavePy will make some synthetic data.  Data is stored in a *Pair* object.
+I will use a synthetic to demonstrate the basic features of the code.  Jump to :ref:`real_data`.
 
 .. .. autoclass:: splitwavepy.core.pair.Pair
 
@@ -103,6 +104,15 @@ It is common to plot the :math:`\lambda_2` surface.  To do this you use the keyw
 	:include-source:
 	
 	measure.plot(vals=measure.lam2, title=r'$\lambda_2$', marker=True, conf95=True, cmap='viridis_r')
+
+.. _setgrid:
+
+Setting the lag time search range
+``````````````````````````````````
+The code automatically sets the maximum lag time to be half the window length.  To set the max search time manually you use the ``lags`` keyword.  This accepts a tuple of length 1, 2, or 3, and will be interpreted differently depending on this length.  The rules are as follows: for a 1-tuple ``lags = (maxlag,)``, a 2-tuple ``lags = (maxlag, nlags)``, and finally a 3-tuple ``(minlag, maxlag, nlags)``.  In the previous example we can see that the solution has a delay time less than 2 seconds, so let's repeat the measurement using a more sensible grid search.
+
+.. note::
+	The code automatically grid searches every 2 degrees along the fast direction axis.  That's ``ndegs = 90`` nodes in total (180/2).  You can change this number using the ``ndegs`` keyword.
 
 Error Estimation
 -----------------
