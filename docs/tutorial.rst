@@ -88,7 +88,7 @@ Alternatively the window can be set using the ``set_window(start,end)`` method.
 Silver and Chan (1991) eigenvalue method
 -----------------------------------------
 
-A powerful and popular method for measuring splitting is the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  It uses a grid search to find the inverse splitting parameters that best linearise the particle motion.  Linearisation is assessed by principal component analysis at each search node, taking the eigenvalues of the covariance matrix, where linearity maximises :math:`\lambda_1/` and minimises :math:`\lambda_2`.
+A powerful and popular method for measuring splitting is the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  It uses a grid search to find the inverse splitting parameters that best linearise the particle motion.  Linearisation is assessed by principal component analysis at each search node, taking the eigenvalues of the covariance matrix, where linearity maximises :math:`\lambda_1` and minimises :math:`\lambda_2`, the code uses the node that maximises the ratio :math:`\lambda1/\lambda_2`.
 
 To use this method on your data.
 
@@ -98,7 +98,7 @@ To use this method on your data.
 	measure = sw.EigenM(data,ndegs=90,lags=(4,))
 	measure.plot()
 
-It is common to plot the :math:`\lambda_2` surface.  To do this you use the keyword ``vals = measure.lam2``, the title can be changed ``title = r'$\lambda_2$'``.  Additionally, to add a marker at the max :math:`\lambda_1/\lambda_2` location use ``marker=True`` and to plot the 95\% confidence contour use ``conf95=True``.  To change the colour bar use ``cmap`` to a valid colourmap.
+It is quite common to plot the :math:`\lambda_2` surface.  To do this you use the keyword ``vals = measure.lam2``, the title can be changed ``title = r'$\lambda_2$'``.  Additionally, to add a marker at the max :math:`\lambda_1/\lambda_2` location use ``marker=True`` and to plot the 95\% confidence contour use ``conf95=True``.  This plots a contour at the value of :math:`\lambda_2` that should contain the correct parameters 95% of the time, according to an F-test, which uses the noise level on the corrected residual trace (:math:\lambda_2 min) and a data determined estimate of the degrees of freedom (the code uses the coefficients of `Walsh et al., 2014 <http://onlinelibrary.wiley.com/doi/10.1002/jgrb.50386/full>`_).  To change the colour bar use ``cmap`` to a valid matplotlib colourmap.
 
 .. nbplot::
 	:include-source:
@@ -114,20 +114,9 @@ The code automatically sets the maximum lag time to be half the window length.  
 .. note::
 	The code automatically grid searches every 2 degrees along the fast direction axis.  That's ``ndegs = 90`` nodes in total (180/2).  You can change this number using the ``ndegs`` keyword.
 
-Error Estimation
------------------
 
-To report the 
-
-F--test
-````````
-
-.. Bootstrap
-.. ``````````
-
-
-The Results
-----------------
+Tabulating the result
+----------------------
 
 .. Keeping things together
 .. -------------------------
