@@ -15,7 +15,7 @@ Synthetic data
 ---------------------
 
 By default, if no data is provided, SplitWavePy will make some synthetic data.  Data is stored in a *Pair* object.
-I will use a synthetic to demonstrate the basic features of the code.  Jump to :ref:`real_data`.
+I will use a synthetic to demonstrate the basic features of the code.  Jump to :ref:`realdata`.
 
 .. .. autoclass:: splitwavepy.core.pair.Pair
 
@@ -88,7 +88,7 @@ Alternatively the window can be set using the ``set_window(start,end)`` method.
 Silver and Chan (1991) eigenvalue method
 -----------------------------------------
 
-A powerful and popular method for measuring splitting is the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.
+A powerful and popular method for measuring splitting is the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  It uses a grid search to find the inverse splitting parameters that best linearise the particle motion.  Linearisation is assessed by principal component analysis at each search node, taking the eigenvalues of the covariance matrix, where linearity maximises :math:`\lambda_1/` and minimises :math:`\lambda_2`.
 
 To use this method on your data.
 
