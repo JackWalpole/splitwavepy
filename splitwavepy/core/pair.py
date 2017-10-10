@@ -120,35 +120,8 @@ class Pair:
 
     # methods
 
-    def t(self):
-        return np.arange(self.x.size) * self.delta
-  
-    def data(self):
-        return np.vstack((self.x,self.y))
+
     
-    def set_labels(self,*args):
-        if len(args) == 0:
-            if np.allclose(self.cmpvecs,np.eye(2),atol=1e-02):
-                if self.geom == 'geo': self.cmplabels = ['North','East']
-                elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
-                elif self.geom == 'cart': self.cmplabels = ['X','Y']
-                else: self.cmplabels = ['Comp1','Comp2']
-                return
-            # if reached here we have a non-standard orientation
-            a1,a2 = self.cmpangs()
-            lbl1 = str(round(a1))+r' ($^\circ$)'
-            lbl2 = str(round(a2))+r' ($^\circ$)'
-            self.cmplabels = [lbl1,lbl2]
-            return
-        elif len(args) == 1:
-            if not isinstance(args[0],list): raise TypeError('expecting a list')
-            if not len(args[0]) == 2: raise Exception('list must be length 2')
-            if not (isinstance(args[0][0],str) and isinstance(args[0][1],str)):
-                raise TypeError('cmplabels must be a list of strings')
-            self.cmplabels = args[0]
-            return
-        else:
-            raise Exception('unexpected number of arguments')
         
     def split(self,fast,lag):
         """
@@ -164,15 +137,6 @@ class Pair:
         # apply splitting
         self.x, self.y = core.split(self.x,self.y,fast,samps)
         self.rotateto(origangs[0])
-        
-        # ang = np.deg2rad(fast)
-        # fastcmps = np.array([[np.cos(ang),-np.sin(ang)],
-        #                      [np.sin(ang), np.cos(ang)]])
-        # rot = np.dot(fastcmps,self.cmpvecs.T)
-        # rangle = np.rad2deg(np.arccos(rot[0,0]))
-        # print(rangle,samps)
-        # apply splitting
-        # self.x, self.y = core.split(self.x,self.y,rangle,samps)
            
     def unsplit(self,fast,lag):
         """
@@ -188,15 +152,7 @@ class Pair:
         # apply splitting
         self.x, self.y = core.unsplit(self.x,self.y,fast,samps)
         self.rotateto(origangs[0])
-        
-        # ang = np.deg2rad(fast)
-        # fastcmps = np.array([[np.cos(ang),-np.sin(ang)],
-        #                      [np.sin(ang), np.cos(ang)]])
-        # rot = np.dot(fastcmps,self.cmpvecs.T)
-        # rangle = np.rad2deg(np.arccos(rot[0,0]))
-        # print(rangle,samps)
-        # self.x, self.y = core.unsplit(self.x,self.y,rangle,samps)
-        
+       
     def rotateto(self,degrees):
         """
         Rotate data so that trace1 lines up with *degrees*
@@ -222,34 +178,7 @@ class Pair:
         lab1,lab2 = self.cmpangs()
         self.set_labels()
         
-        
-    def pol(self):
-        """Return principal component orientation"""
-        # rotate to zero
-        rot = self.cmpvecs.T
-        data = self.chop().data()
-        xy = np.dot(rot,data)
-        _,eigvecs = core.eigcov(xy)
-        x,y = eigvecs[:,0]
-        pol = np.rad2deg(np.arctan2(y,x))
-        return pol
-        
-    def eigen(self,window=None):
-        self.eigvals, self.eigvecs = core.eigcov(self.data())
-
-    def cmpangs(self):
-        cmp1 = self.cmpvecs[:,0]
-        cmp2 = self.cmpvecs[:,1]
-        def getang(c) : return np.rad2deg(np.arctan2(c[1],c[0]))
-        return getang(cmp1),getang(cmp2)
-        
-# Geometry stuff
-
-    # def geom_to_geo():
-    # def geom_to_ray():
-    # def geom_to
-
-# Windowing
+    # Windowing
                 
     def set_window(self,*args,**kwargs):
         """
@@ -276,7 +205,7 @@ class Pair:
         
         # if no arguments provided
         if len(args) == 0:
-            width = self.nsamps() / 3
+            width = self._nsamps() / 3
             self.window = Window(width)
             return
         # if start/end given
@@ -292,7 +221,55 @@ class Pair:
             return
         else:
             raise Exception ('unexpected number of arguments')
-                
+
+    def set_labels(self,*args):
+        if len(args) == 0:
+            if np.allclose(self.cmpvecs,np.eye(2),atol=1e-02):
+                if self.geom == 'geo': self.cmplabels = ['North','East']
+                elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
+                elif self.geom == 'cart': self.cmplabels = ['X','Y']
+                else: self.cmplabels = ['Comp1','Comp2']
+                return
+            # if reached here we have a non-standard orientation
+            a1,a2 = self.cmpangs()
+            lbl1 = str(round(a1))+r' ($^\circ$)'
+            lbl2 = str(round(a2))+r' ($^\circ$)'
+            self.cmplabels = [lbl1,lbl2]
+            return
+        elif len(args) == 1:
+            if not isinstance(args[0],list): raise TypeError('expecting a list')
+            if not len(args[0]) == 2: raise Exception('list must be length 2')
+            if not (isinstance(args[0][0],str) and isinstance(args[0][1],str)):
+                raise TypeError('cmplabels must be a list of strings')
+            self.cmplabels = args[0]
+            return
+        else:
+            raise Exception('unexpected number of arguments')
+    
+    # Utility 
+
+    def pol(self):
+        """Return principal component orientation"""
+        # rotate to zero
+        rot = self.cmpvecs.T
+        data = self.chop().data()
+        xy = np.dot(rot,data)
+        _,eigvecs = core.eigcov(xy)
+        x,y = eigvecs[:,0]
+        pol = np.rad2deg(np.arctan2(y,x))
+        return pol
+        
+    def eigen(self,window=None):
+        self.eigvals, self.eigvecs = core.eigcov(self.data())
+        
+    def power(self):
+        return self.x**2,self.y**2
+
+    def cmpangs(self):
+        cmp1 = self.cmpvecs[:,0]
+        cmp2 = self.cmpvecs[:,1]
+        def getang(c) : return np.rad2deg(np.arctan2(c[1],c[0]))
+        return getang(cmp1),getang(cmp2)          
     
     def chop(self):
         """
@@ -314,17 +291,17 @@ class Pair:
         """
         Window start time.
         """
-        sbeg = self.window.start(self.nsamps())
+        sbeg = self.window.start(self._nsamps())
         return sbeg * self.delta
     
     def wend(self):
         """
         Window end time.
         """
-        send = self.window.end(self.nsamps())
+        send = self.window.end(self._nsamps())
         return send * self.delta
     
-    # plotting
+    # Plotting
                 
     def plot(self,**kwargs):
         """
@@ -370,7 +347,7 @@ class Pair:
 
         # plot window markers
         # if 'window' not in kwargs and kwargs['window'] != False:
-        if self.window.width < self.nsamps():
+        if self.window.width < self._nsamps():
             w1 = ax.axvline(self.wbeg(),linewidth=1,color='k')
             w2 = ax.axvline(self.wend(),linewidth=1,color='k')
             w1.aname = 'w1'
@@ -401,44 +378,7 @@ class Pair:
         ax.axes.yaxis.set_ticklabels([])
         return
         
-    # useful?
-    def nsamps(self):
-        return self.x.size
-    
-    def centresamp(self):
-        return int(self.x.size/2)
-        
-    def centretime(self):
-        return int(self.x.size/2) * self.delta
-        
-    def power(self):
-        return self.x**2+self.y**2
-      
-    # I/O stuff  
-
-    def save(self,filename):
-        """
-        Save Measurement for future referral
-        """
-        io.save(self,filename)
-                       
-    def copy(self):
-        return io.copy(self)
-
-    # In builts
-    
-    def __eq__(self, other) :
-        # check same class
-        if self.__class__ != other.__class__: return False
-        # check same keys
-        if self.__dict__.keys() != other.__dict__.keys(): return False
-        # check same values
-        for key in self.__dict__.keys():
-            if np.all( self.__dict__[key] != other.__dict__[key]): return False
-        # if reached here then the same
-        return True
-        
-# Interaction 
+    # Interactive
 
     def pick_window(self,**kwargs):
         """
@@ -466,27 +406,100 @@ class Pair:
 
         # windowpicker.disconnec
         # fig.close()
+        
+
+      
+    # I/O stuff  
+
+    def save(self,filename):
+        """
+        Save Measurement for future referral
+        """
+        io.save(self,filename)
+                       
+    def copy(self):
+        return io.copy(self)
+
+        
+    # Geometry stuff
+
+    # def geom_to_geo():
+    # def geom_to_ray():
+    # def geom_to   
+
+    
+    # Hidden
+    
+    def _nsamps(self):
+        return self.x.size
+
+    def _centresamp(self):
+        return int(self.x.size/2)
+    
+    def _centretime(self):
+        return int(self.x.size/2) * self.delta
+
+        
+    # Special
+    
+    def __eq__(self, other) :
+        # check same class
+        if self.__class__ != other.__class__: return False
+        # check same keys
+        if self.__dict__.keys() != other.__dict__.keys(): return False
+        # check same values
+        for key in self.__dict__.keys():
+            if np.all( self.__dict__[key] != other.__dict__[key]): return False
+        # if reached here then the same
+        return True
+
+# Exterior   
+
+def _synth(**kwargs):
+    """return ricker wavelet synthetic data"""
+    
+    # defaults
+    pol = 0.
+    delta = 1.
+    fast = 0.
+    lag = 0.
+    noise = 0.001
+    nsamps = 1001
+    width = 32.
+    
+    # override defaults
+    if ('pol' in kwargs): pol = kwargs['pol']   
+    if ('delta' in kwargs): delta = kwargs['delta']  
+    if ('fast' in kwargs): fast = kwargs['fast']
+    if ('lag' in kwargs): lag = kwargs['lag']   
+    if ('noise' in kwargs): noise = kwargs['noise']   
+    if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
+    if ('width' in kwargs): width = kwargs['width']   
+
+    nsamps = int(nsamps)  
+    x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,int(width/4))
+    y = core.noise(nsamps,noise,width/4)    
+    # rotate to polarisation 
+    # negative because we are doing the active rotation of data, whereas
+    # core.rotate does the passive transormation of the co-ordinate system
+    x,y = core.rotate(x,y,-pol)    
+    # add any splitting -- lag samples must be even
+    slag = core.time2samps(lag,delta,mode='even')
+    x,y = core.split(x,y,fast,slag)
+    
+    return x,y
+    
+
 
 class WindowPicker:
     """
     Pick a Window
     """
 
-    ### free up the keys I want to use so pyplot doesn't do funky things.
-    ### probably a neater way to do this?
-    # import matplotlib as mpl
-    # neededkeys=['c','a','f',' ','enter']
-    # keymap = dict(plt.rcParams.find_all('keymap'))
-    # for key in keymap.keys():
-    #     overlap = list(set(neededkeys) & set(keymap[key]))
-    #     [ mpl.rcParams[key].remove(wantedkey) for wantedkey in overlap ]
-
     def __init__(self,fig,ax,pair):
-
-            
+           
         self.canvas = fig.canvas
         self.ax = ax
-
         # window limit lines
         self.start = pair.wbeg()
         self.end = pair.wend()
@@ -536,41 +549,3 @@ class WindowPicker:
         x = event.xdata
         self.cursorline.set_data([x,x],self.origydat)
         self.canvas.draw()
-
-    
-def _synth(**kwargs):
-    """return ricker wavelet synthetic data"""
-    
-    # defaults
-    pol = 0.
-    delta = 1.
-    fast = 0.
-    lag = 0.
-    noise = 0.001
-    nsamps = 1001
-    width = 32.
-    
-    # override defaults
-    if ('pol' in kwargs): pol = kwargs['pol']   
-    if ('delta' in kwargs): delta = kwargs['delta']  
-    if ('fast' in kwargs): fast = kwargs['fast']
-    if ('lag' in kwargs): lag = kwargs['lag']   
-    if ('noise' in kwargs): noise = kwargs['noise']   
-    if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
-    if ('width' in kwargs): width = kwargs['width']   
-
-    nsamps = int(nsamps)  
-    x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,int(width/4))
-    y = core.noise(nsamps,noise,width/4)    
-    # rotate to polarisation 
-    # negative because we are doing the active rotation of data, whereas
-    # core.rotate does the passive transormation of the co-ordinate system
-    x,y = core.rotate(x,y,-pol)    
-    # add any splitting -- lag samples must be even
-    slag = core.time2samps(lag,delta,mode='even')
-    x,y = core.split(x,y,fast,slag)
-    
-    return x,y
-    
-
-

@@ -141,10 +141,48 @@ class EigenM:
         self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
         # get errors
         self.dfast, self.dlag = self.f_errors()
-                
-        
 
-    # methods
+    
+    # METHODS 
+    #---------    
+                
+    def report(self,file=None,choose=None,**kwargs):
+        """
+        Report to stdout or to a file.
+        
+        keywords
+        --------
+        
+        file     string e.g. 'myfile.txt'
+        append   bool   e.g. True
+        header   bool   e.g. False
+        choose   list   e.g. ['fast','lag']
+        
+        By default will report to stdout with a header.
+        
+        If a file name is provided using the keyword *file*
+        then the code, by default, will write with a header 
+        to a new file, and append without a header to a pre-
+        existing file.
+        
+        By default the code will report:
+        name, fast, lag, dfast, dlag, 
+        
+        choose 
+        
+        
+        """
+        # choose what to report
+        if choose is None:
+            pass
+        
+        # header line
+        
+        # if file not exist
+        
+        # if file exists
+        # exists append        
+
     
     def srcpol(self):
         # recover source polarisation
@@ -373,7 +411,14 @@ class EigenM:
         
         return ax
 
-
+    # Report
+    
+    class Report:        
+        """
+        Handle reporting of measurement in tabular form.
+        """
+        def __init__(self):
+            self.choose = []
 
     # Comparison
     
