@@ -8,16 +8,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from ..core import core
+from ..core import core,io
 from ..core.pair import Pair
 from ..core.window import Window
 from . import eigval
 # from ..plotting import plot
-from ..core import io
+# from ..core import io
 
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+
 
 class EigenM:
     
@@ -100,7 +101,8 @@ class EigenM:
                 raise TypeError('ndegs must be an integer')
             degs = np.linspace( mindeg, maxdeg, kwargs['ndegs'], endpoint=False)
                 
-        # receiver correction            
+        # receiver correction 
+        self.rcvcorr = None           
         if ('rcvcorr' in kwargs):
             if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
             if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
@@ -110,7 +112,8 @@ class EigenM:
             kwargs['rcvcorr'] = ( deg, samps)
             self.rcvcorr = ( deg, samps * self.delta)
         
-        # source correction                  
+        # source correction
+        self.srccorr = None                  
         if ('srccorr' in kwargs):
             if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
             if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
@@ -119,12 +122,11 @@ class EigenM:
             samps = core.time2samps( lag, self.delta, 'even')
             kwargs['srccorr'] = ( deg, samps)
             self.srccorr = ( deg, samps * self.delta)
-
             
         # ensure trace1 at zero angle
         self.data.rotateto(0)        
 
-        # grid search splitting
+        # MAKE MEASUREMENT
         window = self.data.window
         self.degs, self.samplags, self.lam1, self.lam2 = eigval.grideigval(self.data.x, self.data.y, degs, slags, window, **kwargs)
         # convert sample lags to meaningful time lags
@@ -137,12 +139,9 @@ class EigenM:
         self.lag  = self.lags[maxloc]
         # estimate signal to noise level (lam1-lam2)/lam2
         self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
-        
-        # data corrections
-        self.rcvcorr = None
-        if 'rcvcorr' in kwargs: self.rcvcorr = kwargs['rcvcorr']
-        self.srccorr = None
-        if 'srccorr' in kwargs: self.rcvcorr = kwargs['srccorr'] 
+        # get errors
+        self.dfast, self.dlag = self.f_errors()
+                
         
 
     # methods
@@ -175,22 +174,26 @@ class EigenM:
     def srcpoldata(self):
         srcpoldata = self.data.copy()
         srcpoldata.rotateto(-self.srcpol())
+        srcpoldata.set_labels(['srcpol','residual'])
         return srcpoldata
         
     def srcpoldata_corr(self):
         srcpoldata_corr = self.data_corr()        
         srcpoldata_corr.rotateto(-self.srcpol())
+        srcpoldata_corr.set_labels(['srcpol','residual'])
         return srcpoldata_corr
         
     def fastdata(self,flipslow=False):
         """Plot fast/slow data."""
         fastdata = self.data.copy()
         fastdata.rotateto(-self.fast)
+        fastdata.set_labels(['fast','slow'])
         return fastdata
 
     def fastdata_corr(self,flipslow=False):
         fastdata_corr = self.data_corr()
         fastdata_corr.rotateto(-self.fast)
+        fastdata_corr.set_labels(['fast','slow'])
         return fastdata_corr
             
     # F-test utilities
@@ -231,7 +234,7 @@ class EigenM:
         # trickier to handle due to cyclicity of angles
         # search for the longest continuous line of False values
         cyclic = np.hstack((fastbool,fastbool))
-        lengthFalse = np.diff(np.where(cyclic)).max()
+        lengthFalse = np.diff(np.where(cyclic)).max() - 1
         # shortest line that contains ALL true values is then:
         lengthTrue = fastbool.size - lengthFalse
         fdfast = lengthTrue * fast_step * 0.25
@@ -265,19 +268,24 @@ class EigenM:
     
     # Output
     
-    def report(self):
-        """
-        Print out a summary of the result.
-        """
+    # def report(self):
+    #     """
+    #     Report the mesurement in tabular form.
+    #     """
+    #     toprin
         
-        # pformat = 
+        
+    # I/O stuff  
 
     def save(self,filename):
         """
         Save Measurement for future referral
         """
         io.save(self,filename)
-        
+                       
+    def copy(self):
+        return io.copy(self)  
+            
     
     # Plotting
     
@@ -302,8 +310,6 @@ class EigenM:
         
         # flip polarity of slow wave in panel one if opposite to fast
         # d1f.y = d1f.y * np.sign(np.tan(self.srcpol()-self.fast))
-        d1f.cmplabels = ['fast','slow']
-        d2s.cmplabels = ['srcpol','residual']
         
         # get axis scaling
         lim = np.abs(d2s.data()).max() * 1.1
@@ -350,14 +356,13 @@ class EigenM:
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
         ax.set_xlabel('Delay Time (' + self.units + ')')
         
-        # marker
-        if 'marker' in kwargs and kwargs['marker'] == True:
-            dfast, dlag = self.f_errors()
-            ax.errorbar(self.lag,self.fast,xerr=dlag,yerr=dfast,fmt='o')
-
         # confidence region
         if 'conf95' in kwargs and kwargs['conf95'] == True:
             ax.contour(self.lags,self.degs,self.lam2,levels=[self.lam2_95()])
+            
+        # marker
+        if 'marker' in kwargs and kwargs['marker'] == True:
+            ax.errorbar(self.lag,self.fast,xerr=self.dlag,yerr=self.dfast)
 
         ax.set_xlim([self.lags[0,0], self.lags[-1,0]])
         ax.set_ylim([self.degs[0,0], self.degs[0,-1]])
@@ -367,69 +372,6 @@ class EigenM:
             ax.set_title(kwargs['title']) 
         
         return ax
-
-#     def plot(self,**kwargs):
-#
-#
-#         if 'cmplabels' not in kwargs:
-#             kwargs['cmplabels'] = self.data.cmplabels
-#
-#         if 'mode' not in kwargs:
-#             kwargs['mode'] = 'all'
-#
-#         # plot only surface
-#         if kwargs['mode'] == 'surf':
-#
-#             if 'vals' not in kwargs:
-#                 kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
-#             plot.surf(self,**kwargs)
-#
-#         # else plot everything
-#         else:
-#             fig = plt.figure(figsize=(12,6))
-#             gs = gridspec.GridSpec(2, 3,
-#                                width_ratios=[1,1,2]
-#                                )
-#
-#             ax0 = plt.subplot(gs[0,0])
-#             ax1 = plt.subplot(gs[0,1])
-#             ax2 = plt.subplot(gs[1,0])
-#             ax3 = plt.subplot(gs[1,1])
-#             ax4 = plt.subplot(gs[:,2])
-#
-#             d1 = self.srcpoldata()
-#             d2 = self.srcpoldata_corr()
-#
-#             d1d = d1.chop()
-#             d1t = d1.chopt()
-#             d2d = d2.chop()
-#             d2t = d2.chopt()
-#
-#             # get axis scaling
-#             lim = np.abs(np.hstack((d1d,d2d))).max() * 1.1
-#             ylim = [-lim,lim]
-#
-# ## TODO fix times so they are equal at centre sample
-#
-#             # original
-#             plot.trace(d1d[0],d1d[1],time=d1t,ax=ax0,ylim=ylim,**kwargs)
-#             plot.particle(d1d[0],d1d[1],ax=ax1,lim=ylim,**kwargs)
-#
-#             # corrected
-#             plot.trace(d2d[0],d2d[1],time=d2t,ax=ax2,ylim=ylim,**kwargs)
-#             plot.particle(d2d[0],d2d[1],ax=ax3,lim=ylim,**kwargs)
-#
-#             # error surface
-#             if 'vals' not in kwargs:
-#                 kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
-#                 kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
-#
-#             plot.surf(self,ax=ax4,**kwargs)
-#
-#             # neaten
-#             plt.tight_layout()
-#
-#         plt.show()
 
 
 
@@ -446,7 +388,5 @@ class EigenM:
         # if reached here then the same
         return True
         
-
-
 
         

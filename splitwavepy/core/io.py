@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 import pickle
+import copy
 
 # Saving
 
@@ -27,6 +28,10 @@ def load(filename):
     with open(filename, 'rb') as f:
         return pickle.load(f)
         
+# Copying
+
+copy = copy.deepcopy
+
 
 # Would be good to incorporte this info in files:
 # version tracking ... e.g..

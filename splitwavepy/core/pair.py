@@ -12,7 +12,7 @@ from . import geom
 import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
-import copy
+
 
 class Pair:
     """
@@ -125,19 +125,29 @@ class Pair:
     def data(self):
         return np.vstack((self.x,self.y))
     
-    def set_labels(self):
-        if np.allclose(self.cmpvecs,np.eye(2),atol=1e-02):
-            if self.geom == 'geo': self.cmplabels = ['North','East']
-            elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
-            elif self.geom == 'cart': self.cmplabels = ['X','Y']
-            else: self.cmplabel = ['Comp1','Comp2']
+    def set_labels(self,*args):
+        if len(args) == 0:
+            if np.allclose(self.cmpvecs,np.eye(2),atol=1e-02):
+                if self.geom == 'geo': self.cmplabels = ['North','East']
+                elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
+                elif self.geom == 'cart': self.cmplabels = ['X','Y']
+                else: self.cmplabels = ['Comp1','Comp2']
+                return
+            # if reached here we have a non-standard orientation
+            a1,a2 = self.cmpangs()
+            lbl1 = str(round(a1))+r' ($^\circ$)'
+            lbl2 = str(round(a2))+r' ($^\circ$)'
+            self.cmplabels = [lbl1,lbl2]
             return
-        # if reached here we have a non-standard orientation
-        a1,a2 = self.cmpangs()
-        lbl1 = str(round(a1))+r' ($^\circ$)'
-        lbl2 = str(round(a2))+r' ($^\circ$)'
-        self.cmplabels = [lbl1,lbl2]
-        
+        elif len(args) == 1:
+            if not isinstance(args[0],list): raise TypeError('expecting a list')
+            if not len(args[0]) == 2: raise Exception('list must be length 2')
+            if not (isinstance(args[0][0],str) and isinstance(args[0][1],str)):
+                raise TypeError('cmplabels must be a list of strings')
+            self.cmplabels = args[0]
+            return
+        else:
+            raise Exception('unexpected number of arguments')
         
     def split(self,fast,lag):
         """
@@ -238,7 +248,7 @@ class Pair:
     # def geom_to_ray():
     # def geom_to
 
-    # Windowing
+# Windowing
                 
     def set_window(self,*args,**kwargs):
         """
@@ -416,7 +426,7 @@ class Pair:
         io.save(self,filename)
                        
     def copy(self):
-        return copy.deepcopy(self)    
+        return io.copy(self)
 
     # In builts
     

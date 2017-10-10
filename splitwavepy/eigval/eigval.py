@@ -96,12 +96,16 @@ def ndf(y,window=None,detrend=False):
     Y = np.fft.fft(y)
     amp = np.absolute(Y)
     
-    # estimate E2 and E4 following Walsh et al (2013)
+    # estimate E2 and E4 following Walsh et al (2013) 
     a = np.ones(Y.size)
     a[0] = a[-1] = 0.5
-    E2 = np.sum( a * amp**2)
-    E4 = (np.sum( (4 * a**2 / 3) * amp**4))
     
+    # equation (25)
+    E2 = np.sum( a * amp**2)
+    # equation (26)
+    E4 = np.sum( (4 * a**2 / 3) * amp**4)
+    
+    # equation (31)
     ndf = 2 * ( 2 * E2**2 / E4 - 1 )
     
     return ndf
