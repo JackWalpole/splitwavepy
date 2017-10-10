@@ -7,7 +7,6 @@ from . import core
 from . import core3d
 from .pair import Pair
 from .window import Window
-from ..plotting import plot3d as plot
 
 import numpy as np
 from scipy import signal
@@ -109,49 +108,49 @@ class Trio:
     def xyz(self):
         return np.vstack((self.x,self.y,self.z))
 
-    def plot(self,window=None):
-        """
-        Plot trace data and particle motion
-        """
-        from matplotlib import gridspec
-        fig = plt.figure(figsize=(12, 3))
-        if window is None:
-            gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1])
-            # trace
-            ax0 = plt.subplot(gs[0])
-            plot.trace(self.x,self.y,self.z,time=self.t(),ax=ax0)
-            # particle  motion
-            ax1 = plt.subplot(gs[1],projection='3d')
-            plot.particle(self.x,self.y,self.z,ax=ax1)
-        else:
-            gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
-            # trace with window markers
-            ax0 = plt.subplot(gs[0])
-            plot.trace(self.x,self.y,self.z,time=self.t(),window=window,ax=ax0)
-            # windowed data
-            d2 = self.copy()
-            d2.chop(window)
-            ax1 = plt.subplot(gs[1])
-            nsamps = self.nsamps()
-            wbeg = window.start(nsamps)*self.delta
-            plot.trace(d2.x,d2.y,d2.z,time=d2.t()+wbeg,ax=ax1)
-            # particle  motion
-            ax2 = plt.subplot(gs[2],projection='3d')
-            plot.particle(d2.x,d2.y,d2.z,ax=ax2)
-        # show
-        plt.tight_layout()
-        plt.show()
-        
-    
-    def pt(self,**kwargs):
-        """Plot traces"""
-        ax = plot.trace(self.x,self.y,self.z,time=self.t(),**kwargs)
-        plt.show()
-    
-    def ppm(self,**kwargs):
-        """Plot particle motion"""
-        ax = plot.particle(self.x,self.y,self.z,**kwargs)
-        plt.show()
+    # def plot(self,window=None):
+    #     """
+    #     Plot trace data and particle motion
+    #     """
+    #     from matplotlib import gridspec
+    #     fig = plt.figure(figsize=(12, 3))
+    #     if window is None:
+    #         gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1])
+    #         # trace
+    #         ax0 = plt.subplot(gs[0])
+    #         plot.trace(self.x,self.y,self.z,time=self.t(),ax=ax0)
+    #         # particle  motion
+    #         ax1 = plt.subplot(gs[1],projection='3d')
+    #         plot.particle(self.x,self.y,self.z,ax=ax1)
+    #     else:
+    #         gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
+    #         # trace with window markers
+    #         ax0 = plt.subplot(gs[0])
+    #         plot.trace(self.x,self.y,self.z,time=self.t(),window=window,ax=ax0)
+    #         # windowed data
+    #         d2 = self.copy()
+    #         d2.chop(window)
+    #         ax1 = plt.subplot(gs[1])
+    #         nsamps = self.nsamps()
+    #         wbeg = window.start(nsamps)*self.delta
+    #         plot.trace(d2.x,d2.y,d2.z,time=d2.t()+wbeg,ax=ax1)
+    #         # particle  motion
+    #         ax2 = plt.subplot(gs[2],projection='3d')
+    #         plot.particle(d2.x,d2.y,d2.z,ax=ax2)
+    #     # show
+    #     plt.tight_layout()
+    #     plt.show()
+    #
+    #
+    # def pt(self,**kwargs):
+    #     """Plot traces"""
+    #     ax = plot.trace(self.x,self.y,self.z,time=self.t(),**kwargs)
+    #     plt.show()
+    #
+    # def ppm(self,**kwargs):
+    #     """Plot particle motion"""
+    #     ax = plot.particle(self.x,self.y,self.z,**kwargs)
+    #     plt.show()
         
         
     #

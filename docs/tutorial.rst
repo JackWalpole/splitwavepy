@@ -98,7 +98,9 @@ To use this method on your data.
 	measure = sw.EigenM(data,ndegs=90,lags=(4,))
 	measure.plot()
 
-It is quite common to plot the :math:`\lambda_2` surface.  To do this you use the keyword ``vals = measure.lam2``, the title can be changed ``title = r'$\lambda_2$'``.  Additionally, to add a marker at the max :math:`\lambda_1/\lambda_2` location use ``marker=True`` and to plot the 95\% confidence contour use ``conf95=True``.  This plots a contour at the value of :math:`\lambda_2` that should contain the correct parameters 95% of the time, according to an F-test, which uses the noise level on the corrected residual trace (:math:\lambda_2 min) and a data determined estimate of the degrees of freedom (the code uses the coefficients of `Walsh et al., 2014 <http://onlinelibrary.wiley.com/doi/10.1002/jgrb.50386/full>`_).  To change the colour bar use ``cmap`` to a valid matplotlib colourmap.
+It is quite common to plot the :math:`\lambda_2` surface.  To do this you use the keyword ``vals = measure.lam2``, in fact any combination of :math:`\lambda_1` and :math:`\lambda_2` can be plotted in this way, for example you might have noticed that by default the code plots :math:`(\lambda_1-\lambda_2)/\lambda_2`.  Additionally, the title can be changed ``title = r'$\lambda_2$'``, a marker can be added at the max :math:`\lambda_1/\lambda_2` location ``marker=True``, and the 95\% confidence contour can be plotted ``conf95=True``.  
+
+.. This latter is the contour at the value of :math:`\lambda_2` that is 95% of the time, according to an F-test, which uses the noise level on the corrected residual trace (:math:\lambda_2 min) and a data determined estimate of the degrees of freedom (the code uses the coefficients of `Walsh et al., 2014 <http://onlinelibrary.wiley.com/doi/10.1002/jgrb.50386/full>`_).  To change the colour bar use ``cmap`` to a valid matplotlib colourmap.
 
 .. nbplot::
 	:include-source:
@@ -187,11 +189,11 @@ With optional geometry information appended to the right:
 | body row 1 | column 2   | column 3  | 
 +------------+------------+-----------+ 
 
-
-.. Saving and loading
--------------------
-
-
+.. Receiver correction
+.. -------------------
+..
+.. Source correction
+.. -----------------
 
 
 
@@ -217,13 +219,7 @@ With optional geometry information appended to the right:
 ..
 ..
 ..
-.. Receiver correction
-.. -------------------
-..
-.. Source correction
-.. -----------------
-..
-..
+
 .. Bootstrap correction error estimation
 .. -------------------------------------
 ..

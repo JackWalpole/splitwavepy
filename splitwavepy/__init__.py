@@ -11,7 +11,6 @@ from .core import core
 from .core import geom
 from .core.window import Window
 from .core.io import load
-from . import plotting
 
 
 

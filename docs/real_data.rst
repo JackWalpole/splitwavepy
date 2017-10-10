@@ -85,13 +85,13 @@ By chance the window looks not bad.  If you want to change it see :ref:`window`.
 	measure = sw.EigenM(realdata)
 	measure.plot()
 
-It worked (!), kind of (?).  The maximum delay time in the grid search is a bit high.  We can change this as explained in :ref:`setgrid`.
+It worked, kind of.  The maximum delay time in the grid search is a bit high.  We can change this as explained in :ref:`setgrid`.
 
 .. nbplot::
 	:include-source:
 	
 	measure = sw.EigenM(realdata, lags=(2,))
-	measure.plot()
+	measure.plot(marker=True)
 
 That looks better.
 	
