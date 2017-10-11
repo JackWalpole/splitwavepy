@@ -1,0 +1,20 @@
+tips from http://peterdowns.com/posts/first-time-with-pypi.html
+
+checklist:
+• change version number in setup.py
+	- number should be updated using: major.minor.patch
+• create a git tag:
+	- e.g. 
+	git tag 0.1 -m "Adds a tag so that we can put this on PyPI."
+	git tag        (shows a list of tags)
+	git push --tags origin master (to put it on github)
+
+---OPTIONAL TEST SERVER
+• register package on PyPI Test server (as a check eveything's working)
+	python setup.py register -r pypitest
+• upload to test PyPI repository
+	python setup.py sdist upload -r pypitest
+
+---THE REAL DEAL 
+	python setup.py register -r pypi
+	python setup.py sdist upload -r pypi

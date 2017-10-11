@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'SplitWavePy',
-    version = '0.1.1',
+    version = '0.2.0',
     description = "Shearwave splitting measurement tools",
     author = 'Jack Walpole',
     author_email = 'j.walpole@gmail.com',
@@ -13,4 +13,5 @@ setup(
         'matplotlib',
         'numpy',
         'scipy']
+    keywords = ['shear', 'wave', 'splitting', 'seismic', 'anisotropy','seismology']
 )
