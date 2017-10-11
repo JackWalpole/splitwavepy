@@ -37,8 +37,10 @@ class EigenM:
     lags -- tuple = (maxlag,)  
          -- tuple = (maxlag,Nlags) 
          -- tuple = (minlag,maxlag,Nlags)
+         -- numpy ndarray
     
-    degs -- int = Ndegs
+    degs -- int = degs
+         -- numpy ndarray
     
     rcvcorr = (fast,tlag) | tuple | Receiver Correction
     srccorr = (fast,tlag) | tuple | Source Correction
@@ -66,40 +68,44 @@ class EigenM:
         self.delta = self.data.delta
         self.units = self.data.units
                 
-        # default lags        
+        # LAGS               
         minlag = 0
-        maxlag = self.delta * self.data.window.width / 2
+        maxlag = self.data.wwidth() / 4
         nlags  = 40
-        
-        # parse lags
         if 'lags' not in kwargs:
             lags = np.linspace( minlag, maxlag, nlags)
         else:
-            if not isinstance(kwargs['lags'],tuple):
-                raise TypeError('lags keyword must be a tuple')
-            elif len(kwargs['lags']) == 1:
-                lags = np.linspace( minlag, kwargs['lags'], nlags)
-            elif len(kwargs['lags']) == 2:
-                lags = np.linspace( minlag, *kwargs['lags'])
-            elif len(kwargs['lags']) == 3:
-                lags = np.linspace( *kwargs['lags'])
+            if isinstance(kwargs['lags'],np.ndarray):
+                lags = kwargs['lags']                
+            elif isinstance(kwargs['lags'],tuple):                
+                if len(kwargs['lags']) == 1:
+                    lags = np.linspace( minlag, kwargs['lags'], nlags)
+                elif len(kwargs['lags']) == 2:
+                    lags = np.linspace( minlag, *kwargs['lags'])
+                elif len(kwargs['lags']) == 3:
+                    lags = np.linspace( *kwargs['lags'])
+                else:
+                    raise Exception('Can\'t parse lags keyword')                   
             else:
-                raise Exception('Can\'t parse lags keyword')
-        
+                raise TypeError('lags keyword must be a tuple or numpy array')                
         # convert lags to samples (must be even)
         slags = np.unique( core.time2samps( lags, self.delta, mode='even')).astype(int)
-            
-        # degs
+        
+        # DEGS
         mindeg = -90
         maxdeg = 90
-        ndegs = 90
-        
-        if 'ndegs' not in kwargs:
-            degs = np.linspace( mindeg, maxdeg, ndegs, endpoint=False)
+        degs = 90        
+        if 'degs' not in kwargs:
+            degs = np.linspace( mindeg, maxdeg, degs, endpoint=False)
         else:
-            if not isinstance(kwargs['ndegs'],int):
-                raise TypeError('ndegs must be an integer')
-            degs = np.linspace( mindeg, maxdeg, kwargs['ndegs'], endpoint=False)
+            if isinstance(kwargs['degs'],np.ndarray):
+                degs = kwargs['degs']
+            elif isinstance(kwargs['degs'],int):
+                degs = np.linspace( mindeg, maxdeg, kwargs['degs'], endpoint=False)
+            else:
+                raise TypeError('degs must be an integer or numpy array') 
+        sdegs=degs
+        kwargs.pop('degs', None)
                 
         # receiver correction 
         self.rcvcorr = None           
@@ -128,7 +134,8 @@ class EigenM:
 
         # MAKE MEASUREMENT
         window = self.data.window
-        self.degs, self.samplags, self.lam1, self.lam2 = eigval.grideigval(self.data.x, self.data.y, degs, slags, window, **kwargs)
+        self.degs, self.samplags, self.lam1, self.lam2 \
+        = eigval.grideigval(self.data.x, self.data.y, sdegs, slags, window, **kwargs)
         # convert sample lags to meaningful time lags
         self.lags = self.samplags * self.delta
                 
@@ -174,8 +181,8 @@ class EigenM:
         """
         # choose what to report
         if choose is None:
+            # 'delta', 'lam1', 'fast', 'units', 'lam2', 'dfast', 'rcvcorr', 'dlag', 'degs', 'data', 'snr', 'samplags', 'lag', 'lags', 'srccorr'
             pass
-        
         # header line
         
         # if file not exist
@@ -287,7 +294,7 @@ class EigenM:
         return np.sum((self.lam1-self.lam2)/self.lam2, axis=0)
         
     def lagprofile(self):
-        return np.sum((self.lam1-self.la2)/self.lam2, axis=1)
+        return np.sum((self.lam1-self.lam2)/self.lam2, axis=1)
     
     # auto null classification  
     
@@ -410,6 +417,26 @@ class EigenM:
             ax.set_title(kwargs['title']) 
         
         return ax
+        
+    def plot_profiles(self,**kwargs):
+        # Error analysis
+        fig,ax = plt.subplots(2)
+        ax0 = plt.subplot(121)
+        ax1 = plt.subplot(122)
+
+        ax0.plot(self.degs[0,:],self.fastprofile())
+        ax0.axvline(self.fast)
+        ax0.axvline(self.fast-2*self.dfast,alpha=0.5)
+        ax0.axvline(self.fast+2*self.dfast,alpha=0.5)
+        ax0.set_title('fast direction')
+
+        ax1.plot(self.lags[:,0],self.lagprofile())
+        ax1.axvline(self.lag)
+        ax1.axvline(self.lag-2*self.dlag,alpha=0.5)
+        ax1.axvline(self.lag+2*self.dlag,alpha=0.5)
+        ax1.set_title('lag direction')
+
+        plt.show()
 
     # Report
     

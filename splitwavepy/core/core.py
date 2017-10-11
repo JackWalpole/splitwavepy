@@ -60,8 +60,7 @@ def lag(x,y,samps):
     else:
         # negative shift
         return x[:samps], y[-samps:]
-
-        
+      
 def rotate(x,y,degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis
@@ -120,8 +119,7 @@ def chop(*args,**kwargs):
         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey
     elif len(args)==3:
         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
-
-    
+   
 def eigcov(data):
     """
     Return eigen values and vectors of covariance matrix
@@ -164,6 +162,25 @@ def noise(size,amp,smooth):
     gauss = norm * signal.gaussian(size,smooth)
     n = np.random.normal(0,amp,size)
     return np.convolve(n,gauss,'same')  
+    
+def resample_noise(y):
+    """
+    Return a randomly simulated noise trace with similar spectral properties to y.
+    
+    Following Sandvol and Hearn.
+    """  
+    # white noise
+    x = np.random.normal(0,1,y.size)
+    # convolve with y
+    x = np.convolve(x,y,'same')
+    # additional randomisation
+    x = np.roll(x,np.random.randint(y.size))
+    # whipeout near nyquist
+    x = np.convolve(np.array([1,1,1]),x,'same')
+    # normalise energy
+    x = x * np.sqrt((np.sum(y**2) / np.sum(x**2)))
+    # return
+    return x
     
 def min_idx(vals):
     """

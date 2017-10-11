@@ -118,11 +118,8 @@ class Pair:
         self.args = args
         self.kwargs = kwargs
 
-    # methods
-
-
-    
-        
+    # METHODS
+      
     def split(self,fast,lag):
         """
         Applies splitting operator.
@@ -247,6 +244,12 @@ class Pair:
             raise Exception('unexpected number of arguments')
     
     # Utility 
+    
+    def t(self):
+        return np.arange(self.x.size) * self.delta
+  
+    def data(self):
+        return np.vstack((self.x,self.y))
 
     def pol(self):
         """Return principal component orientation"""
@@ -300,7 +303,13 @@ class Pair:
         """
         send = self.window.end(self._nsamps())
         return send * self.delta
-    
+        
+    def wwidth(self):
+        """
+        Window width.
+        """
+        return self.window.width * self.delta
+        
     # Plotting
                 
     def plot(self,**kwargs):
@@ -377,6 +386,7 @@ class Pair:
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
         return
+        
         
     # Interactive
 
