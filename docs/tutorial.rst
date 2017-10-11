@@ -90,7 +90,7 @@ Set the window using the ``set_window(start,end)`` method.
 Silver and Chan (1991) eigenvalue method
 -----------------------------------------
 
-A powerful and popular method for measuring splitting is the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  It uses a grid search to find the inverse splitting parameters that best linearise the particle motion.  Linearisation is assessed by principal component analysis at each search node, taking the eigenvalues of the covariance matrix, where linearity maximises :math:`\lambda_1` and minimises :math:`\lambda_2`, the code uses the node that maximises the ratio :math:`\lambda1/\lambda_2`.
+A powerful and popular method for measuring splitting is the eigenvalue method of `Silver and Chan (1991) <http://onlinelibrary.wiley.com/doi/10.1029/91JB00899/abstract>`_.  It uses a grid search to find the inverse splitting parameters that best linearise the particle motion.  Linearisation is assessed by principal component analysis at each search node, taking the eigenvalues of the covariance matrix, where linearity maximises :math:`\lambda_1` and minimises :math:`\lambda_2`.  The code uses the ratio :math:`\lambda_1/\lambda_2` to find the best node (which is more stable than using only :math:`\lambda_1` or :math:`\lambda_2` as it accounts for the possibility that energy might be lost by sliding out of the window).
 
 To use this method on your data.
 
@@ -124,60 +124,12 @@ The code automatically grid searches every 2 degrees along the fast direction ax
 Tabulating the result
 ----------------------
 
-.. Keeping things together
-.. -------------------------
-..
-.. Each measurement can be saved and backed up to disk.
-..
-.. Saving and reloading the data is as easy as:
-..
-.. .. nbplot::
-..
-.. 	>>> m.save('temp.eigm')
-.. 	>>> n = sw.load('temp.eigm')
-.. 	>>> n == m
-.. 	... True
-..
-.. .. warning::
-..
-..    Saving will overwrite pre-existing files with the same name.
-..
-..
-.. **All** information stored in an *EigenM* objected is preserved, this includes:
-..
-.. * the input data,
-.. * any corrections that were applied as part of the measurement, and
-.. * the :math:`\lambda_1` and :math:`\lambda_2` surfaces.
-..
-.. From the loaded object we can look at the original input data.
-..
-.. .. nbplot::
-.. 	:include-source:
-..
-.. 	n.data.plot()
-..
-.. Or compare the :math:`\lambda_1` and :math:`\lambda_2` surfaces.
-..
-.. .. nbplot::
-.. 	:include-source:
-..
-.. 	fig, ax = plt.subplots(nrows=1, ncols=3, figsize=(20, 6))
-.. 	n.plot( ax=ax[0], vals=n.lam1, title=r'$\lambda_1$', mode='surf')
-.. 	n.plot( ax=ax[1], vals=n.lam2, title=r'$\lambda_2$', mode='surf', cmap='magma_r')
-.. 	n.plot( ax=ax[2], mode='surf') # by default plots (lam1-lam2)/lam2
+Oftentimes it is useful to reduce your measurement to tabular form.
+This facilitates the analysis of a set of measurements in a spreadsheet type environment.
+This is achievable by the ``report()`` method.  By default this will print a 
+tabular summary of your measurement to screen.
 
-
-An "error surface", in the literature, is typically a :math:`\lambda_2` surface with the values normalised so that the value at the confidence level of 95% is equal to 1.
-
-- Error surface from F--test (using the summation coefficients found by Walsh et al., 2014).
-
->>> m.plot(m.error)
-
-- Lambda1 and Lambda2 surfaces
-
->>> m.plot(m.lam1/m.lam2)
-
-- Tabular data is reported with the following information:
+- By default tabular data is reported with the following information:
 
 +------------+------------+-----------+ 
 | Header 1   | Header 2   | Header 3  | 
@@ -185,55 +137,81 @@ An "error surface", in the literature, is typically a :math:`\lambda_2` surface 
 | body row 1 | column 2   | column 3  | 
 +------------+------------+-----------+ 
 
-With optional geometry information appended to the right:
 
-+------------+------------+-----------+ 
-| Header 1   | Header 2   | Header 3  | 
-+============+============+===========+ 
-| body row 1 | column 2   | column 3  | 
-+------------+------------+-----------+ 
-
-.. Receiver correction
-.. -------------------
-..
-.. Source correction
-.. -----------------
+.. note::
+	By reducing your measurement to tabular form you are losing valuable information.  Therefore do not rely on ``report()`` to backup your measurements.
+	Backup your measurements using ``save()``.
 
 
+Saving and loading your measurements
+-------------------------------------
 
-.. Transverse minimisation method
-.. -------------------------------
-..
-.. Rotation correlation method
-.. ----------------------------
-..
-..
-.. Null detection
-.. --------------
-..
-..
-.. Error surface stacking
-.. ----------------------
+To save your measurement to disk simply use the ``save(filename)`` method.
+This will backup the input data complete with the :math:`\lambda_1` and :math:`\lambda_2` surfaces.
+
+This can be recovered at a later time using ``splitwavepy.load(filename)``.
+
+Splitting corrections
+----------------------
+
+In the case where you have a good estimation of the splitting parameters beneath the receiver or the source it is possible to correct the waveforms and to measure the residual splitting.  The residual splitting can then be attributed to anisotropy elsewhere along the path.
+
+Let's consider a simple 2-layer case.
+
+.. nbplot::
+	:include-source:
+	
+	# Original Data (no splitting)
+	a = sw.Pair(fast=0, lag=0, noise=0.03, delta=0.02)
+	# Layer 1 splitting (source-side)
+	a.split(30, 1.3)
+	# Layer 2 splitting (receiver-side)
+	a.split(-45, 1.7)
+	# standard measurement
+	m = sw.EigenM(a, lags=(3,))
+	m.plot()
+	
+The *apparent* splitting measured above is some non-linear combination of the 2-layers (non-linear because the order of splitting is important).
+
+Receiver correction
+``````````````````````
+If we know the layer 2 contribution we can back this off and resolve the splitting in layer 1 using the ``rcvcorr=(fast, lag)`` keyword.
+	
+.. nbplot::
+	:include-source:
+	
+	m = sw.EigenM(a, lags=(3,), rcvcorr=(-45,1.7))
+	m.plot()
+	
+If it's worked we should have measured splitting parameters of :math:`\phi=30` and :math:`\delta t =1.3`.
+	
+Source correction
+``````````````````
+
+Alternatively, if we know the layer 1 contribution we can use
+``srccorr=(fast, lag)`` to correct for the source side anisotropy.
+
+.. nbplot::
+	:include-source:
+	
+	m = sw.EigenM(a, lags=(3,), srccorr=(30,1.3))
+	m.plot()
+	
+If this has worked we should have measured splitting parameters of :math:`\phi=-45` and :math:`\delta t =1.7`.
+
+If we apply both the source and receiver correction to the above synthetic example we should yield a *null* result (no splitting).
+
+.. nbplot::
+	:include-source:
+	
+	m = sw.EigenM(a, lags=(3,), rcvcorr=(-45,1.7), srccorr=(30,1.3))
+	m.plot()
+
+We do as can be seen by the concentration of energy at delay time 0.
 
 
-.. Self normalised SNR :math:`(\lambda_1 - \lambda_2)/\lambda_2` surface stacking
-.. ````````````````````````````````````````````````````````````````````````````````
-..
-.. If :math:`\lambda_1 = \text{signal} + \text{noise}` and :math:`\lambda_2 = \text{noise}`, then the signal to noise ratio, :math:`\text{SNR} = (\lambda_1 - \lambda_2)/\lambda_2`.
-..
-..
-..
 
-.. Bootstrap correction error estimation
-.. -------------------------------------
-..
-..
-..
-..
-..
-..
-.. 3--component data
-.. --------------------
+
 
 
 

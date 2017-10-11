@@ -154,60 +154,60 @@ class EigenM:
     # METHODS 
     #---------    
                 
-    def report(self,fname=None,**kwargs):
-        """
-        Report to stdout or to a file.
-        
-        keywords
-        --------
-        
-        fname    string e.g. 'myfile.txt'. If None will write to stdout.
-        append   bool   e.g. True. Append to existing file.
-        header   bool   e.g. False.  Include the header line.
-        choose   list   e.g. ['fast','lag'].  Choose which attributes (and order) to report.
-        
-        By default will report to stdout with a header.
-        
-        If a file name is provided using the keyword *file*
-        then the code, by default, will write with a header 
-        to a new file, and append without a header to a pre-
-        existing file.
-        
-        By default the code will report:
-        name, fast, lag, dfast, dlag, 
-        
-        choose 
-        
-        
-        """
-        
-        # by default write to stdout and include the header
-        header = True
-        append = False
-
-        if fname is not None:
-            if not isinstance(kwargs['file'],str):
-                raise TypeError('file name must be a string')
-            # does file exist?
-            if os.path.isfile(fname):
-                # yes -- change defaults
-                header = False
-                append = True
-      
-        # overwrite defaults with keyword arguments
-        if 'header' in kwargs: header = kwargs['header']
-        if 'append' in kwargs: append = kwargs['append']
-        
-        # choose what to report
-        choose=['name','fast','dfast','lag','dlag','snr','ndf','rcvcorr','srccorr']    
-        # get header line
-        # get data line
-                       
-        # if file not exist
-        if append
-        
-        # if file exists
-        # exists append        
+    # def report(self,fname=None,**kwargs):
+    #     """
+    #     Report to stdout or to a file.
+    #
+    #     keywords
+    #     --------
+    #
+    #     fname    string e.g. 'myfile.txt'. If None will write to stdout.
+    #     append   bool   e.g. True. Append to existing file.
+    #     header   bool   e.g. False.  Include the header line.
+    #     choose   list   e.g. ['fast','lag'].  Choose which attributes (and order) to report.
+    #
+    #     By default will report to stdout with a header.
+    #
+    #     If a file name is provided using the keyword *file*
+    #     then the code, by default, will write with a header
+    #     to a new file, and append without a header to a pre-
+    #     existing file.
+    #
+    #     By default the code will report:
+    #     name, fast, lag, dfast, dlag,
+    #
+    #     choose
+    #
+    #
+    #     """
+    #
+    #     # by default write to stdout and include the header
+    #     header = True
+    #     append = False
+    #
+    #     if fname is not None:
+    #         if not isinstance(kwargs['file'],str):
+    #             raise TypeError('file name must be a string')
+    #         # does file exist?
+    #         if os.path.isfile(fname):
+    #             # yes -- change defaults
+    #             header = False
+    #             append = True
+    #
+    #     # overwrite defaults with keyword arguments
+    #     if 'header' in kwargs: header = kwargs['header']
+    #     if 'append' in kwargs: append = kwargs['append']
+    #
+    #     # choose what to report
+    #     choose=['name','fast','dfast','lag','dlag','snr','ndf','rcvcorr','srccorr']
+    #     # get header line
+    #     # get data line
+    #
+    #     # if file not exist
+    #     if append
+    #
+    #     # if file exists
+    #     # exists append
 
     
     def srcpol(self):
