@@ -18,6 +18,7 @@ from . import eigval
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import os.path
 
 
 class EigenM:
@@ -153,17 +154,17 @@ class EigenM:
     # METHODS 
     #---------    
                 
-    def report(self,file=None,choose=None,**kwargs):
+    def report(self,fname=None,**kwargs):
         """
         Report to stdout or to a file.
         
         keywords
         --------
         
-        file     string e.g. 'myfile.txt'
-        append   bool   e.g. True
-        header   bool   e.g. False
-        choose   list   e.g. ['fast','lag']
+        fname    string e.g. 'myfile.txt'. If None will write to stdout.
+        append   bool   e.g. True. Append to existing file.
+        header   bool   e.g. False.  Include the header line.
+        choose   list   e.g. ['fast','lag'].  Choose which attributes (and order) to report.
         
         By default will report to stdout with a header.
         
@@ -179,13 +180,31 @@ class EigenM:
         
         
         """
-        # choose what to report
-        if choose is None:
-            # 'delta', 'lam1', 'fast', 'units', 'lam2', 'dfast', 'rcvcorr', 'dlag', 'degs', 'data', 'snr', 'samplags', 'lag', 'lags', 'srccorr'
-            pass
-        # header line
         
+        # by default write to stdout and include the header
+        header = True
+        append = False
+
+        if fname is not None:
+            if not isinstance(kwargs['file'],str):
+                raise TypeError('file name must be a string')
+            # does file exist?
+            if os.path.isfile(fname):
+                # yes -- change defaults
+                header = False
+                append = True
+      
+        # overwrite defaults with keyword arguments
+        if 'header' in kwargs: header = kwargs['header']
+        if 'append' in kwargs: append = kwargs['append']
+        
+        # choose what to report
+        choose=['name','fast','dfast','lag','dlag','snr','ndf','rcvcorr','srccorr']    
+        # get header line
+        # get data line
+                       
         # if file not exist
+        if append
         
         # if file exists
         # exists append        
@@ -445,7 +464,7 @@ class EigenM:
     
     class Report:        
         """
-        Handle reporting of measurement in tabular form.
+        Handle reporting of measurement.
         """
         def __init__(self):
             self.choose = []
