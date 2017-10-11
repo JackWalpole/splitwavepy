@@ -60,30 +60,32 @@ Setting the window
 	
 The window should be designed in such a way as to maximise the energy of a single pulse of shear energy relative to noise and other arrivals.
 
-.. note::
-    By default the window will be centred on the middle of the trace with width 1/3 of the trace length.
-
-Interactive plotting window picking is supported by ``plot(interactive=True)``.  Left click to pick the window and right click to set the window and close the plot.
-
-.. tip::
-	If the interactive plotting is not working you might need to add ``backend : TkAgg`` as a line 
-	in your ``~/.matplotlib/matplotlibrc`` file.	
-
-Alternatively the window can be set using the ``set_window(start,end)`` method.
+Set the window using the ``set_window(start,end)`` method.
 
 .. nbplot::
 	:include-source:
 
 	data.set_window( 15, 32) # start, end 
 	data.plot()
-	
-	
-.. .. note::
 
-	This brings me to a subtle but fundamental point about SplitWavePy, it works by a *centrality* principle.  Every lag operation involves a shift in the data, and must maintain balance on the centre sample.  Therefore every shift must always be an even number of samples (x trace shifts half *lag* to the left, y trace shifts half *lag* to the right).  To ensure a balanced centre point all *Window* objects must have an odd *width*.  This should affect how you pick a *Window*.  You want the shear energy  in the middle of the *Window*, narrow enough to avoid surrounding energy, and wide enough to capture relevant energy with a bit extra for 'spreading room'.
-	
+.. warning::
+    By default the window will be centred on the middle of the trace with width 1/3 of the trace length, which is likely to be inappropriate, so make sure to set your window sensibly.
+
+.. Interactive plotting window picking is supported by ``plot(interactive=True)``.  Left click to pick the window and right click to set the window and close the plot.
+
 .. .. nbplot::
 	:include-source:
+
+.. .. tip::
+.. 	If the interactive plotting is not working you might need to add ``backend : TkAgg`` as a line
+.. 	in your ``~/.matplotlib/matplotlibrc`` file.
+
+	
+.. .. note::
+..
+.. 	This brings me to a subtle but fundamental point about SplitWavePy, it works by a *centrality* principle.  Every lag operation involves a shift in the data, and must maintain balance on the centre sample.  Therefore every shift must always be an even number of samples (x trace shifts half *lag* to the left, y trace shifts half *lag* to the right).  To ensure a balanced centre point all *Window* objects must have an odd *width*.  This should affect how you pick a *Window*.  You want the shear energy  in the middle of the *Window*, narrow enough to avoid surrounding energy, and wide enough to capture relevant energy with a bit extra for 'spreading room'.
+	
+
 	
 Silver and Chan (1991) eigenvalue method
 -----------------------------------------

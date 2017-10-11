@@ -401,7 +401,6 @@ class EigenM:
         # error surface
         cax = ax.contourf(self.lags,self.degs,kwargs['vals'],26,cmap=kwargs['cmap'])
         cbar = plt.colorbar(cax)
-        ax.set_yticks(np.linspace(-90,90,6,endpoint=False))
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
         ax.set_xlabel('Delay Time (' + self.units + ')')
         

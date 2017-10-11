@@ -4,7 +4,7 @@
 Get started
 ****************************************************
 
-First off, get yourself a functioning `Python <https://www.python.org/>`_ environment, I use `Anaconda <https://www.anaconda.com/download/#macos>`_.
+First off, get yourself a functioning `Python <https://www.python.org/>`_ environment, I use `Anaconda <https://www.anaconda.com/download/#macos>`_ to manage environments and mainly work with Python 3.
 
 Second, install **SplitWavePy** with the following terminal command.
 
