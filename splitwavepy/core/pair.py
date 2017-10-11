@@ -459,7 +459,7 @@ class Pair:
         if self.__dict__.keys() != other.__dict__.keys(): return False
         # check same values
         for key in self.__dict__.keys():
-            if np.all( self.__dict__[key] != other.__dict__[key]): return False
+            if not np.all( self.__dict__[key] == other.__dict__[key]): return False
         # if reached here then the same
         return True
 
