@@ -202,7 +202,7 @@ class Pair:
         
         # if no arguments provided
         if len(args) == 0:
-            width = self._nsamps() / 3
+            width = core.odd(self._nsamps() / 3)
             self.window = Window(width)
             return
         # if start/end given
