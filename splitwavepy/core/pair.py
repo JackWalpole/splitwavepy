@@ -484,11 +484,13 @@ def _synth(**kwargs):
     if ('lag' in kwargs): lag = kwargs['lag']   
     if ('noise' in kwargs): noise = kwargs['noise']   
     if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
-    if ('width' in kwargs): width = kwargs['width']   
+    if ('width' in kwargs): width = kwargs['width'] 
+    noisewidth = width/4  
+    if ('noisewidth' in kwargs): noisewidth = kwargs['noisewidth']
 
     nsamps = int(nsamps)  
-    x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,int(width/4))
-    y = core.noise(nsamps,noise,width/4)    
+    x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,int(noisewidth))
+    y = core.noise(nsamps,noise,int(noisewidth))    
     # rotate to polarisation 
     # negative because we are doing the active rotation of data, whereas
     # core.rotate does the passive transormation of the co-ordinate system
