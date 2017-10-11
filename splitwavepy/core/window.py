@@ -7,8 +7,6 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 
-from . import core
-
 class Window:
     """
     Instantiate a Window defined relative to centre of a window of flexible size.
@@ -25,7 +23,9 @@ class Window:
     
     def __init__(self,width,offset=0,tukey=None):
         # ensure width is odd 
-        self.width = core.odd(width)
+        if width%2 != 1:
+            raise Exception('width must be an odd integer')
+        self.width = width
         self.offset = offset
         self.tukey = tukey
     
