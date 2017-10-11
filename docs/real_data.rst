@@ -74,7 +74,10 @@ First read the shear plane components (horizontals in this case) into a *Pair* o
 	import splitwavepy as sw
 
 	# get data into Pair object and plot
-	realdata = sw.Pair( st[1].data, st[0].data, delta=st[0].stats.delta)
+	north = st[1].data
+	east = st[0].data
+	sample_interval = st[0].stats.delta
+	realdata = sw.Pair(north, east, delta=sample_interval)
 	realdata.plot()
 	
 By chance the window looks not bad.  If you want to change it see :ref:`window`.  For now let's press on with measuring the splitting.

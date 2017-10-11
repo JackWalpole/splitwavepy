@@ -6,7 +6,7 @@ from __future__ import print_function
 from .eigenM import EigenM
 
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 class Stack:
 
@@ -59,38 +59,39 @@ class Stack:
         
         # get degs and tlags from first M
         self.degs = self.listM[0].degs
-        self.tlags = self.listM[0].tlags
+        self.lags = self.listM[0].lags
         
         if 'weights' in kwargs:
             self.weights = kwargs['weights']
+            
 
     def wolfe_silver(self,**kwargs):
         """
         Return stack using method of Wolfe and Silver (1998).
-        
-        This method stacks the lambda2 surfaces, 
+
+        This method stacks the lambda2 surfaces,
         pre-normalises surfaces so that minimum lambda2 = 1.
-        
+
         Optionally set keywords to extend the Wofe and Silver method following Restivo and Helffrich (1999)
         -- snr = True -- signal to noise ratio weights added
         -- baz = True -- back-azimuthal bin weighting added (geometry information required)
         >>> S.wolfe_silver(snr=True, azi=True)
         """
-        
+
         listS = [ M.lam2 / np.min(M.lam2) for M in self.listM ]
-        
-        if kwargs['snr'] is True:
+
+        if 'snr' in kwargs and kwargs['snr'] is True:
             # weight by signal to noise ratio
             # need sigmoid function with min to max ranging from 1 to 21.
             raise Exception('not yet supported')
-                  
-        if kwargs['baz'] is True:
+
+        if 'baz' in kwargs and kwargs['baz'] is True:
             # weight by backazimuthal density coverage
             raise Exception('not yet supported')
-            
-        # keep track of degrees of freedom    
+
+        # keep track of degrees of freedom
         # ndf = np.sum([M.ndf for M in self.listM])
-        
+
         return _stack(listS,**kwargs)
         
 

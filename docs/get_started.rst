@@ -32,7 +32,7 @@ Save your measurement to disk.
 	>>> m.save('temp.eigm')
 
 
-Check your working directory for a file called ``temp.eigm``.  Is it there?  How big is it?  It should be less than 100K.  It's a backup of your measurement together with the input data.
+Check your working directory for a file called ``temp.eigm``.  Is it there?  How big is it?  It should be less than 200K.  It's a backup of your measurement together with the input data.  The idea is to help make reproducibility as easy as possible.
 
 .. hint::
 	To check your file size in a Unix style operating system:
