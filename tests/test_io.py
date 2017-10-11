@@ -6,7 +6,7 @@ Test the fundamental routines
 """
 
 import os
-import unittest
+import unittest, pytest
 import numpy as np
 import numpy.testing as npt
 
