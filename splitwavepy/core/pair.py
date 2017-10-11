@@ -456,7 +456,7 @@ class Pair:
         # check same class
         if self.__class__ != other.__class__: return False
         # check same keys
-        if self.__dict__.keys() != other.__dict__.keys(): return False
+        if set(self.__dict__) != set(other.__dict__): return False
         # check same values
         for key in self.__dict__.keys():
             if not np.all( self.__dict__[key] == other.__dict__[key]): return False

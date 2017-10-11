@@ -103,8 +103,9 @@ class Window:
     
     def __eq__(self, other) :
         if self.__class__ != other.__class__: return False
-        return self.__dict__ == other.__dict__
-
+        if set(self.__dict__) != set(other.__dict__): return False
+        return True
+        
     def save(self,filename):
         """
         Save just the data for future referral
