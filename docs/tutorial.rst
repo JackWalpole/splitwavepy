@@ -109,12 +109,14 @@ It is quite common to plot the :math:`\lambda_2` surface.  To do this you use th
 
 .. _setgrid:
 
-Setting the lag time search range
+Setting the lag time grid search
 ``````````````````````````````````
-The code automatically sets the maximum lag time to be half the window length.  To set the max search time manually you use the ``lags`` keyword.  This accepts a tuple of length 1, 2, or 3, and will be interpreted differently depending on this length.  The rules are as follows: for a 1-tuple ``lags = (maxlag,)``, a 2-tuple ``lags = (maxlag, nlags)``, and finally a 3-tuple ``(minlag, maxlag, nlags)``.  In the previous example we can see that the solution has a delay time less than 2 seconds, so let's repeat the measurement using a more sensible grid search.
+The code automatically sets the maximum lag time to be half the window length.  To set the max search time manually you use the ``lags`` keyword.  This accepts a tuple of length 1, 2, or 3, and will be interpreted differently depending on this length.  The rules are as follows: for a 1-tuple ``lags = (maxlag,)``, a 2-tuple ``lags = (maxlag, nlags)``, and finally a 3-tuple ``(minlag, maxlag, nlags)``.  Alternatively will accept a numpy array containing all nodes to search.
 
-.. note::
-	The code automatically grid searches every 2 degrees along the fast direction axis.  That's ``ndegs = 90`` nodes in total (180/2).  You can change this number using the ``ndegs`` keyword.
+Setting the fast direction grid search
+````````````````````````````````````````
+
+The code automatically grid searches every 2 degrees along the fast direction axis.  That's ``degs = 90`` nodes in total (180/2).  You can change this number using the ``degs`` keyword and providing an integer.  Alternatively will accept a numpy array containing all nodes to search.
 
 
 Tabulating the result

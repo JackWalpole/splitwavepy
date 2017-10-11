@@ -91,7 +91,7 @@ It worked, kind of.  The maximum delay time in the grid search is a bit high.  W
 	:include-source:
 	
 	measure = sw.EigenM(realdata, lags=(2,))
-	measure.plot(marker=True)
+	measure.plot(marker=True,conf95=True)
 
-That looks better.
+That looks better.  Notice I've added a marker at the max :math:`\lambda_2/\lambda_2` location using ``marker=True`` and a contour at the 95% confidence level using ``conf95=True``.
 	

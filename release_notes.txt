@@ -9,12 +9,10 @@ checklist:
 	git tag        (shows a list of tags)
 	git push --tags origin master (to put it on github)
 
----OPTIONAL TEST SERVER
-• register package on PyPI Test server (as a check eveything's working)
-	python setup.py register -r pypitest
-• upload to test PyPI repository
+UPLOAD TO PYPI
+
+-- (optional test first)
 	python setup.py sdist upload -r pypitest
 
 ---THE REAL DEAL 
-	python setup.py register -r pypi
 	python setup.py sdist upload -r pypi

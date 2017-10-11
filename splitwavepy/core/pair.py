@@ -211,7 +211,7 @@ class Pair:
             time_centre = (start + end)/2
             time_width = end - start
             tcs = core.time2samps(time_centre,self.delta)
-            offset = tcs - self.centresamp()
+            offset = tcs - self._centresamp()
             # convert time to nsamples -- must be odd
             width = core.time2samps(time_width,self.delta,'odd')       
             self.window = Window(width,offset,**kwargs) 

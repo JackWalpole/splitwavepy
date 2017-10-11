@@ -9,9 +9,6 @@ setup(
     license = 'MIT',
     url = 'https://github.com/JackWalpole/splitwavepy',
     packages = find_packages(),
-    install_requires = [
-        'matplotlib',
-        'numpy',
-        'scipy']
-    keywords = ['shear', 'wave', 'splitting', 'seismic', 'anisotropy','seismology']
+    install_requires = ['matplotlib','numpy','scipy'],
+    keywords = 'shear wave splitting seismic anisotropy seismology',
 )

@@ -13,7 +13,7 @@ Second, install **SplitWavePy** with the following terminal command.
 .. tip::
 	Ensure you have the latest release.
 	
-	``pip upgrade splitwavepy``
+	``pip install splitwavepy --upgrade``
 
 Now try the code.
 
