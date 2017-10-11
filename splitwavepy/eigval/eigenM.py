@@ -291,10 +291,14 @@ class EigenM:
     # "squashed" profiles
     
     def fastprofile(self):
-        return np.sum((self.lam1-self.lam2)/self.lam2, axis=0)
+        surf = (self.lam1-self.lam2)/self.lam2
+        surf = surf / surf.sum()
+        return np.sum(surf, axis=0)
         
     def lagprofile(self):
-        return np.sum((self.lam1-self.lam2)/self.lam2, axis=1)
+        surf = (self.lam1-self.lam2)/self.lam2
+        surf = surf / surf.sum()
+        return np.sum(surf, axis=1)
     
     # auto null classification  
     

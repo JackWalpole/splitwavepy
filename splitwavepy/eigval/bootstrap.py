@@ -28,9 +28,9 @@ class Bootstrap:
         kwargs['nits'] = nits
         self.data = pair
         self.listM = bs_loop(pair,**kwargs)
-        self.stk_l1_l2 = np.stack([ m.lam1 / m.lam2 for m in self.listM ])
-        self.stk_fastprofile = np.stack([m.fastprofile() for m in self.listM ])
-        self.stk_lagprofile = np.stack([m.lagprofile() for m in self.listM ])
+        # self.stk_l1_l2 = np.stack([ m.lam1 / m.lam2 for m in self.listM ])
+        # self.stk_fastprofile = np.stack([m.fastprofile() for m in self.listM ])
+        # self.stk_lagprofile = np.stack([m.lagprofile() for m in self.listM ])
 
 def bs_loop(pair,**kwargs):
     """
@@ -46,10 +46,11 @@ def bs_loop(pair,**kwargs):
     dlag = mlags[1] - mlags[0]
 
     # apply polar density correction
-    density = rho(m.lags,dlag)
-    surf = surf / density
+    # not sure about this
+    # density = rho(m.lags,dlag)
+    # surf = surf / density
 
-    # normalise
+    # normalise (probs must add to 1)
     surf = surf / surf.sum()
 
     # pick fast and tlag from surf
