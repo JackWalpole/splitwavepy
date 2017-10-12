@@ -14,15 +14,15 @@ Assuming you have the code setup it's time to see what it can do.  Fire up an in
 Synthetic data
 ---------------------
 
-By default, if no data is provided, SplitWavePy will make some synthetic data.  Data is stored in a *Pair* object.
-I will use a synthetic to demonstrate the basic features of the code.  Jump to :ref:`realdata`.
+By default, if no data are provided, SplitWavePy will make some synthetic data.  Data is stored in a *Pair* object.
+I will use synthetic data to demonstrate the basic features of the code.
 
 .. .. autoclass:: splitwavepy.core.pair.Pair
 
 .. nbplot::
 	:include-source:
 
-	data = sw.Pair(fast=30, lag=1.4, noise=0.02, pol=-15.8, delta=0.05)
+	data = sw.Pair( split=( 30, 1.4), noise=0.03, pol=-15.8, delta=0.05)
 	data.plot()
 
 You specify the *fast* direction, *lag* time, *noise*, and source *pol* -arisation as shown above.  Order is not important.
@@ -33,13 +33,16 @@ You specify the *fast* direction, *lag* time, *noise*, and source *pol* -arisati
 Adding and removing splitting
 ------------------------------
 
-The data are already split, but that doesn't mean they can't be split again! You can add more splitting using the *split()* method.
+The data are already split, but that doesn't mean they can't be split again!   You can add splitting using the *split()* method.
 
 .. nbplot::
 	:include-source:
 	
 	data.split( -12, 1.3) # fast, lag 
 	data.plot()
+	
+.. note::
+	This method will also split the noise, which is probable undesirable.  A better way to make synthetic with multiple splitting events is to provide the ``split`` keyword with a list of parameters, e.g. ``split = [( 30, 1.4), ( -12, 1.3)]``, these will be applied in the order provided.
 
 Sometimes we might want to do a *correction* and apply the *inverse* splitting operator.  This is supported using the *unsplit()* method.  If we correct the above data for the latter layer of anisotropy we should return the waveforms to their former state.
 
@@ -168,12 +171,13 @@ Let's consider a simple 2-layer case.
 .. nbplot::
 	:include-source:
 	
-	# Original Data (no splitting)
-	a = sw.Pair(fast=0, lag=0, noise=0.03, delta=0.02)
-	# Layer 1 splitting (source-side)
-	a.split(30, 1.3)
-	# Layer 2 splitting (receiver-side)
-	a.split(-45, 1.7)
+	# srcside and rceiver splitting parameters
+	srcsplit = (  30, 1.3)
+	rcvsplit = ( -45, 1.7)
+	
+	# Create synthetic
+	a = sw.Pair( split=([ srcsplit, rcvsplit]), noise=0.03, delta=0.02)
+
 	# standard measurement
 	m = sw.EigenM(a, lags=(3,))
 	m.plot()
@@ -201,7 +205,7 @@ Alternatively, if we know the layer 1 contribution we can use
 .. nbplot::
 	:include-source:
 	
-	m = sw.EigenM(a, lags=(3,), srccorr=(30,1.3))
+	m = sw.EigenM(a, lags=(3,), srccorr=(30,1.3))	
 	m.plot()
 	
 If this has worked we should have measured splitting parameters of :math:`\phi=-45` and :math:`\delta t =1.7`.

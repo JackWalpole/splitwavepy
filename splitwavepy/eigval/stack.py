@@ -96,9 +96,15 @@ class Stack:
         """
         Return stack of lam1 / lam2 with optional user-defined weights.
         """        
-        listS = [ M.lam1 / M.lam2 for M in self.listM ]        
+        listS = [ (M.lam1-M.lam2) / M.lam2 for M in self.listM ]        
         return _stack(listS, **kwargs)
    
+    def stackpdf(self,**kwargs):
+        """
+        Return stack of lam1 / lam2 with optional user-defined weights.
+        """        
+        listS = [ ( (M.lam1-M.lam2) / M.lam2) / np.sum( (M.lam1-M.lam2) / M.lam2) for M in self.listM ]        
+        return _stack(listS, **kwargs)
 
 # basic stacking routine
 def _stack(listSurfaces,**kwargs):
