@@ -33,7 +33,7 @@ class EigenM:
     
     kwargs:
     
-    window = Window
+    name -- string = 'Untitled'
     
     lags -- tuple = (maxlag,)  
          -- tuple = (maxlag,Nlags) 
@@ -149,6 +149,10 @@ class EigenM:
         self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
         # get errors
         self.dfast, self.dlag = self.f_errors()
+        
+        # Name
+        self.name = 'Untitled'
+        if 'name' in kwargs: self.name = kwargs['name']
 
     
     # METHODS 
@@ -372,7 +376,8 @@ class EigenM:
         
         # data to plot
         d1 = self.data.chop()
-        d1f = self.fastdata().chop()
+        # d1f = self.fastdata().chop()
+        d1f = self.srcpoldata().chop()
         d2 = self.data_corr().chop()
         d2s = self.srcpoldata_corr().chop()
         
@@ -396,7 +401,11 @@ class EigenM:
             kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
 
         self._psurf(ax4,**kwargs)
-    
+        
+        # title
+        if self.name != 'Untitled':
+            plt.suptitle(self.name)
+        
         # neaten
         plt.tight_layout()
         plt.show()
