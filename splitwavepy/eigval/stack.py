@@ -31,7 +31,7 @@ class Stack:
         
         >>> S.wolfe_silver()
     
-        Optionally set keywords to extend the Wofe and Silver method following Restivo and Helffrich (1999)
+        Optionally set keywords to extend the Wolfe and Silver method following Restivo and Helffrich (1999)
         -- snr = True -- signal to noise ratio weights added
         -- azi = True -- azimuthal bin weighting added (geometry information required)
         
