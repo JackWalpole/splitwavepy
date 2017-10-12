@@ -267,6 +267,12 @@ class Pair:
         
     def power(self):
         return self.x**2,self.y**2
+        
+    def snrRH(self):
+        data = self.copy()
+        data.rotateto(data.pol())
+        data.chop()
+        return core.snrRH(data.data())
 
     def cmpangs(self):
         cmp1 = self.cmpvecs[:,0]
@@ -471,8 +477,9 @@ def _synth(**kwargs):
     # defaults
     pol = 0.
     delta = 1.
-    fast = 0.
-    lag = 0.
+    # fast = 0.
+    # lag = 0.
+    split = []
     noise = 0.001
     nsamps = 1001
     width = 32.
@@ -480,25 +487,41 @@ def _synth(**kwargs):
     # override defaults
     if ('pol' in kwargs): pol = kwargs['pol']   
     if ('delta' in kwargs): delta = kwargs['delta']  
-    if ('fast' in kwargs): fast = kwargs['fast']
-    if ('lag' in kwargs): lag = kwargs['lag']   
+    # if ('fast' in kwargs): fast = kwargs['fast']
+    # if ('lag' in kwargs): lag = kwargs['lag']
+    if ('split') in kwargs: split = kwargs['split']
     if ('noise' in kwargs): noise = kwargs['noise']   
     if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
     if ('width' in kwargs): width = kwargs['width'] 
     noisewidth = width/4  
     if ('noisewidth' in kwargs): noisewidth = kwargs['noisewidth']
 
+    # initiate data with clean ricker wavelet
     nsamps = int(nsamps)  
-    x = signal.ricker(nsamps, width) + core.noise(nsamps,noise,int(noisewidth))
-    y = core.noise(nsamps,noise,int(noisewidth))    
+    x = signal.ricker(nsamps, width)
+    y = np.zeros(nsamps)
+    
     # rotate to polarisation 
     # negative because we are doing the active rotation of data, whereas
     # core.rotate does the passive transormation of the co-ordinate system
-    x,y = core.rotate(x,y,-pol)    
-    # add any splitting -- lag samples must be even
-    slag = core.time2samps(lag,delta,mode='even')
-    x,y = core.split(x,y,fast,slag)
+    x,y = core.rotate(x,y,-pol)
+
+    if isinstance(split,tuple):
+        fast, lag = split
+        # add any splitting -- lag samples must be even
+        slag = core.time2samps(lag,delta,mode='even')
+        x,y = core.split(x,y,fast,slag)
+    elif isinstance(split,list):        
+        for parms in split:
+            fast, lag = parms
+            # add any splitting -- lag samples must be even
+            slag = core.time2samps(lag,delta,mode='even')
+            x,y = core.split(x,y,fast,slag)
     
+    # add noise - do this last to avoid splitting the noise
+    x = x + core.noise(x.size,noise,int(noisewidth))    
+    y = y + core.noise(x.size,noise,int(noisewidth))
+
     return x,y
     
 
