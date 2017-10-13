@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 The eigenvalue method of Silver and Chan (1991)
-Uses Pair to do high level work
+Uses Trio to do high level work
 """
 
 from __future__ import absolute_import
@@ -9,9 +9,9 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core,io
-from ..core.pair import Pair
+from ..core.trio import Trio
 from ..core.window import Window
-from . import eigval
+from . import eigval3d
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,15 +19,15 @@ import matplotlib.gridspec as gridspec
 import os.path
 
 
-class EigenM:
+class Eig3dM:
     
     """
     Silver and Chan (1991) eigenvalue method measurement.
     
     args:
     None = create synthetic
-    Pair = Measure splitting on Pair object
-    x, y = Measure splitting on traces x, and y.
+    Trio = Measure splitting on Trio object
+    x, y, z = Measure splitting on traces x, y, and z.
     
     kwargs:
     
@@ -54,14 +54,14 @@ class EigenM:
     
     def __init__(self,*args,**kwargs):
         """
-        Populates an EigenM instance.
+        Populates an Eig3dM instance.
         """
         
         # process input
-        if len(args) == 1 and isinstance(args[0],Pair):
+        if len(args) == 1 and isinstance(args[0],Trio):
             self.data = args[0]
         else:
-            self.data = Pair(*args,**kwargs)
+            self.data = Trio(*args,**kwargs)
         
         # convert times to nsamples
         self.delta = self.data.delta
@@ -105,48 +105,48 @@ class EigenM:
                 raise TypeError('degs must be an integer or numpy array') 
         sdegs=degs
         kwargs.pop('degs', None)
-                
-        # receiver correction 
-        self.rcvcorr = None           
-        if ('rcvcorr' in kwargs):
-            if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
-            if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
-            # convert time shift to nsamples -- must be even
-            deg, lag = kwargs['rcvcorr']
-            samps = core.time2samps( lag,self.delta, 'even')
-            kwargs['rcvcorr'] = ( deg, samps)
-            self.rcvcorr = ( deg, samps * self.delta)
-        
-        # source correction
-        self.srccorr = None                  
-        if ('srccorr' in kwargs):
-            if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
-            if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
-            # convert time shift to nsamples -- must be even
-            deg, lag = kwargs['srccorr']
-            samps = core.time2samps( lag, self.delta, 'even')
-            kwargs['srccorr'] = ( deg, samps)
-            self.srccorr = ( deg, samps * self.delta)
+        #
+        # # receiver correction
+        # self.rcvcorr = None
+        # if ('rcvcorr' in kwargs):
+        #     if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
+        #     if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
+        #     # convert time shift to nsamples -- must be even
+        #     deg, lag = kwargs['rcvcorr']
+        #     samps = core.time2samps( lag,self.delta, 'even')
+        #     kwargs['rcvcorr'] = ( deg, samps)
+        #     self.rcvcorr = ( deg, samps * self.delta)
+        #
+        # # source correction
+        # self.srccorr = None
+        # if ('srccorr' in kwargs):
+        #     if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
+        #     if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
+        #     # convert time shift to nsamples -- must be even
+        #     deg, lag = kwargs['srccorr']
+        #     samps = core.time2samps( lag, self.delta, 'even')
+        #     kwargs['srccorr'] = ( deg, samps)
+        #     self.srccorr = ( deg, samps * self.delta)
             
-        # ensure trace1 at zero angle
-        self.data.rotateto(0)        
+        # rotate to desired frame
+        # self.data.rotateto(0)
 
         # MAKE MEASUREMENT
         window = self.data.window
-        self.degs, self.samplags, self.lam1, self.lam2 \
-        = eigval.grideigval(self.data.x, self.data.y, sdegs, slags, window, **kwargs)
+        self.degs, self.samplags, self.lam1, self.lam2, self.lam3, self.v1, self.v2, self.v3 \
+        = eigval3d.grideigval(self.data.x, self.data.y, self.data.z, sdegs, slags, window, **kwargs)
         # convert sample lags to meaningful time lags
         self.lags = self.samplags * self.delta
                 
         # get some measurement attributes
-        # maximise lam1/lam2
-        maxloc = core.max_idx(self.lam1/self.lam2)
+        # maximise lam1/(lam2*lam3)
+        maxloc = core.max_idx( self.lam1 / (self.lam2*self.lam3))
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
         # estimate signal to noise level (lam1-lam2)/lam2
-        self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
+        # self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
         # get errors
-        self.dfast, self.dlag = self.f_errors()
+        # self.dfast, self.dlag = self.f_errors()
         
         # Name
         self.name = 'Untitled'
@@ -267,11 +267,11 @@ class EigenM:
     def ndf(self):
         """Number of degrees of freedom."""
         d = self.srcpoldata_corr().chop()
-        return eigval.ndf(d.y)
+        return eigval3d.ndf(d.y)
     
     def lam2_95(self):
         """Value of lam2 at 95% confidence contour."""
-        return eigval.ftest(self.lam2,self.ndf(),alpha=0.05)
+        return eigval3d.ftest(self.lam2,self.ndf(),alpha=0.05)
         
     def f_errors(self):
         """

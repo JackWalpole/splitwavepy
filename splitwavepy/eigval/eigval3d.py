@@ -8,7 +8,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from ..core import core
+from ..core import core, core3d, geom
 from ..core.window import Window
 
 import numpy as np
@@ -47,8 +47,20 @@ def eigvalcov(data):
     """
     return np.sort(np.linalg.eigvals(np.cov(data)))
     
+def eigcov(data):
+    """
+    Return eigen values and vectors of covariance matrix
+    """
+    eigenValues, eigenVectors = np.linalg.eig(np.cov(data))
+    idx = eigenValues.argsort()[::-1]   
+    eigenValues = eigenValues[idx]
+    eigenVectors = eigenVectors[:,idx]
+    return eigenValues, eigenVectors
     
-def grideigval(x, y, **kwargs):
+def vstack(x,y,z):
+    return np.vstack((x,y,z))
+
+def grideigval(x, y, z, degs, slags, window, **kwargs):
     """
     Grid search for splitting parameters applied to data.
     
@@ -81,43 +93,50 @@ def grideigval(x, y, **kwargs):
     shape = degs.shape
     lam1 = np.zeros(shape)
     lam2 = np.zeros(shape)
+    lam3 = np.zeros(shape)
+    v1 = np.zeros(shape + (3,))
+    v2 = np.zeros(shape + (3,))
+    v3 = np.zeros(shape + (3,))
     
     # avoid using "dots" in loops for performance
-    rotate = core.rotate
-    lag = core.lag
-    chop = core.chop
+    rotate = core3d.rotate
+    lag = core3d.lag
+    chop = core3d.chop
     
-    # pre-apply receiver correction
-    if 'rcvcorr' in kwargs:
-        x,y = core.unsplit(x,y,*kwargs['rcvcorr'])
-    
-    # make function to do source correction (used in loop)
-    if 'srccorr' in kwargs:
-        srcphi, srclag = kwargs['srccorr']
-        def srccorr(x,y,ang):
-            # unwind rotation
-            x,y = rotate(x,y,srcphi-ang)
-            # remove splitting
-            x,y = lag(x,y,-srclag)
-            return x,y
-    else:
-        def srccorr(x,y,ang):
-            # no source correction so do nothing
-            return x,y
+    #
+    # # pre-apply receiver correction
+    # if 'rcvcorr' in kwargs:
+    #     x,y = core.unsplit(x,y,*kwargs['rcvcorr'])
+    #
+    # # make function to do source correction (used in loop)
+    # if 'srccorr' in kwargs:
+    #     srcphi, srclag = kwargs['srccorr']
+    #     def srccorr(x,y,ang):
+    #         # unwind rotation
+    #         x,y = rotate(x,y,srcphi-ang)
+    #         # remove splitting
+    #         x,y = lag(x,y,-srclag)
+    #         return x,y
+    # else:
+    #     def srccorr(x,y,ang):
+    #         # no source correction so do nothing
+    #         return x,y
     
     for ii in np.arange(shape[1]):
-        tx, ty = rotate(x,y,degs[0,ii])
+        tx, ty, tz = rotate(x,y,z,degs[0,ii])
         for jj in np.arange(shape[0]):
             # remove splitting so use inverse operator (negative lag)
-            ux, uy = lag(tx,ty,-lags[jj,ii])
+            ux, uy, uz = lag( tx, ty, tz, -lags[jj,ii])
             # if requested -- post-apply source correction
-            ux, uy = srccorr(ux,uy,degs[0,ii])
+            # ux, uy = srccorr(ux,uy,degs[0,ii])
             # chop to analysis window
-            ux, uy = chop(ux,uy,window=kwargs['window'])
+            ux, uy, uz = chop( ux, uy, uz, window=kwargs['window'])
             # measure eigenvalues of covariance matrix
-            lam2[jj,ii], lam1[jj,ii] = eigvalcov(np.vstack((ux,uy)))
+            eigvals, eigvecs = eigcov( vstack( x ,y, z))
+            lam1[jj,ii], lam2[jj,ii], lam3[jj,ii] = eigvals[0], eigvals[1], eigvals[2]
+            v1[jj,ii,:], v2[jj,ii,:], v3[jj,ii,:] = eigvecs[:,0], eigvecs[:,1], eigvecs[:,2]
             
-    return degs,lags,lam1,lam2,kwargs['window']
+    return degs,lags,lam1,lam2,lam3,v1,v2,v3
 
 def ndf(y,window=None,detrend=False):
     """

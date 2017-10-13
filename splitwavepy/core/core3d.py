@@ -13,6 +13,7 @@ from . import core
 
 import numpy as np
 from scipy import signal
+import math
 
 def lag(x,y,z,nsamps):
     """
@@ -38,8 +39,14 @@ def rotate(x,y,z,degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis
        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
-    x, y = core.rotate(x,y,degrees)
-    return x,y,z
+    ang = math.degrees(degrees)
+    rot = np.array([[ math.cos(ang), math.sin(ang), 0],
+                    [-math.sin(ang), math.cos(ang), 0],
+                    [             0,             0, 0]])
+    xyz = np.dot(rot,np.vstack((x,y,z)))
+    return xyz[0], xyz[1], xyz[2]
+
+
 
 def split(x,y,z,degrees,nsamps):
     """Apply forward splitting and rotate back"""
@@ -55,6 +62,8 @@ def unsplit(x,y,z,degrees,nsamps):
 def chop(*args,**kwargs):
     """Chop trace, or traces, using window"""
     return core.chop(*args,**kwargs)
+    
+
 
 # def pca(data):
 #     """

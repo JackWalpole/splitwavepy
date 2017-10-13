@@ -15,6 +15,7 @@ from .window import Window
 
 import numpy as np
 from scipy import signal
+import math
 
 ##############
 
@@ -65,7 +66,7 @@ def rotate(x,y,degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis
        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
-    ang = np.deg2rad(degrees)
+    ang = math.degrees(degrees)
     rot = np.array([[np.cos(ang),np.sin(ang)],
                     [-np.sin(ang), np.cos(ang)]])
     xy = np.dot(rot,np.vstack((x,y)))

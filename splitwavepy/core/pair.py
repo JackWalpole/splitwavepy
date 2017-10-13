@@ -3,11 +3,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from . import core
-# from ..plotting import plot
+from . import core, geom, io
 from .window import Window
-from ..core import io
-from . import geom
 
 import numpy as np
 from scipy import signal
@@ -74,7 +71,7 @@ class Pair:
             self.x, self.y = _synth(**kwargs)               
         # otherwise read in data                
         elif len(args) == 2:
-            if not (isinstance(args[0],np.ndarray) & isinstance(args[0],np.ndarray)):
+            if not (isinstance(args[0],np.ndarray) & isinstance(args[1],np.ndarray)):
                 raise TypeError('expecting numpy arrays')         
             self.x, self.y = args[0], args[1]
         else: 
@@ -157,7 +154,8 @@ class Pair:
         # find appropriate rotation matrix
         ang = np.deg2rad(degrees)
         # define the new cmpvecs
-        rotcmpvecs = np.array([[np.cos(ang),-np.sin(ang)],
+        backoff = self.cmpvecs.T
+        self.cmpvecs = np.array([[np.cos(ang),-np.sin(ang)],
                             [np.sin(ang), np.cos(ang)]])
         # find the rotation matrix. 
         # Linear algebra: if a and b are rotation matrices, 
@@ -165,7 +163,7 @@ class Pair:
         # then: dot(a.T,a) = dot(b.T,b) = I
         # and (multiply by b): dot(dot(b,a.T),a) = b.
         # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
-        rot = np.dot(rotcmpvecs,self.cmpvecs.T)
+        rot = np.dot(self.cmpvecs,backoff)
         # rotate data to suit
         xy = np.dot(rot,self.data())
         self.x, self.y = xy[0],xy[1]
