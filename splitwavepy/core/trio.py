@@ -91,43 +91,41 @@ class Trio:
 
     # METHODS
         
-    # def split(self,fast,lag):
-    #     """
-    #     Applies splitting operator.
-    #
-    #     .. warning:: shortens trace length by *lag*.
-    #     """
-    #     # convert time shift to nsamples -- must be even
-    #     samps = core.time2samps(lag,self.delta,mode='even')
-    #     # find appropriate rotation angle
-    #     origangs=self.cmpangs()
-    #     self.rotateto(0)
-    #     # apply splitting
-    #     self.x, self.y = core.split(self.x,self.y,fast,samps)
-    #     self.rotateto(origangs[0])
-    #
-    # def unsplit(self,fast,lag):
-    #     """
-    #     Reverses splitting operator.
-    #
-    #     .. warning:: shortens trace length by *lag*.
-    #     """
-    #     # convert time shift to nsamples -- must be even
-    #     samps = core.time2samps(lag,self.delta,mode='even')
-    #     # find appropriate rotation angle
-    #     origangs=self.cmpangs()
-    #     self.rotateto(0)
-    #     # apply splitting
-    #     self.x, self.y = core.unsplit(self.x,self.y,fast,samps)
-    #     self.rotateto(origangs[0])
+    def split(self,fast,lag):
+        """
+        Applies splitting operator.
+        
+        Rotates about z-axis.
+
+        .. warning:: shortens trace length by *lag*.
+        """
+        # convert time shift to nsamples -- must be even
+        samps = core.time2samps(lag,self.delta,mode='even')
+        # apply splitting
+        self.x, self.y, self.z = core3d.split(self.x,self.y,self.z,fast,samps)
+
+    def unsplit(self,fast,lag):
+        """
+        Reverses splitting operator.
+
+        .. warning:: shortens trace length by *lag*.
+        """
+        # convert time shift to nsamples -- must be even
+        samps = core.time2samps(lag,self.delta,mode='even')
+        # apply splitting
+        self.x, self.y, self.z = core3d.unsplit(self.x,self.y,self.z,fast,samps)
         
     def rotateto(self,vecs):
         """
         Rotate data so that trace1 lines up with *degrees*
         """
+        if vecs.shape != (3,3):
+            raise Exception('vecs must be a 3x3 matrix with principal vectors in columns')
+        if np.any(vecs != vecs.T):
+            raise Exception('vecs must be symmetric matrix') 
         # define the new cmpvecs
         backoff = self.cmpvecs.T
-        self.cmpvecs = rotcmpvecs
+        self.cmpvecs = vecs
         # find the rotation matrix. 
         # Linear algebra: if a and b are rotation matrices, 
         # then: a.T = inv(a) and b.T = inv(b)
@@ -138,6 +136,7 @@ class Trio:
         # rotate data to suit
         xyz = np.dot(rot,self.data())
         self.x, self.y,self.z = xyz[0],xyz[1],xyz[2]
+        self.rayvec = np.dot(rot, self.rayvec)
         # reset label
         # if reached here use the default label
         # lab1,lab2,lab3 = self.cmpangs()
@@ -146,7 +145,10 @@ class Trio:
     def rotz(self,degs):
         """Rotate about z axis."""
         rads = math.radians(degs)
-        rotateto( geom.rz( self.cmpvecs,rads))
+        rot=np.array([[ np.cos(rads), np.sin(rads), 0],
+                      [-np.sin(rads), np.cos(rads), 0],
+                      [            0,            0, 1]])
+        self.rotateto(rot)
         
     # Windowing
                 
@@ -410,12 +412,7 @@ class Trio:
     def _ppm(self,ax,**kwargs):
         """Plot particle motion on *ax* matplotlib axis object.
         """
-                
-        # plot data
-        xyz = self.chop().data()
-        x,y,z = xyz[0], xyz[1], xyz[2]
-        ax.plot( x, y, z)
-    
+        
         # set limit
         lim = np.abs(self.data()).max() * 1.1
         if 'lims' not in kwargs: kwargs['lims'] = [-lim,lim] 
@@ -423,18 +420,27 @@ class Trio:
         ax.set_xlim(kwargs['lims'])
         ax.set_ylim(kwargs['lims'])
         ax.set_zlim(kwargs['lims'])
+                
+        # plot data
+        xyz = self.chop().data()
+        x,y,z = xyz[0], xyz[1], xyz[2]
+        ax.plot( x, y, z)
+        
+        # side panel data
+        ax.plot(x, y,-lim, zdir='z', alpha=0.3, color='g')
+        ax.plot(x, z, lim, zdir='y', alpha=0.3, color='g')
+        ax.plot(y, z,-lim, zdir='x', alpha=0.3, color='g')
+            
+        # plot ray arrow
+        ax.quiver(0,0,0,self.rayvec[0],self.rayvec[1],self.rayvec[2],
+                  pivot='middle', color='r', length=1.5*lim, alpha=0.5)
     
         # set labels
         if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
         ax.set_xlabel(kwargs['cmplabels'][0])
         ax.set_ylabel(kwargs['cmplabels'][1])
         ax.set_zlabel(kwargs['cmplabels'][2])
-        
-        # side panel data
-        ax.plot(x, y,-lim, zdir='z', alpha=0.3, color='g')
-        ax.plot(x, z, lim, zdir='y', alpha=0.3, color='g')
-        ax.plot(y, z,-lim, zdir='x', alpha=0.3, color='g')
-        
+                
         # turn off tick annotation
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
@@ -497,6 +503,7 @@ def _synth(**kwargs):
     noise = 0.001
     nsamps = 1001
     width = 32.
+    noisewidth = width/4  
     
     # override defaults
     if ('pol' in kwargs): pol = kwargs['pol']   
@@ -507,7 +514,6 @@ def _synth(**kwargs):
     if ('noise' in kwargs): noise = kwargs['noise']   
     if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
     if ('width' in kwargs): width = kwargs['width'] 
-    noisewidth = width/4  
     if ('noisewidth' in kwargs): noisewidth = kwargs['noisewidth']
 
     # initiate data with clean ricker wavelet

@@ -70,26 +70,9 @@ def grideigval(x, y, z, degs, slags, window, **kwargs):
     rcvcorr = receiver correction parameters in tuple (fast,lag) 
     srccorr = source correction parameters in tuple (fast,lag) 
     """
-        
-    if 'lags' not in kwargs:
-        # a tenth the trace
-        maxlag = core.even( x.size / 10)
-        lags = core.even(np.linspace(0,maxlag,30))
-        kwargs['lags'] = np.unique(lags)
-        
-    if 'degs' not in kwargs:
-        # 3 degree increments
-        stepang = 3
-        kwargs['degs'] = np.arange(-90,90,stepang)
-        
-    if 'window' not in kwargs:
-        # half the trace
-        samps = core.odd( x.size / 2)
-        offset = 0
-        kwargs['window'] = Window(samps,offset,tukey=None)
-                    
+
     # grid of degs and lags to search over
-    degs, lags = np.meshgrid(kwargs['degs'],kwargs['lags'])
+    degs, lags = np.meshgrid(degs,slags)
     shape = degs.shape
     lam1 = np.zeros(shape)
     lam2 = np.zeros(shape)
@@ -97,7 +80,7 @@ def grideigval(x, y, z, degs, slags, window, **kwargs):
     v1 = np.zeros(shape + (3,))
     v2 = np.zeros(shape + (3,))
     v3 = np.zeros(shape + (3,))
-    
+
     # avoid using "dots" in loops for performance
     rotate = core3d.rotate
     lag = core3d.lag
@@ -130,9 +113,9 @@ def grideigval(x, y, z, degs, slags, window, **kwargs):
             # if requested -- post-apply source correction
             # ux, uy = srccorr(ux,uy,degs[0,ii])
             # chop to analysis window
-            ux, uy, uz = chop( ux, uy, uz, window=kwargs['window'])
+            ux, uy, uz = chop( ux, uy, uz, window=window)
             # measure eigenvalues of covariance matrix
-            eigvals, eigvecs = eigcov( vstack( x ,y, z))
+            eigvals, eigvecs = eigcov( vstack( ux , uy, uz))
             lam1[jj,ii], lam2[jj,ii], lam3[jj,ii] = eigvals[0], eigvals[1], eigvals[2]
             v1[jj,ii,:], v2[jj,ii,:], v3[jj,ii,:] = eigvecs[:,0], eigvecs[:,1], eigvecs[:,2]
             
