@@ -164,13 +164,10 @@ class Pair:
         # and (multiply by b): dot(dot(b,a.T),a) = b.
         # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
         rot = np.dot(self.cmpvecs,backoff)
-        # rotate data to suit
+        # rotate data
         xy = np.dot(rot,self.data())
         self.x, self.y = xy[0],xy[1]
-        self.cmpvecs = rotcmpvecs
         # reset label
-        # if reached here use the default label
-        lab1,lab2 = self.cmpangs()
         self.set_labels()
         
     # Windowing
