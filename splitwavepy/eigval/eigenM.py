@@ -239,26 +239,26 @@ class EigenM:
 
     def srcpoldata(self):
         srcpoldata = self.data.copy()
-        srcpoldata.rotateto(-self.srcpol())
+        srcpoldata.rotateto(self.srcpol())
         srcpoldata.set_labels(['srcpol','residual'])
         return srcpoldata
         
     def srcpoldata_corr(self):
         srcpoldata_corr = self.data_corr()        
-        srcpoldata_corr.rotateto(-self.srcpol())
+        srcpoldata_corr.rotateto(self.srcpol())
         srcpoldata_corr.set_labels(['srcpol','residual'])
         return srcpoldata_corr
         
     def fastdata(self,flipslow=False):
         """Plot fast/slow data."""
         fastdata = self.data.copy()
-        fastdata.rotateto(-self.fast)
+        fastdata.rotateto(self.fast)
         fastdata.set_labels(['fast','slow'])
         return fastdata
 
     def fastdata_corr(self,flipslow=False):
         fastdata_corr = self.data_corr()
-        fastdata_corr.rotateto(-self.fast)
+        fastdata_corr.rotateto(self.fast)
         fastdata_corr.set_labels(['fast','slow'])
         return fastdata_corr
             

@@ -150,7 +150,7 @@ class Pair:
        
     def rotateto(self,degrees):
         """
-        Rotate data so that trace1 lines up with *degrees*
+        Rotate traces so that cmp1 lines up with *degrees*
         """
         # find appropriate rotation matrix
         ang = math.radians(degrees)

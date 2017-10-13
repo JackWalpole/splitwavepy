@@ -195,7 +195,7 @@ class Trio:
     def set_labels(self,*args):
         if len(args) == 0:
             if np.allclose(self.cmpvecs,np.eye(3),atol=1e-02):
-                if self.geom == 'geo': self.cmplabels = ['North','East','Down'] #
+                if self.geom == 'geo': self.cmplabels = ['North','East','Z'] #
                 elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal','Ray']
                 elif self.geom == 'cart': self.cmplabels = ['X','Y','Z']
                 else: self.cmplabels = ['Comp1','Comp2','Comp3']
@@ -219,63 +219,7 @@ class Trio:
         else:
             raise Exception('unexpected number of arguments')
 
-    # def __init__(self,*args,**kwargs):
-    #
-    #     if ('delta' in kwargs):
-    #         self.delta = kwargs['delta']
-    #     else:
-    #         self.delta = 1.
-    #
-    #     if ('units' in kwargs):
-    #         self.units = kwargs['units']
-    #     else:
-    #         self.units = 's'
-    #
-    #     if ('window' in kwargs and isinstance(kwargs['window'],Window)):
-    #         self.window = window
-    #     else:
-    #         self.window = None
-    #
-    #     if len(args) == 0:
-    #         if ('lag' in kwargs):
-    #             # convert time shift to nsamples -- must be even
-    #             nsamps = int(kwargs['lag']/self.delta)
-    #             nsamps = nsamps if nsamps%2==0 else nsamps + 1
-    #             kwargs['lag'] = nsamps
-    #         self.x, self.y, self.z = _synth(**kwargs)
-    #     elif len(args) == 3:
-    #         self.x, self.y, self.z = args[0],args[1],args[2]
-    #     else:
-    #         raise Exception('Unexpected number of arguments')
-    #
-    #     # some sanity checks
-    #     if self.x.ndim != 1:
-    #         raise Exception('data must be one dimensional')
-    #     if self.x.size%2 == 0:
-    #         raise Exception('data must have odd number of samples')
-    #     if (self.x.size != self.y.size) or (self.x.size != self.z.size):
-    #         raise Exception('x and y and z must be the same length')
-    #
-    #     # add geometry info
-    #     if ('geom' in kwargs):
-    #         self.geom = kwargs['geom']
-    #     else:
-    #         # if using 3-component data I'll guess the user wants cartesian coordinates.
-    #         self.geom = 'cart'
-    #
-    #     if ('srcloc' in kwargs):
-    #         self.srcloc = kwargs['srcloc']
-    #
-    #     if ('rcvloc' in kwargs):
-    #         self.rcvloc = kwargs['rcvloc']
-            
-        # if ('xyz' in kwargs):
-        #     self.xyz = kargs['xyz']
-        # else:
-        #     self.xyz = np.ones(3)
-        
-    # methods
-    
+
 
                 
 
@@ -468,7 +412,9 @@ class Trio:
         """
                 
         # plot data
-        ax.plot(self.chop().x,self.chop().y,self.chop().z)
+        xyz = self.chop().data()
+        x,y,z = xyz[0], xyz[1], xyz[2]
+        ax.plot( x, y, z)
     
         # set limit
         lim = np.abs(self.data()).max() * 1.1
@@ -483,6 +429,11 @@ class Trio:
         ax.set_xlabel(kwargs['cmplabels'][0])
         ax.set_ylabel(kwargs['cmplabels'][1])
         ax.set_zlabel(kwargs['cmplabels'][2])
+        
+        # side panel data
+        ax.plot(x, y,-lim, zdir='z', alpha=0.3, color='g')
+        ax.plot(x, z, lim, zdir='y', alpha=0.3, color='g')
+        ax.plot(y, z,-lim, zdir='x', alpha=0.3, color='g')
         
         # turn off tick annotation
         ax.axes.xaxis.set_ticklabels([])
