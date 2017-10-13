@@ -66,10 +66,10 @@ def rotate(x,y,degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis
        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
-    ang = math.degrees(degrees)
-    rot = np.array([[np.cos(ang),np.sin(ang)],
+    ang = math.radians(degrees)
+    rot = np.array([[ np.cos(ang), np.sin(ang)],
                     [-np.sin(ang), np.cos(ang)]])
-    xy = np.dot(rot,np.vstack((x,y)))
+    xy = np.dot(rot, np.vstack((x,y)))
     return xy[0], xy[1]
 
 def split(x,y,degrees,samps):

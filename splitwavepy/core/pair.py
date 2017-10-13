@@ -7,6 +7,7 @@ from . import core, geom, io
 from .window import Window
 
 import numpy as np
+import math
 from scipy import signal
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
@@ -152,21 +153,21 @@ class Pair:
         Rotate data so that trace1 lines up with *degrees*
         """
         # find appropriate rotation matrix
-        ang = np.deg2rad(degrees)
+        ang = math.radians(degrees)
         # define the new cmpvecs
         backoff = self.cmpvecs.T
-        self.cmpvecs = np.array([[np.cos(ang),-np.sin(ang)],
-                            [np.sin(ang), np.cos(ang)]])
+        self.cmpvecs = np.array([[ math.cos(ang), math.sin(ang)],
+                                 [-math.sin(ang), math.cos(ang)]])
         # find the rotation matrix. 
         # Linear algebra: if a and b are rotation matrices, 
         # then: a.T = inv(a) and b.T = inv(b)
         # then: dot(a.T,a) = dot(b.T,b) = I
         # and (multiply by b): dot(dot(b,a.T),a) = b.
         # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
-        rot = np.dot(self.cmpvecs,backoff)
+        rot = np.dot(self.cmpvecs, backoff)
         # rotate data
-        xy = np.dot(rot,self.data())
-        self.x, self.y = xy[0],xy[1]
+        xy = np.dot(rot, self.data())
+        self.x, self.y = xy[0], xy[1]
         # reset label
         self.set_labels()
         

@@ -145,7 +145,7 @@ class Trio:
 
     def rotz(self,degs):
         """Rotate about z axis."""
-        rads = np.degs2rad(degs)
+        rads = math.radians(degs)
         rotateto( geom.rz( self.cmpvecs,rads))
         
     # Windowing
