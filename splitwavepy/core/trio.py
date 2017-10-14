@@ -24,12 +24,11 @@ class Trio:
     Keyword Arguments:
         - delta = 1. (sample interval) [default] | float
         - units = 's' (for labelling) | string
-        - geom = 'cart' (x,y,z) [default] | 'geo' (az,inc,r) | 'ray' (P,SH,SV) 
         - window = None (default) | Window object
-        - angle
     
-    Advanced Keyword Arguments (if in doubt don't use):
-        - xyz = np.ones(3) | custom numpy array
+    Geometry Keyword Arguments:
+        - geom = 'cart' (x,y,z) [default] | 'geo' (az,inc,r) | 'ray' (P,SH,SV) 
+        - cmpvecs = np.ones(3) | custom numpy array
         - rcvloc = None
         - srcloc = None
     """
@@ -40,8 +39,7 @@ class Trio:
         if ('delta' in kwargs): self.delta = kwargs['delta']
                        
         # if no args make synthetic
-        if len(args) == 0: 
-            self.x, self.y, self.z = _synth(**kwargs)               
+        if len(args) == 0: self.x, self.y, self.z = _synth(**kwargs)               
         # otherwise read in data                
         elif len(args) == 3:
             if not (isinstance(args[0], np.ndarray) & 
@@ -49,34 +47,28 @@ class Trio:
                     isinstance(args[2], np.ndarray)):
                 raise TypeError('expecting numpy arrays')         
             self.x, self.y, self.z = args[0], args[1], args[2]
-        else: 
-            raise Exception('Unexpected number of arguments')
+        else: raise Exception('Unexpected number of arguments')
                     
         # some sanity checks
-        if self.x.ndim != 1:
-            raise Exception('data must be one dimensional')
-        if self.x.size%2 == 0:
-            raise Exception('data must have odd number of samples')
-        if (self.x.size != self.y.size):
-            raise Exception('x and y must be the same length')
+        if self.x.ndim != 1: raise Exception('data must be one dimensional')
+        if self.x.size%2 == 0: raise Exception('data must have odd number of samples')
+        if (self.x.size != self.y.size): raise Exception('x and y must be the same length')
                    
         # Pair must have a window
         self.set_window(**kwargs)
          
         # add geometry info 
         self.geom = 'geo'
-        if ('geom' in kwargs): self.geom = kwargs['geom']
-           
-        self.cmpvecs = np.eye(3)  
-        if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']
-        
+        self.cmpvecs = np.eye(3)
         self.rayvec = [0,0,1] # normal to shear plane, along Z-axis
+        if ('geom' in kwargs): self.geom = kwargs['geom']
+        if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']
         if ('rayvec' in kwargs): self.rayvec = kwargs['rayvec']
         
         # source and receiver location info
         if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']     
         if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
-        if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
+        if ('rayloc' in kwargs): self.rayloc = kwargs['rayloc']
 
         # labels
         self.units = 's'
@@ -93,27 +85,54 @@ class Trio:
         
     def split(self,fast,lag):
         """
-        Applies splitting operator.
-        
-        Rotates about z-axis.
+        Applies splitting operator orthogonal to ray vector.
 
         .. warning:: shortens trace length by *lag*.
         """
         # convert time shift to nsamples -- must be even
         samps = core.time2samps(lag,self.delta,mode='even')
+        # find appropriate rotation angle
+        origvecs = self.cmpvecs
+        self.rotate2ray()
         # apply splitting
-        self.x, self.y, self.z = core3d.split(self.x,self.y,self.z,fast,samps)
+        self.x, self.y , self.z = core3d.split(self.x,self.y,self.z,fast,samps)
+        self.rotateto(origvecs)
 
     def unsplit(self,fast,lag):
         """
-        Reverses splitting operator.
+        Reverses splitting operator orthogonal to ray vector.
 
         .. warning:: shortens trace length by *lag*.
         """
         # convert time shift to nsamples -- must be even
         samps = core.time2samps(lag,self.delta,mode='even')
+        # find appropriate rotation angle
+        origvecs = self.cmpvecs
+        self.rotate2ray()
         # apply splitting
-        self.x, self.y, self.z = core3d.unsplit(self.x,self.y,self.z,fast,samps)
+        self.x, self.y , self.z = core3d.unsplit(self.x,self.y,self.z,fast,samps)
+        self.rotateto(origvecs)
+        
+    def set_ray(self,az,inc):
+        """
+        Change the ray direction.
+        """
+        az = math.radians(az)
+        inc = math.radians(inc)
+        sinc = math.sin(inc)
+        cinc = math.cos(inc)
+        saz = math.sin(az)
+        caz = math.cos(az)        
+        self.rayvec = np.array([[-cinc*caz,  saz, sinc*caz],
+                                [-cinc*saz, -caz, sinc*saz],
+                                [     sinc,    0,     cinc]])
+
+    def rotate2ray(self):
+        """
+        Rotate data with shear plane normal to 3 axis and project 1 from "up" direction.
+        """
+        self.rotateto(self.rayvec)
+
         
     def rotateto(self,vecs):
         """
@@ -142,13 +161,14 @@ class Trio:
         # lab1,lab2,lab3 = self.cmpangs()
         # self.set_labels()
 
-    def rotz(self,degs):
-        """Rotate about z axis."""
-        rads = math.radians(degs)
-        rot=np.array([[ np.cos(rads), np.sin(rads), 0],
-                      [-np.sin(rads), np.cos(rads), 0],
-                      [            0,            0, 1]])
-        self.rotateto(rot)
+    # def rotz(self,degs):
+    #     """Rotate about z axis."""
+    #     rads = math.radians(degs)
+    #     rot = np.array([[ np.cos(phi), np.sin(phi), 0],
+    #                     [-np.sin(phi), np.cos(phi), 0],
+    #                     [           0,           0, 1]])
+    #     rotateto(rot)
+
         
     # Windowing
                 
@@ -222,8 +242,37 @@ class Trio:
             raise Exception('unexpected number of arguments')
 
 
-
-                
+    def geom2ray(self):
+        """Change geometry to ray frame."""
+        
+        if self.geom == 'ray':
+            return
+            
+        if self.geom == 'geo':
+            rot = geom.geo2ray
+            self.cmpvecs = geom.geo2ray(self.cmpvecs)
+            self.rayvec = 
+            self.geom = 'ray'
+            self.set_labels()
+            
+    def geom2geo(self):
+        """Change geometry to geographic frame."""
+        
+        if self.geom == 'geo':
+            return
+            
+        if self.geom == 'ray':
+            rot = geom.ray2geo()
+            self.rotateto(rot)
+            self.cmpvecs = np.eye(3)
+            self.geom = 'geo'
+            self.set_labels()
+            
+        # if self.geom ==
+        #     self.
+        
+    
+    # def rotate2cart
 
         
     # Utility 
