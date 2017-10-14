@@ -127,12 +127,12 @@ def enu2psv(az,inc):
 def psv2enu(az,inc):
     """return matrix to convert PSV coordinates to local ENU coordinates 
        given local azimuth and inclination of ray"""
-    az = np.deg2rad(az)
-    inc = np.deg2rad(inc)
-    sinc = np.sin(inc)
-    cinc = np.cos(inc)
-    saz = np.sin(az)
-    caz = np.cos(az)
+    az = math.radians(az)
+    inc = math.radians(inc)
+    sinc = math.sin(inc)
+    cinc = math.cos(inc)
+    saz = math.sin(az)
+    caz = math.cos(az)
     m = np.array([[sinc*saz, -caz, -cinc*saz],
                   [sinc*caz,  saz, -cinc*caz],
                   [    cinc,    0,      sinc]])
