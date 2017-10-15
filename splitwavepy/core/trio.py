@@ -159,10 +159,8 @@ class Trio:
         """
         Rotate data so that trace1 lines up with *degrees*
         """
-        if vecs.shape != (3,3):
-            raise Exception('vecs must be a 3x3 matrix with principal vectors in columns')
-        if np.any(vecs != vecs.T):
-            raise Exception('vecs must be symmetric matrix') 
+        if not np.allclose(np.eye(3),np.dot(vecs,vecs.T)):
+            raise Exception('vecs must be orthogonal 3x3 matrix')
         # define the new cmpvecs
         backoff = self.cmpvecs.T
         self.cmpvecs = vecs
@@ -175,7 +173,7 @@ class Trio:
         rot = np.dot(self.cmpvecs,backoff)
         # rotate data to suit
         xyz = np.dot(rot,self.data())
-        self.x, self.y,self.z = xyz[0],xyz[1],xyz[2]
+        self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
         self.rayvecs = np.dot(rot, self.rayvecs)
         # reset label
         # if reached here use the default label
@@ -509,8 +507,16 @@ class Trio:
         ax.plot(y, z,-lim, zdir='x', alpha=0.3, color='g')
             
         # plot ray arrow
-        ax.quiver(0,0,0,self.rayvecs[0,2],self.rayvecs[1,2],self.rayvecs[2,2],
-                  pivot='middle', color='r', length=1.5*lim, alpha=0.5)
+        rayx, rayy, rayz = self.rayvecs[0,2], self.rayvecs[1,2], self.rayvecs[2,2]
+        l = length=1.5*lim
+        ax.quiver(0,0,0,rayx,rayy,rayz,
+                  pivot='middle', color='r', length=l, alpha=0.5)
+                  
+        # side panel ray
+        ax.quiver(-lim,0,0,0,rayy,rayz,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayy**2+rayz**2))
+        ax.quiver(0,lim,0,rayx,0,rayz,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayx**2+rayz**2))
+        ax.quiver(0,0,-lim,rayx,rayy,0,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayx**2+rayy**2))
+ 
     
         # set labels
         if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
