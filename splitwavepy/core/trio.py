@@ -123,30 +123,42 @@ class Trio:
         
     def set_ray(self,*args):
         """
-        Change the ray direction.
+        Set the ray direction.
         
-        args
-        ----
+        Usage:
         
-        az
-        inc
+        set_ray() -- estimate ray from eigenvectors
+        set_ray( np.array([ rayx, rayy, rayz]) ) -- set ray direction
+        set_ray( np.array([[x1,x2,x3],[y1,y2,y3],[z1,z2,z3]])) -- ray in column 3
+        set_ray(az,inc) -- set ray from azimuth and incidence angle 
         
         if args is empty will set_ray to eigenvectors.
         """
         
         if len(args) == 0:
             self.rayvecs = self.eigvecs()
+            return
+        
+        if len(args) == 1:
+            if not isinstance(args[0],np.ndarray):
+                raise TypeError('expecting numpy array')
+            elif args[0].shape == (3,):
+                raise Exception('Not yet implemented')                
+                # do stuff
+            elif args[0].shape == (3,3):
+                self.rayvecs = args[0]
+            else:
+                raise Exception('must be a shape (3,) or (3,3) array')
+            return
             
         if len(args) == 2:
-            az = math.radians(args[0])
-            inc = math.radians(args[1])
-            sinc = math.sin(inc)
-            cinc = math.cos(inc)
-            saz = math.sin(az)
-            caz = math.cos(az)        
+            az, inc = math.radians(args[0]), math.radians(args[1])
+            sinc, cinc = math.sin(inc), math.cos(inc)
+            saz, caz = math.sin(az), math.cos(az) 
             self.rayvecs = np.array([[-cinc*caz,  saz, sinc*caz],
                                      [-cinc*saz, -caz, sinc*saz],
-                                     [     sinc,    0,     cinc]]).T
+                                     [     sinc,    0,     cinc]])
+            return
 
     def rotate2ray(self):
         """
@@ -155,6 +167,31 @@ class Trio:
         self.rotateto(self.rayvecs)
 
         
+    # def rotateto(self,vecs):
+    #     """
+    #     Rotate data so that trace1 lines up with *degrees*
+    #     """
+    #     if not np.allclose(np.eye(3),np.dot(vecs,vecs.T)):
+    #         raise Exception('vecs must be orthogonal 3x3 matrix')
+    #     # define the new cmpvecs
+    #     backoff = self.cmpvecs.T
+    #     self.cmpvecs = vecs
+    #     # find the rotation matrix.
+    #     # Linear algebra: if a and b are rotation matrices,
+    #     # then: a.T = inv(a) and b.T = inv(b)
+    #     # then: dot(a.T,a) = dot(b.T,b) = I
+    #     # and (multiply by b): dot(dot(b,a.T),a) = b.
+    #     # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
+    #     rot = np.dot(self.cmpvecs,backoff)
+    #     # rotate data to suit
+    #     xyz = np.dot(rot,self.data())
+    #     self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
+    #     # self.rayvecs = np.dot(rot, self.rayvecs)
+    #     # reset label
+    #     # if reached here use the default label
+    #     # lab1,lab2,lab3 = self.cmpangs()
+    #     # self.set_labels()
+
     def rotateto(self,vecs):
         """
         Rotate data so that trace1 lines up with *degrees*
@@ -162,23 +199,13 @@ class Trio:
         if not np.allclose(np.eye(3),np.dot(vecs,vecs.T)):
             raise Exception('vecs must be orthogonal 3x3 matrix')
         # define the new cmpvecs
-        backoff = self.cmpvecs.T
-        self.cmpvecs = vecs
-        # find the rotation matrix. 
-        # Linear algebra: if a and b are rotation matrices, 
-        # then: a.T = inv(a) and b.T = inv(b)
-        # then: dot(a.T,a) = dot(b.T,b) = I
-        # and (multiply by b): dot(dot(b,a.T),a) = b.
-        # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
-        rot = np.dot(self.cmpvecs,backoff)
-        # rotate data to suit
-        xyz = np.dot(rot,self.data())
+        self.cmpvecs = np.dot(vecs.T,self.cmpvecs)
+        # rotate data and ray to vecs
+        xyz = np.dot(vecs.T,self.data())
         self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
-        self.rayvecs = np.dot(rot, self.rayvecs)
+        self.rayvecs = np.dot(vecs.T, self.rayvecs)
         # reset label
-        # if reached here use the default label
-        # lab1,lab2,lab3 = self.cmpangs()
-        # self.set_labels()
+        self.set_labels()
 
     # def rotz(self,degs):
     #     """Rotate about z axis."""
@@ -237,9 +264,12 @@ class Trio:
         if len(args) == 0:
             if np.allclose(self.cmpvecs,np.eye(3),atol=1e-02):
                 if self.geom == 'geo': self.cmplabels = ['North','East','Z'] #
-                elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal','Ray']
-                elif self.geom == 'cart': self.cmplabels = ['X','Y','Z']
-                else: self.cmplabels = ['Comp1','Comp2','Comp3']
+                # elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal','Ray']
+                # elif self.geom == 'cart': self.cmplabels = ['X','Y','Z']
+                # else: self.cmplabels = ['Comp1','Comp2','Comp3']
+                return
+            if np.allclose(self.rayvecs,np.eye(3)):
+                self.cmplabels = ['SV','SH','P']
                 return
             # if reached here we have a non-standard orientation
             # a1,a2 = self.cmpangs()
