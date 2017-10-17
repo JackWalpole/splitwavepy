@@ -14,23 +14,31 @@ import numpy as np
 
 class Bootstrap:
     """
-    Produce *nits* bootstrap samples (measurement objects)
+    Produce *n* bootstrap samples (measurement objects)
     by resimulating noise sequence and remeasuring.
     
     keywords
     
-    nits      number of bootstrap samples to produce
+    n      number of bootstrap samples to produce
     """
     
-    def __init__(self,pair,nits=50,**kwargs):
+    def __init__(self,pair,n=50,**kwargs):
         if not isinstance(pair,Pair):
             raise TypeError('expecting a pair')
-        kwargs['nits'] = nits
+        kwargs['n'] = n
         self.data = pair
         self.listM = bs_loop(pair,**kwargs)
+        self.lam1 = np.stack([ m.lam1 for m in self.listM ])
+        self.lam2 = np.stack([ m.lam2 for m in self.listM ])
+        self.t = np.average(self.lam1/self.lam2,axis=0) / np.std(self.lam1/self.lam2,axis=0)
         # self.stk_l1_l2 = np.stack([ m.lam1 / m.lam2 for m in self.listM ])
         # self.stk_fastprofile = np.stack([m.fastprofile() for m in self.listM ])
         # self.stk_lagprofile = np.stack([m.lagprofile() for m in self.listM ])
+        
+    def t(self):
+        bhat = np.average(self.lam1/self.lam2,axis=0) 
+        sigma_bhat = np.std(self.lam1/self.lam2,axis=0)
+        return bhat / sigma_bhat
 
 def bs_loop(pair,**kwargs):
     """
@@ -55,7 +63,7 @@ def bs_loop(pair,**kwargs):
 
     # pick fast and tlag from surf
     probs = surf.ravel()
-    picks = np.random.choice(probs.size,size=kwargs['nits'],replace=True,p=probs)
+    picks = np.random.choice(probs.size,size=kwargs['n'],replace=True,p=probs)
     idx = np.unravel_index(picks,surf.shape)
 
     # generate bootstrap sample measurements    

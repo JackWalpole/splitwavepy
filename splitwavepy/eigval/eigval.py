@@ -22,7 +22,7 @@ def eigvalcov(data):
     return sorted eigenvalues of covariance matrix
     lambda1 first, lambda2 second
     """
-    return np.sort(np.linalg.eigvals(np.cov(data)))
+    return np.sort(np.linalg.eigh(np.cov(data)))
     
     
 def grideigval(x, y, degs, slags, window, **kwargs):
