@@ -45,7 +45,7 @@ def eigvalcov(data):
     return sorted eigenvalues of covariance matrix
     lambda1 first, lambda2 second
     """
-    return np.sort(np.linalg.eigvals(np.cov(data)))
+    return np.sort(np.linalg.eigvalsh(np.cov(data)))
     
 def eigcov(data):
     """
@@ -115,11 +115,9 @@ def grideigval(x, y, z, degs, slags, window, **kwargs):
             # chop to analysis window
             ux, uy, uz = chop( ux, uy, uz, window=window)
             # measure eigenvalues of covariance matrix
-            eigvals, eigvecs = eigcov( vstack( ux , uy, uz))
-            lam1[jj,ii], lam2[jj,ii], lam3[jj,ii] = eigvals[0], eigvals[1], eigvals[2]
-            v1[jj,ii,:], v2[jj,ii,:], v3[jj,ii,:] = eigvecs[:,0], eigvecs[:,1], eigvecs[:,2]
+            lam3[jj,ii], lam2[jj,ii], lam1[jj,ii] = eigvalcov(np.vstack((ux,uy,uz)))
             
-    return degs,lags,lam1,lam2,lam3,v1,v2,v3
+    return degs,lags,lam1,lam2,lam3
 
 def ndf(y,window=None,detrend=False):
     """

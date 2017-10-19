@@ -108,6 +108,10 @@ class Eig3dM:
                 raise TypeError('degs must be an integer or numpy array') 
         sdegs=degs
         kwargs.pop('degs', None)
+            
+        # rotate to desired frame
+        self.data.rotate2ray()
+        
         #
         # # receiver correction
         # self.rcvcorr = None
@@ -130,13 +134,10 @@ class Eig3dM:
         #     samps = core.time2samps( lag, self.delta, 'even')
         #     kwargs['srccorr'] = ( deg, samps)
         #     self.srccorr = ( deg, samps * self.delta)
-            
-        # rotate to desired frame
-        # self.data.rotateto(0)
 
         # MAKE MEASUREMENT
         window = self.data.window
-        self.degs, self.samplags, self.lam1, self.lam2, self.lam3, self.v1, self.v2, self.v3 \
+        self.degs, self.samplags, self.lam1, self.lam2, self.lam3 \
         = eigval3d.grideigval(self.data.x, self.data.y, self.data.z, sdegs, slags, window, **kwargs)
         # convert sample lags to meaningful time lags
         self.lags = self.samplags * self.delta
