@@ -131,26 +131,26 @@ Setting the fast direction grid search
 The code automatically grid searches every 2 degrees along the fast direction axis.  That's ``degs = 90`` nodes in total (180/2).  You can change this number using the ``degs`` keyword and providing an integer.  Alternatively will accept a numpy array containing all nodes to search.
 
 
-Tabulating the result
-----------------------
-
-Oftentimes it is useful to reduce your measurement to tabular form.
-This facilitates the analysis of a set of measurements in a spreadsheet type environment.
-This is achievable by the ``report()`` method.  By default this will print a 
-tabular summary of your measurement to screen.
-
-- By default tabular data is reported with the following information:
-
-+------------+------------+-----------+ 
-| Header 1   | Header 2   | Header 3  | 
-+============+============+===========+ 
-| body row 1 | column 2   | column 3  | 
-+------------+------------+-----------+ 
-
-
-.. note::
-	By reducing your measurement to tabular form you are losing valuable information.  Therefore do not rely on ``report()`` to backup your measurements.
-	Backup your measurements using ``save()``.
+.. Tabulating the result
+.. ----------------------
+..
+.. Oftentimes it is useful to reduce your measurement to tabular form.
+.. This facilitates the analysis of a set of measurements in a spreadsheet type environment.
+.. This is achievable by the ``report()`` method.  By default this will print a
+.. tabular summary of your measurement to screen.
+..
+.. - By default tabular data is reported with the following information:
+..
+.. +------------+------------+-----------+
+.. | Header 1   | Header 2   | Header 3  |
+.. +============+============+===========+
+.. | body row 1 | column 2   | column 3  |
+.. +------------+------------+-----------+
+..
+..
+.. .. note::
+.. 	By reducing your measurement to tabular form you are losing valuable information.  Therefore do not rely on ``report()`` to backup your measurements.
+.. 	Backup your measurements using ``save()``.
 
 
 Saving and loading your measurements
@@ -160,6 +160,8 @@ To save your measurement to disk simply use the ``save(filename)`` method.
 This will backup the input data complete with the :math:`\lambda_1` and :math:`\lambda_2` surfaces.
 
 This can be recovered at a later time using ``splitwavepy.load(filename)``.
+
+This feature is demonstrated here :ref:`introduction`.
 
 Splitting corrections
 ----------------------
@@ -223,6 +225,8 @@ We do as can be seen by the concentration of energy at delay time 0.
 
 Measurement stacking
 ---------------------
+
+
 
 
 
