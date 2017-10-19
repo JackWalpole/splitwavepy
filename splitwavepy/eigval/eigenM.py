@@ -400,6 +400,7 @@ class EigenM:
         # add marker and info box by default
         if 'marker' not in kwargs: kwargs['marker'] = True
         if 'info' not in kwargs: kwargs['info'] = True
+        if 'conf95' not in kwargs: kwargs['conf95'] = True
         self._psurf(ax4,**kwargs)
         
         # title
@@ -449,7 +450,7 @@ class EigenM:
             
         # add info in text box
         if 'info' in kwargs and kwargs['info'] == True:
-            textstr = '$\phi=%.1f\pm%.1f$\n$\delta t=%.1f\pm%.1f$'%\
+            textstr = '$\phi=%.1f\pm%.1f$\n$\delta t=%.2f\pm%.2f$'%\
                         (self.fast,self.dfast,self.lag,self.dlag)
             # place a text box in upper left in axes coords
             props = dict(boxstyle='round', facecolor='white', alpha=0.5)

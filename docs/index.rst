@@ -26,10 +26,8 @@ Acknowledge
 Feel free to use this code, and if you find it helpful please acknowledge this in your work.
 
 
-Contribute!
+Contribute
 -----------
-
-Code collaborators and pilot users, get in touch, the code needs users to find and report bugs and smooth the rough edges.
 
 If you can help by improving the code in any way please `submit an issue on github <https://github.com/JackWalpole/splitwavepy/issues>`_ or `fork on github <https://github.com/JackWalpole/splitwavepy>`_ and `submit a pull request <https://github.com/JackWalpole/splitwavepy/pulls>`_.
 
