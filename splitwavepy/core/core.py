@@ -52,8 +52,6 @@ def lag(x,y,samps):
     """
     if samps == 0:
         return x,y
-    elif samps%2 != 0:
-        raise Exception('samps must be even')
 
     if samps > 0:
         # positive shift

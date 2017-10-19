@@ -39,14 +39,12 @@ def rotate(x,y,z,degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis
        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
-    ang = math.degrees(degrees)
+    ang = math.radians(degrees)
     rot = np.array([[ math.cos(ang), math.sin(ang), 0],
                     [-math.sin(ang), math.cos(ang), 0],
-                    [             0,             0, 0]])
+                    [             0,             0, 1]])
     xyz = np.dot(rot,np.vstack((x,y,z)))
     return xyz[0], xyz[1], xyz[2]
-
-
 
 def split(x,y,z,degrees,nsamps):
     """Apply forward splitting and rotate back"""

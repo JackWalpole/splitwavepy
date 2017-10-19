@@ -16,6 +16,7 @@ from . import eigval3d
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from mpl_toolkits.mplot3d import Axes3D
 import os.path
 
 
@@ -58,7 +59,9 @@ class Eig3dM:
         """
         
         # process input
-        if len(args) == 1 and isinstance(args[0],Trio):
+        if len(args) == 1:
+            if not isinstance(args[0],Trio):
+                raise TypeError('must be a Trio')
             self.data = args[0]
         else:
             self.data = Trio(*args,**kwargs)
@@ -228,37 +231,37 @@ class Eig3dM:
         # copy data     
         data_corr = self.data.copy()
         # rcv side correction     
-        if self.rcvcorr is not None:
-            data_corr.unsplit(*self.rcvcorr)    
+        # if self.rcvcorr is not None:
+        #     data_corr.unsplit(*self.rcvcorr)  
         # target layer correction
         data_corr.unsplit(self.fast,self.lag)  
         # src side correction
-        if self.srccorr is not None:
-            data_corr.unsplit(*self.srccorr)
+        # if self.srccorr is not None:
+        #     data_corr.unsplit(*self.srccorr)
         return data_corr
 
     def srcpoldata(self):
         srcpoldata = self.data.copy()
-        srcpoldata.rotateto(-self.srcpol())
+        srcpoldata.rotateto(self.srcpol())
         srcpoldata.set_labels(['srcpol','residual'])
         return srcpoldata
         
     def srcpoldata_corr(self):
         srcpoldata_corr = self.data_corr()        
-        srcpoldata_corr.rotateto(-self.srcpol())
+        srcpoldata_corr.rotateto(self.srcpol())
         srcpoldata_corr.set_labels(['srcpol','residual'])
         return srcpoldata_corr
         
     def fastdata(self,flipslow=False):
         """Plot fast/slow data."""
         fastdata = self.data.copy()
-        fastdata.rotateto(-self.fast)
+        fastdata.rotateto(self.fast)
         fastdata.set_labels(['fast','slow'])
         return fastdata
 
     def fastdata_corr(self,flipslow=False):
         fastdata_corr = self.data_corr()
-        fastdata_corr.rotateto(-self.fast)
+        fastdata_corr.rotateto(self.fast)
         fastdata_corr.set_labels(['fast','slow'])
         return fastdata_corr
             
@@ -367,36 +370,35 @@ class Eig3dM:
                            width_ratios=[1,1,2]
                            )    
         ax0 = plt.subplot(gs[0,0])
-        ax1 = plt.subplot(gs[0,1])
+        ax1 = plt.subplot(gs[0,1], projection='3d')
         ax2 = plt.subplot(gs[1,0])
-        ax3 = plt.subplot(gs[1,1])
+        ax3 = plt.subplot(gs[1,1], projection='3d')
         ax4 = plt.subplot(gs[:,2])
         
         # data to plot
         d1 = self.data.chop()
-        # d1f = self.fastdata().chop()
-        d1f = self.srcpoldata().chop()
+        # d1f = self.srcpoldata().chop()
         d2 = self.data_corr().chop()
-        d2s = self.srcpoldata_corr().chop()
+        # d2s = self.srcpoldata_corr().chop()
         
         # flip polarity of slow wave in panel one if opposite to fast
         # d1f.y = d1f.y * np.sign(np.tan(self.srcpol()-self.fast))
         
         # get axis scaling
-        lim = np.abs(d2s.data()).max() * 1.1
+        lim = np.abs(d2.data()).max() * 1.1
         ylim = [-lim,lim]
 
         # original
-        d1f._ptr(ax0,ylim=ylim,**kwargs)
-        d1._ppm(ax1,lims=ylim,**kwargs)
+        d1._ptr(ax0, ylim=ylim, **kwargs)
+        d1._ppm(ax1, lims=ylim, **kwargs)
         # corrected
-        d2s._ptr(ax2,ylim=ylim,**kwargs)
-        d2._ppm(ax3,lims=ylim,**kwargs)
+        d2._ptr(ax2, ylim=ylim, **kwargs)
+        d2._ppm(ax3, lims=ylim, **kwargs)
 
         # error surface
         if 'vals' not in kwargs:
             kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
-            kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
+            kwargs['title'] = r'$\lambda_1 / (\lambda_2 \cdot \lambda_3)$'
 
         self._psurf(ax4,**kwargs)
         
@@ -422,7 +424,7 @@ class Eig3dM:
             kwargs['cmap'] = 'magma'
     
         if 'vals' not in kwargs:
-            kwargs['vals'] = (self.lam1-self.lam2) / self.lam2
+            kwargs['vals'] = (self.lam1) / (self.lam2*self.lam3)
             
         # error surface
         cax = ax.contourf(self.lags,self.degs,kwargs['vals'],26,cmap=kwargs['cmap'])

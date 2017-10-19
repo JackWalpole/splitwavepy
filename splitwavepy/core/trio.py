@@ -8,6 +8,7 @@ from .pair import Pair
 from .window import Window
 
 import numpy as np
+import math
 from scipy import signal
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -24,12 +25,12 @@ class Trio:
     Keyword Arguments:
         - delta = 1. (sample interval) [default] | float
         - units = 's' (for labelling) | string
-        - geom = 'cart' (x,y,z) [default] | 'geo' (az,inc,r) | 'ray' (P,SH,SV) 
         - window = None (default) | Window object
-        - angle
     
-    Advanced Keyword Arguments (if in doubt don't use):
-        - xyz = np.ones(3) | custom numpy array
+    Geometry Keyword Arguments:
+        - ray = (azimuth, incidence) | tuple
+        - geom = 'cart' (x,y,z) [default] | 'geo' (az,inc,r) | 'ray' (P,SH,SV) 
+        - cmpvecs = np.ones(3) | custom numpy array
         - rcvloc = None
         - srcloc = None
     """
@@ -38,10 +39,21 @@ class Trio:
         # important to do first
         self.delta = 1.
         if ('delta' in kwargs): self.delta = kwargs['delta']
+        
+        # geometry info 
+        self.geom = 'geo'
+        self.cmpvecs = np.eye(3)
+        self.rayvecs = np.eye(3) # actual ray is assumed to be third column vector
+        if ('geom' in kwargs): self.geom = kwargs['geom']
+        if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']
+        if ('ray' in kwargs): self.set_ray(*kwargs['ray'])            
                        
         # if no args make synthetic
         if len(args) == 0: 
-            self.x, self.y, self.z = _synth(**kwargs)               
+            self.x, self.y, self.z = _synth(**kwargs)
+            # rotate data to ray (but not components)
+
+                      
         # otherwise read in data                
         elif len(args) == 3:
             if not (isinstance(args[0], np.ndarray) & 
@@ -49,34 +61,22 @@ class Trio:
                     isinstance(args[2], np.ndarray)):
                 raise TypeError('expecting numpy arrays')         
             self.x, self.y, self.z = args[0], args[1], args[2]
-        else: 
-            raise Exception('Unexpected number of arguments')
+        else: raise Exception('Unexpected number of arguments')
                     
         # some sanity checks
-        if self.x.ndim != 1:
-            raise Exception('data must be one dimensional')
-        if self.x.size%2 == 0:
-            raise Exception('data must have odd number of samples')
-        if (self.x.size != self.y.size):
-            raise Exception('x and y must be the same length')
+        if self.x.ndim != 1: raise Exception('data must be one dimensional')
+        if self.x.size%2 == 0: raise Exception('data must have odd number of samples')
+        if (self.x.size != self.y.size): raise Exception('x and y must be the same length')
                    
         # Pair must have a window
         self.set_window(**kwargs)
          
-        # add geometry info 
-        self.geom = 'geo'
-        if ('geom' in kwargs): self.geom = kwargs['geom']
-           
-        self.cmpvecs = np.eye(3)  
-        if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']
-        
-        self.rayvec = [0,0,1] # normal to shear plane, along Z-axis
-        if ('rayvec' in kwargs): self.rayvec = kwargs['rayvec']
+
         
         # source and receiver location info
         if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']     
         if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
-        if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
+        if ('rayloc' in kwargs): self.rayloc = kwargs['rayloc']
 
         # labels
         self.units = 's'
@@ -91,62 +91,130 @@ class Trio:
 
     # METHODS
         
-    # def split(self,fast,lag):
-    #     """
-    #     Applies splitting operator.
-    #
-    #     .. warning:: shortens trace length by *lag*.
-    #     """
-    #     # convert time shift to nsamples -- must be even
-    #     samps = core.time2samps(lag,self.delta,mode='even')
-    #     # find appropriate rotation angle
-    #     origangs=self.cmpangs()
-    #     self.rotateto(0)
-    #     # apply splitting
-    #     self.x, self.y = core.split(self.x,self.y,fast,samps)
-    #     self.rotateto(origangs[0])
-    #
-    # def unsplit(self,fast,lag):
-    #     """
-    #     Reverses splitting operator.
-    #
-    #     .. warning:: shortens trace length by *lag*.
-    #     """
-    #     # convert time shift to nsamples -- must be even
-    #     samps = core.time2samps(lag,self.delta,mode='even')
-    #     # find appropriate rotation angle
-    #     origangs=self.cmpangs()
-    #     self.rotateto(0)
-    #     # apply splitting
-    #     self.x, self.y = core.unsplit(self.x,self.y,fast,samps)
-    #     self.rotateto(origangs[0])
+    def split(self,fast,lag):
+        """
+        Applies splitting operator orthogonal to ray vector.
+
+        .. warning:: shortens trace length by *lag*.
+        """
+        # convert time shift to nsamples -- must be even
+        samps = core.time2samps(lag,self.delta,mode='even')
+        # find appropriate rotation angle
+        origvecs = self.cmpvecs
+        self.rotate2ray()
+        # apply splitting
+        self.x, self.y , self.z = core3d.split(self.x,self.y,self.z,fast,samps)
+        self.rotateto(origvecs)
+
+    def unsplit(self,fast,lag):
+        """
+        Reverses splitting operator orthogonal to ray vector.
+
+        .. warning:: shortens trace length by *lag*.
+        """
+        # convert time shift to nsamples -- must be even
+        samps = core.time2samps(lag,self.delta,mode='even')
+        # find appropriate rotation angle
+        origvecs = self.cmpvecs
+        self.rotate2ray()
+        # apply splitting
+        self.x, self.y , self.z = core3d.unsplit(self.x,self.y,self.z,fast,samps)
+        self.rotateto(origvecs)
         
+    def set_ray(self,*args):
+        """
+        Set the ray direction.
+        
+        Usage:
+        
+        set_ray() -- estimate ray from eigenvectors
+        set_ray( np.array([ rayx, rayy, rayz]) ) -- set ray direction
+        set_ray( np.array([[x1,x2,x3],[y1,y2,y3],[z1,z2,z3]])) -- ray in column 3
+        set_ray(az,inc) -- set ray from azimuth and incidence angle 
+        
+        if args is empty will set_ray to eigenvectors.
+        """
+        
+        if len(args) == 0:
+            self.rayvecs = self.eigvecs()
+            return
+        
+        if len(args) == 1:
+            if not isinstance(args[0],np.ndarray):
+                raise TypeError('expecting numpy array')
+            elif args[0].shape == (3,):
+                raise Exception('Not yet implemented')                
+                # do stuff
+            elif args[0].shape == (3,3):
+                self.rayvecs = args[0]
+            else:
+                raise Exception('must be a shape (3,) or (3,3) array')
+            return
+            
+        if len(args) == 2:
+            az, inc = math.radians(args[0]), math.radians(args[1])
+            sinc, cinc = math.sin(inc), math.cos(inc)
+            saz, caz = math.sin(az), math.cos(az) 
+            self.rayvecs = np.array([[-cinc*caz,  saz, sinc*caz],
+                                     [-cinc*saz, -caz, sinc*saz],
+                                     [     sinc,    0,     cinc]])
+            return
+
+    def rotate2ray(self):
+        """
+        Rotate data with shear plane normal to 3 axis and project 1 from "up" direction.
+        """
+        self.rotateto(self.rayvecs)
+
+        
+    # def rotateto(self,vecs):
+    #     """
+    #     Rotate data so that trace1 lines up with *degrees*
+    #     """
+    #     if not np.allclose(np.eye(3),np.dot(vecs,vecs.T)):
+    #         raise Exception('vecs must be orthogonal 3x3 matrix')
+    #     # define the new cmpvecs
+    #     backoff = self.cmpvecs.T
+    #     self.cmpvecs = vecs
+    #     # find the rotation matrix.
+    #     # Linear algebra: if a and b are rotation matrices,
+    #     # then: a.T = inv(a) and b.T = inv(b)
+    #     # then: dot(a.T,a) = dot(b.T,b) = I
+    #     # and (multiply by b): dot(dot(b,a.T),a) = b.
+    #     # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
+    #     rot = np.dot(self.cmpvecs,backoff)
+    #     # rotate data to suit
+    #     xyz = np.dot(rot,self.data())
+    #     self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
+    #     # self.rayvecs = np.dot(rot, self.rayvecs)
+    #     # reset label
+    #     # if reached here use the default label
+    #     # lab1,lab2,lab3 = self.cmpangs()
+    #     # self.set_labels()
+
     def rotateto(self,vecs):
         """
         Rotate data so that trace1 lines up with *degrees*
         """
+        if not np.allclose(np.eye(3),np.dot(vecs,vecs.T)):
+            raise Exception('vecs must be orthogonal 3x3 matrix')
         # define the new cmpvecs
-        backoff = self.cmpvecs.T
-        self.cmpvecs = rotcmpvecs
-        # find the rotation matrix. 
-        # Linear algebra: if a and b are rotation matrices, 
-        # then: a.T = inv(a) and b.T = inv(b)
-        # then: dot(a.T,a) = dot(b.T,b) = I
-        # and (multiply by b): dot(dot(b,a.T),a) = b.
-        # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
-        rot = np.dot(self.cmpvecs,backoff)
-        # rotate data to suit
-        xyz = np.dot(rot,self.data())
-        self.x, self.y,self.z = xyz[0],xyz[1],xyz[2]
+        self.cmpvecs = np.dot(vecs.T,self.cmpvecs)
+        # rotate data and ray to vecs
+        xyz = np.dot(vecs.T,self.data())
+        self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
+        self.rayvecs = np.dot(vecs.T, self.rayvecs)
         # reset label
-        # if reached here use the default label
-        # lab1,lab2,lab3 = self.cmpangs()
-        # self.set_labels()
+        self.set_labels()
 
-    def rotz(self,degs):
-        """Rotate about z axis."""
-        rads = math.radians(degs)
-        rotateto( geom.rz( self.cmpvecs,rads))
+    # def rotz(self,degs):
+    #     """Rotate about z axis."""
+    #     rads = math.radians(degs)
+    #     rot = np.array([[ np.cos(phi), np.sin(phi), 0],
+    #                     [-np.sin(phi), np.cos(phi), 0],
+    #                     [           0,           0, 1]])
+    #     rotateto(rot)
+
         
     # Windowing
                 
@@ -196,9 +264,12 @@ class Trio:
         if len(args) == 0:
             if np.allclose(self.cmpvecs,np.eye(3),atol=1e-02):
                 if self.geom == 'geo': self.cmplabels = ['North','East','Z'] #
-                elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal','Ray']
-                elif self.geom == 'cart': self.cmplabels = ['X','Y','Z']
-                else: self.cmplabels = ['Comp1','Comp2','Comp3']
+                # elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal','Ray']
+                # elif self.geom == 'cart': self.cmplabels = ['X','Y','Z']
+                # else: self.cmplabels = ['Comp1','Comp2','Comp3']
+                return
+            if np.allclose(self.rayvecs,np.eye(3)):
+                self.cmplabels = ['SV','SH','P']
                 return
             # if reached here we have a non-standard orientation
             # a1,a2 = self.cmpangs()
@@ -220,8 +291,37 @@ class Trio:
             raise Exception('unexpected number of arguments')
 
 
-
-                
+    # def geom2ray(self):
+    #     """Change geometry to ray frame."""
+    #
+    #     if self.geom == 'ray':
+    #         return
+    #
+    #     if self.geom == 'geo':
+    #         rot = geom.geo2ray
+    #         self.cmpvecs = geom.geo2ray(self.cmpvecs)
+    #         self.rayvecs =
+    #         self.geom = 'ray'
+    #         self.set_labels()
+    #
+    # def geom2geo(self):
+    #     """Change geometry to geographic frame."""
+    #
+    #     if self.geom == 'geo':
+    #         return
+    #
+    #     if self.geom == 'ray':
+    #         rot = geom.ray2geo()
+    #         self.rotateto(rot)
+    #         self.cmpvecs = np.eye(3)
+    #         self.geom = 'geo'
+    #         self.set_labels()
+            
+        # if self.geom ==
+        #     self.
+        
+    
+    # def rotate2cart
 
         
     # Utility 
@@ -232,24 +332,24 @@ class Trio:
     def data(self):
         return np.vstack(( self.x, self.y, self.z))
         
-    def pol(self):
-        """Return principal component orientation"""
-        # rotate to zero
-        rot = self.cmpvecs.T
-        data = self.chop().data()
-        xy = np.dot(rot,data)
-        _,eigvecs = core.eigcov(xy)
-        pol = eigvecs[:,0]
-        return pol
+    # def pol(self):
+    #     """Return principal component orientation"""
+    #     # rotate to zero
+    #     rot = self.cmpvecs.T
+    #     data = self.chop().data()
+    #     xy = np.dot(rot,data)
+    #     _,eigvecs = core.eigcov(xy)
+    #     pol = eigvecs[:,0]
+    #     return pol
 
-    def eigdata(self):
-        """Return to maximum, intermediate, and minimum directions."""
-        # rotate to I
-        rot = self.cmpvecs.T
-        data = self.chop().data()
-        xyz = np.dot(rot,data)
-        _,eigvecs = core.eigcov(xyz)
-        rotateto(self,eigvecs)
+    # def eigdata(self):
+    #     """Return to maximum, intermediate, and minimum directions."""
+    #     # rotate to I
+    #     rot = self.cmpvecs.T
+    #     data = self.chop().data()
+    #     xyz = np.dot(rot,data)
+    #     _,eigvecs = core.eigcov(xyz)
+    #     rotateto(self,eigvecs)
         
     def eigvals(self):
         """Return principal component vector."""
@@ -260,7 +360,14 @@ class Trio:
         eigvals,_ = core.eigcov(xyz)
         return(eigvals)  
         
-
+    def eigvecs(self):
+        """Return principal component vector."""
+        # rotate to I
+        rot = self.cmpvecs.T
+        data = self.chop().data()
+        xyz = np.dot(rot,data)
+        _,eigvecs = core.eigcov(xyz)
+        return(eigvecs)
         
 
     def power(self):
@@ -410,12 +517,7 @@ class Trio:
     def _ppm(self,ax,**kwargs):
         """Plot particle motion on *ax* matplotlib axis object.
         """
-                
-        # plot data
-        xyz = self.chop().data()
-        x,y,z = xyz[0], xyz[1], xyz[2]
-        ax.plot( x, y, z)
-    
+        
         # set limit
         lim = np.abs(self.data()).max() * 1.1
         if 'lims' not in kwargs: kwargs['lims'] = [-lim,lim] 
@@ -423,18 +525,35 @@ class Trio:
         ax.set_xlim(kwargs['lims'])
         ax.set_ylim(kwargs['lims'])
         ax.set_zlim(kwargs['lims'])
+                
+        # plot data
+        xyz = self.chop().data()
+        x,y,z = xyz[0], xyz[1], xyz[2]
+        ax.plot( x, y, z)
+        
+        # side panel data
+        ax.plot(x, y,-lim, zdir='z', alpha=0.3, color='g')
+        ax.plot(x, z, lim, zdir='y', alpha=0.3, color='g')
+        ax.plot(y, z,-lim, zdir='x', alpha=0.3, color='g')
+            
+        # plot ray arrow
+        rayx, rayy, rayz = self.rayvecs[0,2], self.rayvecs[1,2], self.rayvecs[2,2]
+        l = length=1.5*lim
+        ax.quiver(0,0,0,rayx,rayy,rayz,
+                  pivot='middle', color='r', length=l, alpha=0.5)
+                  
+        # side panel ray
+        ax.quiver(-lim,0,0,0,rayy,rayz,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayy**2+rayz**2))
+        ax.quiver(0,lim,0,rayx,0,rayz,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayx**2+rayz**2))
+        ax.quiver(0,0,-lim,rayx,rayy,0,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayx**2+rayy**2))
+ 
     
         # set labels
         if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
         ax.set_xlabel(kwargs['cmplabels'][0])
         ax.set_ylabel(kwargs['cmplabels'][1])
         ax.set_zlabel(kwargs['cmplabels'][2])
-        
-        # side panel data
-        ax.plot(x, y,-lim, zdir='z', alpha=0.3, color='g')
-        ax.plot(x, z, lim, zdir='y', alpha=0.3, color='g')
-        ax.plot(y, z,-lim, zdir='x', alpha=0.3, color='g')
-        
+                
         # turn off tick annotation
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
@@ -491,12 +610,11 @@ def _synth(**kwargs):
     # defaults
     pol = 0.
     delta = 1.
-    # fast = 0.
-    # lag = 0.
     split = []
     noise = 0.001
     nsamps = 1001
     width = 32.
+    noisewidth = width/4  
     
     # override defaults
     if ('pol' in kwargs): pol = kwargs['pol']   
@@ -507,7 +625,6 @@ def _synth(**kwargs):
     if ('noise' in kwargs): noise = kwargs['noise']   
     if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
     if ('width' in kwargs): width = kwargs['width'] 
-    noisewidth = width/4  
     if ('noisewidth' in kwargs): noisewidth = kwargs['noisewidth']
 
     # initiate data with clean ricker wavelet
@@ -536,5 +653,19 @@ def _synth(**kwargs):
     x = x + core.noise(x.size,noise,int(noisewidth))    
     y = y + core.noise(x.size,noise,int(noisewidth))
     z = core.noise(x.size,noise,int(noisewidth))
-
+    
+    if 'ray' in kwargs:
+        if not isinstance(kwargs['ray'], tuple):
+            raise Exception('ray must be a tuple (azi,inc)')
+        if len(kwargs['ray']) != 2:
+            raise Exception('rat must be length 2 (azi,inc)')
+        az, inc = math.radians(kwargs['ray'][0]), math.radians(kwargs['ray'][1])
+        sinc, cinc = math.sin(inc), math.cos(inc)
+        saz, caz = math.sin(az), math.cos(az)
+        rot = np.array([[-cinc*caz,  saz, sinc*caz],
+                        [-cinc*saz, -caz, sinc*saz],
+                        [     sinc,    0,     cinc]])
+        xyz = np.dot(rot,np.vstack((x,y,z)))
+        x, y, z = xyz[0], xyz[1], xyz[2]
+    
     return x,y,z
