@@ -115,9 +115,9 @@ It is quite common to plot the :math:`\lambda_2` surface.  To do this you use th
 	
 	measure.plot(vals=measure.lam2, title=r'$\lambda_2$', marker=True, conf95=True, cmap='viridis_r')
 	
-This example demonstrates that the ratio of :math:`\lambda_1` to :math:`\lambda_2` is much more sharply focused around the solution than a single eigenvalue :math:`\lambda_2` or :math:`\lambda_1` surface.
-
-Furthermore, :math:`\lambda_1/\lambda_2` is dimensionless, and automatically normalised to the signal to noise ratio.  It's energy is strongly focused in the 95% confidence region, as would be expected for a proper error surface.  These properties suggest (to me), that surfaces of this type are much more appropriate for error surface stacking techniques than the (scaled) :math:`\lambda_2` surfaces that are normally used.
+.. This example demonstrates that the ratio of :math:`\lambda_1` to :math:`\lambda_2` is much more sharply focused around the solution than a single eigenvalue :math:`\lambda_2` or :math:`\lambda_1` surface.
+..
+.. Furthermore, :math:`\lambda_1/\lambda_2` is dimensionless, and automatically normalised to the signal to noise ratio.  It's energy is strongly focused in the 95% confidence region, as would be expected for a proper error surface.  These properties suggest (to me), that surfaces of this type are much more appropriate for error surface stacking techniques than the (scaled) :math:`\lambda_2` surfaces that are normally used.
 
 .. _setgrid:
 
