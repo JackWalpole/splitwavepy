@@ -502,7 +502,7 @@ class Trio:
         ax.plot( t, self.x, label=kwargs['cmplabels'][0])
         ax.plot( t, self.y, label=kwargs['cmplabels'][1])
         ax.plot( t, self.z, label=kwargs['cmplabels'][2])
-        ax.legend()
+        ax.legend(framealpha=0.5)
     
         # set limits
         lim = np.abs(self.data()).max() * 1.1

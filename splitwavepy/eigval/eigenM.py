@@ -396,7 +396,10 @@ class EigenM:
         if 'vals' not in kwargs:
             kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
             kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
-
+        
+        # add marker and info box by default
+        if 'marker' not in kwargs: kwargs['marker'] = True
+        if 'info' not in kwargs: kwargs['info'] = True
         self._psurf(ax4,**kwargs)
         
         # title
@@ -443,7 +446,16 @@ class EigenM:
         # optional title
         if 'title' in kwargs:
             ax.set_title(kwargs['title']) 
-        
+            
+        # add info in text box
+        if 'info' in kwargs and kwargs['info'] == True:
+            textstr = '$\phi=%.1f\pm%.1f$\n$\delta t=%.1f\pm%.1f$'%\
+                        (self.fast,self.dfast,self.lag,self.dlag)
+            # place a text box in upper left in axes coords
+            props = dict(boxstyle='round', facecolor='white', alpha=0.5)
+            ax.text(0.6, 0.95, textstr, transform=ax.transAxes, fontsize=12,
+                    verticalalignment='top', bbox=props)
+                    
         return ax
         
     def plot_profiles(self,**kwargs):
