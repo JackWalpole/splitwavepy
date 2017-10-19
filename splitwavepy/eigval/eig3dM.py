@@ -112,28 +112,27 @@ class Eig3dM:
         # rotate to desired frame
         self.data.rotate2ray()
         
-        #
-        # # receiver correction
-        # self.rcvcorr = None
-        # if ('rcvcorr' in kwargs):
-        #     if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
-        #     if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
-        #     # convert time shift to nsamples -- must be even
-        #     deg, lag = kwargs['rcvcorr']
-        #     samps = core.time2samps( lag,self.delta, 'even')
-        #     kwargs['rcvcorr'] = ( deg, samps)
-        #     self.rcvcorr = ( deg, samps * self.delta)
-        #
-        # # source correction
-        # self.srccorr = None
-        # if ('srccorr' in kwargs):
-        #     if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
-        #     if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
-        #     # convert time shift to nsamples -- must be even
-        #     deg, lag = kwargs['srccorr']
-        #     samps = core.time2samps( lag, self.delta, 'even')
-        #     kwargs['srccorr'] = ( deg, samps)
-        #     self.srccorr = ( deg, samps * self.delta)
+        # receiver correction
+        self.rcvcorr = None
+        if ('rcvcorr' in kwargs):
+            if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
+            if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
+            # convert time shift to nsamples -- must be even
+            deg, lag = kwargs['rcvcorr']
+            samps = core.time2samps( lag,self.delta, 'even')
+            kwargs['rcvcorr'] = ( deg, samps)
+            self.rcvcorr = ( deg, samps * self.delta)
+
+        # source correction
+        self.srccorr = None
+        if ('srccorr' in kwargs):
+            if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
+            if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
+            # convert time shift to nsamples -- must be even
+            deg, lag = kwargs['srccorr']
+            samps = core.time2samps( lag, self.delta, 'even')
+            kwargs['srccorr'] = ( deg, samps)
+            self.srccorr = ( deg, samps * self.delta)
 
         # MAKE MEASUREMENT
         window = self.data.window
@@ -148,9 +147,9 @@ class Eig3dM:
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
         # estimate signal to noise level (lam1-lam2)/lam2
-        # self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
+        self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
         # get errors
-        # self.dfast, self.dlag = self.f_errors()
+        self.dfast, self.dlag = self.f_errors()
         
         # Name
         self.name = 'Untitled'
@@ -232,38 +231,38 @@ class Eig3dM:
         # copy data     
         data_corr = self.data.copy()
         # rcv side correction     
-        # if self.rcvcorr is not None:
-        #     data_corr.unsplit(*self.rcvcorr)  
+        if self.rcvcorr is not None:
+            data_corr.unsplit(*self.rcvcorr) 
         # target layer correction
         data_corr.unsplit(self.fast,self.lag)  
         # src side correction
-        # if self.srccorr is not None:
-        #     data_corr.unsplit(*self.srccorr)
+        if self.srccorr is not None:
+            data_corr.unsplit(*self.srccorr)
         return data_corr
 
     def srcpoldata(self):
         srcpoldata = self.data.copy()
         srcpoldata.rotateto(self.srcpol())
-        srcpoldata.set_labels(['srcpol','residual'])
+        srcpoldata.set_labels(['srcpol','residual1','residual2'])
         return srcpoldata
         
     def srcpoldata_corr(self):
         srcpoldata_corr = self.data_corr()        
         srcpoldata_corr.rotateto(self.srcpol())
-        srcpoldata_corr.set_labels(['srcpol','residual'])
+        srcpoldata_corr.set_labels(['srcpol','residual1','residual2'])
         return srcpoldata_corr
         
     def fastdata(self,flipslow=False):
         """Plot fast/slow data."""
         fastdata = self.data.copy()
         fastdata.rotateto(self.fast)
-        fastdata.set_labels(['fast','slow'])
+        fastdata.set_labels(['fast','slow','ray'])
         return fastdata
 
     def fastdata_corr(self,flipslow=False):
         fastdata_corr = self.data_corr()
         fastdata_corr.rotateto(self.fast)
-        fastdata_corr.set_labels(['fast','slow'])
+        fastdata_corr.set_labels(['fast','slow','ray'])
         return fastdata_corr
             
     # F-test utilities
@@ -378,23 +377,23 @@ class Eig3dM:
         
         # data to plot
         d1 = self.data.chop()
-        # d1f = self.srcpoldata().chop()
+        d1f = self.srcpoldata().chop()
         d2 = self.data_corr().chop()
-        # d2s = self.srcpoldata_corr().chop()
+        d2s = self.srcpoldata_corr().chop()
         
         # flip polarity of slow wave in panel one if opposite to fast
         # d1f.y = d1f.y * np.sign(np.tan(self.srcpol()-self.fast))
         
         # get axis scaling
-        lim = np.abs(d2.data()).max() * 1.1
+        lim = np.abs(d2s.data()).max() * 1.1
         ylim = [-lim,lim]
-
+        
         # original
-        d1._ptr(ax0, ylim=ylim, **kwargs)
-        d1._ppm(ax1, lims=ylim, **kwargs)
+        d1f._ptr(ax0,ylim=ylim,**kwargs)
+        d1._ppm(ax1,lims=ylim,**kwargs)
         # corrected
-        d2._ptr(ax2, ylim=ylim, **kwargs)
-        d2._ppm(ax3, lims=ylim, **kwargs)
+        d2s._ptr(ax2,ylim=ylim,**kwargs)
+        d2._ppm(ax3,lims=ylim,**kwargs)
 
         # error surface
         if 'vals' not in kwargs:

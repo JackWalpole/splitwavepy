@@ -68,10 +68,12 @@ class Trio:
         if self.x.size%2 == 0: raise Exception('data must have odd number of samples')
         if (self.x.size != self.y.size): raise Exception('x and y must be the same length')
                    
-        # Pair must have a window
+        # Must have a window
         self.set_window(**kwargs)
-         
-
+        
+        # Must have a ray
+        if 'ray' not in kwargs: kwargs['ray'] = (0,0)
+        self.set_ray(*kwargs['ray'])
         
         # source and receiver location info
         if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']     
@@ -155,9 +157,13 @@ class Trio:
             az, inc = math.radians(args[0]), math.radians(args[1])
             sinc, cinc = math.sin(inc), math.cos(inc)
             saz, caz = math.sin(az), math.cos(az) 
-            self.rayvecs = np.array([[-cinc*caz,  saz, sinc*caz],
-                                     [-cinc*saz, -caz, sinc*saz],
-                                     [     sinc,    0,     cinc]])
+            # self.rayvecs = np.array([[-cinc*caz,  saz, sinc*caz],
+            #                          [-cinc*saz, -caz, sinc*saz],
+            #                          [     sinc,    0,    cinc]])
+            # Left Handed, N, E, Up
+            self.rayvecs = np.array([[ cinc*caz, -saz, sinc*caz],
+                                     [ cinc*saz,  caz, sinc*saz],
+                                     [    -sinc,    0,     cinc]])
             return
 
     def rotate2ray(self):
@@ -263,7 +269,7 @@ class Trio:
     def set_labels(self,*args):
         if len(args) == 0:
             if np.allclose(self.cmpvecs,np.eye(3),atol=1e-02):
-                if self.geom == 'geo': self.cmplabels = ['North','East','Z'] #
+                if self.geom == 'geo': self.cmplabels = ['North','East','Up'] #
                 # elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal','Ray']
                 # elif self.geom == 'cart': self.cmplabels = ['X','Y','Z']
                 # else: self.cmplabels = ['Comp1','Comp2','Comp3']
@@ -332,15 +338,15 @@ class Trio:
     def data(self):
         return np.vstack(( self.x, self.y, self.z))
         
-    # def pol(self):
-    #     """Return principal component orientation"""
-    #     # rotate to zero
-    #     rot = self.cmpvecs.T
-    #     data = self.chop().data()
-    #     xy = np.dot(rot,data)
-    #     _,eigvecs = core.eigcov(xy)
-    #     pol = eigvecs[:,0]
-    #     return pol
+    def pol(self):
+        """Return principal component orientation"""
+        # rotate to zero
+        rot = self.cmpvecs.T
+        data = self.chop().data()
+        xy = np.dot(rot,data)
+        _,eigvecs = core.eigcov(xy)
+        pol = eigvecs
+        return pol
 
     # def eigdata(self):
     #     """Return to maximum, intermediate, and minimum directions."""
@@ -373,12 +379,15 @@ class Trio:
     def power(self):
         return self.x**2,self.y**2,self.z**2
 
-    # def cmpangs(self):
-    #     cmp1 = self.cmpvecs[:,0]
-    #     cmp2 = self.cmpvecs[:,1]
-    #     def getang(c) : return np.rad2deg(np.arctan2(c[1],c[0]))
-    #     return getang(cmp1),getang(cmp2)        
-    
+    def cmpangs(self):
+        """Return (az,inc) tuples in list"""
+        cmp1 = self.cmpvecs[:,0]
+        cmp2 = self.cmpvecs[:,1]
+        cmp3 = self.cmpvecs[:,2]
+        def getazi(c) : return math.degrees(math.atan2(c[1],c[0]))
+        def getinc(c) : return math.degrees(math.atan2((c[0]**2+c[1]**2)**0.5,c[2]))
+        return [ (getazi(cmp1),getinc(cmp1)), (getazi(cmp2),getinc(cmp2)), (getazi(cmp3),getinc(cmp3)) ]
+
     def chop(self):
         """
         Chop data to window
@@ -534,7 +543,7 @@ class Trio:
         # side panel data
         ax.plot(x, y,-lim, zdir='z', alpha=0.3, color='g')
         ax.plot(x, z, lim, zdir='y', alpha=0.3, color='g')
-        ax.plot(y, z,-lim, zdir='x', alpha=0.3, color='g')
+        ax.plot(y, z, lim, zdir='x', alpha=0.3, color='g')
             
         # plot ray arrow
         rayx, rayy, rayz = self.rayvecs[0,2], self.rayvecs[1,2], self.rayvecs[2,2]
@@ -543,7 +552,7 @@ class Trio:
                   pivot='middle', color='r', length=l, alpha=0.5)
                   
         # side panel ray
-        ax.quiver(-lim,0,0,0,rayy,rayz,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayy**2+rayz**2))
+        ax.quiver(lim,0,0,0,rayy,rayz,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayy**2+rayz**2))
         ax.quiver(0,lim,0,rayx,0,rayz,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayx**2+rayz**2))
         ax.quiver(0,0,-lim,rayx,rayy,0,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayx**2+rayy**2))
  
@@ -558,6 +567,11 @@ class Trio:
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
         ax.axes.zaxis.set_ticklabels([])
+        
+        # flip axes
+        ax.invert_xaxis()
+        # ax.invert_zaxis()
+        
         return
 
     # I/O stuff  
@@ -658,7 +672,7 @@ def _synth(**kwargs):
         if not isinstance(kwargs['ray'], tuple):
             raise Exception('ray must be a tuple (azi,inc)')
         if len(kwargs['ray']) != 2:
-            raise Exception('rat must be length 2 (azi,inc)')
+            raise Exception('ray must be length 2 (azi,inc)')
         az, inc = math.radians(kwargs['ray'][0]), math.radians(kwargs['ray'][1])
         sinc, cinc = math.sin(inc), math.cos(inc)
         saz, caz = math.sin(az), math.cos(az)

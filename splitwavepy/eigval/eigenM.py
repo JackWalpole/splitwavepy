@@ -374,7 +374,6 @@ class EigenM:
         
         # data to plot
         d1 = self.data.chop()
-        # d1f = self.fastdata().chop()
         d1f = self.srcpoldata().chop()
         d2 = self.data_corr().chop()
         d2s = self.srcpoldata_corr().chop()
