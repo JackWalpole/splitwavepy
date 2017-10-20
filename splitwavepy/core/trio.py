@@ -157,9 +157,6 @@ class Trio:
             az, inc = math.radians(args[0]), math.radians(args[1])
             sinc, cinc = math.sin(inc), math.cos(inc)
             saz, caz = math.sin(az), math.cos(az) 
-            # self.rayvecs = np.array([[-cinc*caz,  saz, sinc*caz],
-            #                          [-cinc*saz, -caz, sinc*saz],
-            #                          [     sinc,    0,    cinc]])
             # Left Handed, N, E, Up
             self.rayvecs = np.array([[ cinc*caz, -saz, sinc*caz],
                                      [ cinc*saz,  caz, sinc*saz],
@@ -171,32 +168,9 @@ class Trio:
         Rotate data with shear plane normal to 3 axis and project 1 from "up" direction.
         """
         self.rotateto(self.rayvecs)
-
         
-    # def rotateto(self,vecs):
-    #     """
-    #     Rotate data so that trace1 lines up with *degrees*
-    #     """
-    #     if not np.allclose(np.eye(3),np.dot(vecs,vecs.T)):
-    #         raise Exception('vecs must be orthogonal 3x3 matrix')
-    #     # define the new cmpvecs
-    #     backoff = self.cmpvecs.T
-    #     self.cmpvecs = vecs
-    #     # find the rotation matrix.
-    #     # Linear algebra: if a and b are rotation matrices,
-    #     # then: a.T = inv(a) and b.T = inv(b)
-    #     # then: dot(a.T,a) = dot(b.T,b) = I
-    #     # and (multiply by b): dot(dot(b,a.T),a) = b.
-    #     # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
-    #     rot = np.dot(self.cmpvecs,backoff)
-    #     # rotate data to suit
-    #     xyz = np.dot(rot,self.data())
-    #     self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
-    #     # self.rayvecs = np.dot(rot, self.rayvecs)
-    #     # reset label
-    #     # if reached here use the default label
-    #     # lab1,lab2,lab3 = self.cmpangs()
-    #     # self.set_labels()
+    def rotate2eye(self):
+        self.rotateto(np.eye(3))
 
     def rotateto(self,vecs):
         """
@@ -254,7 +228,8 @@ class Trio:
             return
         # if start/end given
         if len(args) == 2:
-            start, end = args 
+            start, end = args
+            if start > end: raise ValueError('start is larger than end')
             time_centre = (start + end)/2
             time_width = end - start
             tcs = core.time2samps(time_centre,self.delta)
@@ -342,8 +317,8 @@ class Trio:
         """Return principal component orientation"""
         # rotate to zero
         rot = self.cmpvecs.T
-        data = self.chop().data()
-        xy = np.dot(rot,data)
+        data = self.copy()
+        xy = np.dot(rot,data.chop().data())
         _,eigvecs = core.eigcov(xy)
         pol = eigvecs
         return pol
@@ -360,19 +335,17 @@ class Trio:
     def eigvals(self):
         """Return principal component vector."""
         # rotate to I
-        rot = self.cmpvecs.T
-        data = self.chop().data()
-        xyz = np.dot(rot,data)
-        eigvals,_ = core.eigcov(xyz)
+        data = self.copy()
+        data.rotate2eye()
+        eigvals,_ = core.eigcov(data.chop().data())
         return(eigvals)  
         
     def eigvecs(self):
         """Return principal component vector."""
         # rotate to I
-        rot = self.cmpvecs.T
-        data = self.chop().data()
-        xyz = np.dot(rot,data)
-        _,eigvecs = core.eigcov(xyz)
+        data = self.copy()
+        data.rotate2eye()
+        _,eigvecs = core.eigcov(data.chop().data())
         return(eigvecs)
         
 

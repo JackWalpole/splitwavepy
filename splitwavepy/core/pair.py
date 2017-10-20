@@ -204,6 +204,7 @@ class Pair:
         # if start/end given
         if len(args) == 2:
             start, end = args 
+            if start > end: raise ValueError('start is larger than end')
             time_centre = (start + end)/2
             time_width = end - start
             tcs = core.time2samps(time_centre,self.delta)
