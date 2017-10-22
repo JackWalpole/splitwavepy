@@ -12,6 +12,7 @@ import math
 from scipy import signal
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from matplotlib import gridspec
 
 class Trio:
@@ -517,18 +518,34 @@ class Trio:
         """Plot particle motion on *ax* matplotlib axis object.
         """
         
+        data = self.chop().copy()
+        x, y, z = data.x, data.y, data.z
+        t = data.t()
+        
         # set limit
-        lim = np.abs(self.data()).max() * 1.1
+        lim = np.abs(data.data()).max() * 1.1
         if 'lims' not in kwargs: kwargs['lims'] = [-lim,lim] 
         ax.set_aspect('equal')
         ax.set_xlim(kwargs['lims'])
         ax.set_ylim(kwargs['lims'])
         ax.set_zlim(kwargs['lims'])
+        
+        # multi-colored
+        norm = plt.Normalize(t.min(),t.max())
+        points = np.array([x,y,z]).T.reshape(-1, 1, 3)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+        lc = Line3DCollection(segments,cmap='plasma',norm=norm,alpha=0.7)
+        lc.set_array(t)
+        lc.set_linewidth(2)
+
+        line = ax.add_collection(lc)
+        plt.colorbar(line)
                 
         # plot data
-        xyz = self.copy().chop().data()
-        x,y,z = xyz[0], xyz[1], xyz[2]
-        ax.plot( x, y, z)
+        # xyz = self.copy().chop().data()
+        # x,y,z = xyz[0], xyz[1], xyz[2]
+        # ax.plot( x, y, z)
         
         # side panel data
         ax.plot(x, y,-lim, zdir='z', alpha=0.3, color='g')
