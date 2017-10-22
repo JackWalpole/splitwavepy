@@ -11,6 +11,7 @@ import math
 from scipy import signal
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
+from matplotlib.collections import LineCollection
 
 
 class Pair:
@@ -369,9 +370,25 @@ class Pair:
     def _ppm(self,ax,**kwargs):
         """Plot particle motion on *ax* matplotlib axis object.
         """
+        
+        data = self.chop().copy()
+        x, y = data.x, data.y
+        t = data.t()
                 
         # plot data
-        ax.plot(self.chop().y,self.chop().x)
+        # ax.plot(self.chop().y,self.chop().x)
+        
+        # multi-colored
+        norm = plt.Normalize(t.min(),t.max())
+        points = np.array([y, x]).T.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+        lc = LineCollection(segments,cmap='plasma',norm=norm,alpha=0.7)
+        lc.set_array(t)
+        lc.set_linewidth(2)
+
+        line = ax.add_collection(lc)
+        plt.colorbar(line)
     
         # set limit
         lim = np.abs(self.data()).max() * 1.1

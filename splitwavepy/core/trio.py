@@ -542,9 +542,9 @@ class Trio:
                   pivot='middle', color='r', length=l, alpha=0.5)
                   
         # side panel ray
-        ax.quiver(lim,0,0,0,rayy,rayz,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayy**2+rayz**2))
-        ax.quiver(0,lim,0,rayx,0,rayz,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayx**2+rayz**2))
-        ax.quiver(0,0,-lim,rayx,rayy,0,alpha=0.3,color='r',pivot='middle',length=l*math.sqrt(rayx**2+rayy**2))
+        ax.quiver(lim,0,0,0,rayy,rayz,alpha=0.3,color='g',pivot='middle',length=l*math.sqrt(rayy**2+rayz**2))
+        ax.quiver(0,lim,0,rayx,0,rayz,alpha=0.3,color='g',pivot='middle',length=l*math.sqrt(rayx**2+rayz**2))
+        ax.quiver(0,0,-lim,rayx,rayy,0,alpha=0.3,color='g',pivot='middle',length=l*math.sqrt(rayx**2+rayy**2))
  
     
         # set labels
