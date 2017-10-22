@@ -263,7 +263,7 @@ def vunit(a):
     # Return a unit vector in the direction of a
     return a/np.linalg.norm(a)
 
-def vrejection(a,b):
+def vreject(a,b):
     # The vector rejection of a on b (the bit of a perpendicular to b)
     # Equivalent to projection onto the plane normal to b
     return a - (np.linalg.norm(a)*np.cos(vangle(a,b))) * vunit(b)

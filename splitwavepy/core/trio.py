@@ -139,6 +139,7 @@ class Trio:
         
         if len(args) == 0:
             self.rayvecs = self.eigvecs()
+            self.ray = self.rayvecs[:,2]
             return
         
         if len(args) == 1:
@@ -161,16 +162,30 @@ class Trio:
             self.rayvecs = np.array([[ cinc*caz, -saz, sinc*caz],
                                      [ cinc*saz,  caz, sinc*saz],
                                      [    -sinc,    0,     cinc]])
+            self.ray = self.rayvecs[:,2]
             return
+            
+        # if reached here then raise exception
+        raise ValueError('Unexpected arguments')
 
     def rotate2ray(self):
         """
         Rotate data with shear plane normal to 3 axis and project 1 from "up" direction.
         """
-        self.rotateto(self.rayvecs)
-        
+        self.rotateto(self.rayvecs)                
+    
     def rotate2eye(self):
         self.rotateto(np.eye(3))
+        
+    def p_rotate(self):
+        """
+        Rotate data given P in window
+        """
+        p = self.eigvecs()[:,0]
+        sv = geom.vunit(geom.vreject([0,0,1],p))
+        sh = np.cross(sv,p)
+        self.rayvecs = np.column_stack((sv,sh,p))
+        self.rotate2ray()       
 
     def rotateto(self,vecs):
         """
@@ -179,11 +194,13 @@ class Trio:
         if not np.allclose(np.eye(3),np.dot(vecs,vecs.T)):
             raise Exception('vecs must be orthogonal 3x3 matrix')
         # define the new cmpvecs
-        self.cmpvecs = np.dot(vecs.T,self.cmpvecs)
+        backoff = self.cmpvecs.T
+        self.cmpvecs = vecs
+        rot = np.dot(vecs,backoff)
         # rotate data and ray to vecs
-        xyz = np.dot(vecs.T,self.data())
+        xyz = np.dot(rot,self.data())
         self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
-        self.rayvecs = np.dot(vecs.T, self.rayvecs)
+        # self.rayvecs = np.dot(vecs.T, self.rayvecs)
         # reset label
         self.set_labels()
 
@@ -249,7 +266,7 @@ class Trio:
                 # elif self.geom == 'cart': self.cmplabels = ['X','Y','Z']
                 # else: self.cmplabels = ['Comp1','Comp2','Comp3']
                 return
-            if np.allclose(self.rayvecs,np.eye(3)):
+            if np.allclose(self.rayvecs,self.cmpvecs):
                 self.cmplabels = ['SV','SH','P']
                 return
             # if reached here we have a non-standard orientation
