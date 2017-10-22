@@ -146,10 +146,13 @@ class Trio:
             if not isinstance(args[0],np.ndarray):
                 raise TypeError('expecting numpy array')
             elif args[0].shape == (3,):
-                raise Exception('Not yet implemented')                
-                # do stuff
+                self.ray = geom.vunit(args[0])
+                sv = geom.vunit(geom.vreject([0,0,1],self.ray))
+                sh = np.cross(sv,self.ray)
+                self.rayvecs = np.column_stack((sv,sh,self.ray))
             elif args[0].shape == (3,3):
                 self.rayvecs = args[0]
+                self.ray = self.rayvecs[:,2]
             else:
                 raise Exception('must be a shape (3,) or (3,3) array')
             return
@@ -182,9 +185,7 @@ class Trio:
         Rotate data given P in window
         """
         p = self.eigvecs()[:,0]
-        sv = geom.vunit(geom.vreject([0,0,1],p))
-        sh = np.cross(sv,p)
-        self.rayvecs = np.column_stack((sv,sh,p))
+        self.set_ray(p)
         self.rotate2ray()       
 
     def rotateto(self,vecs):
@@ -200,9 +201,8 @@ class Trio:
         # rotate data and ray to vecs
         xyz = np.dot(rot,self.data())
         self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
-        # self.rayvecs = np.dot(vecs.T, self.rayvecs)
         # reset label
-        self.set_labels()
+        # self.set_labels()
 
     # def rotz(self,degs):
     #     """Rotate about z axis."""
@@ -526,7 +526,7 @@ class Trio:
         ax.set_zlim(kwargs['lims'])
                 
         # plot data
-        xyz = self.chop().data()
+        xyz = self.copy().chop().data()
         x,y,z = xyz[0], xyz[1], xyz[2]
         ax.plot( x, y, z)
         
