@@ -385,7 +385,7 @@ class Trio:
         """
         chop = self.copy()
         chop.x, chop.y, chop.z = core.chop(self.x,self.y,self.z,window=self.window)
-        self.window.offset = 0
+        chop.window.offset = 0
         return chop
         
     def chopt(self):
@@ -559,9 +559,9 @@ class Trio:
                   pivot='middle', color='r', length=l, alpha=0.5)
                   
         # side panel ray
-        ax.quiver(lim,0,0,0,rayy,rayz,alpha=0.3,color='g',pivot='middle',length=l*math.sqrt(rayy**2+rayz**2))
-        ax.quiver(0,lim,0,rayx,0,rayz,alpha=0.3,color='g',pivot='middle',length=l*math.sqrt(rayx**2+rayz**2))
-        ax.quiver(0,0,-lim,rayx,rayy,0,alpha=0.3,color='g',pivot='middle',length=l*math.sqrt(rayx**2+rayy**2))
+        ax.quiver(lim,0,0,0,rayy,rayz,alpha=0.3,color='b',pivot='middle',length=l*math.sqrt(rayy**2+rayz**2))
+        ax.quiver(0,lim,0,rayx,0,rayz,alpha=0.3,color='b',pivot='middle',length=l*math.sqrt(rayx**2+rayz**2))
+        ax.quiver(0,0,-lim,rayx,rayy,0,alpha=0.3,color='b',pivot='middle',length=l*math.sqrt(rayx**2+rayy**2))
  
     
         # set labels
