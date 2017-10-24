@@ -367,7 +367,7 @@ class Trio:
         """Return principal component vector."""
         # rotate to I
         data = self.copy().chop()
-        # data.rotate2eye()
+        data.rotate2eye()
         _,eigvecs = core.eigcov(data.data())
         return(eigvecs)
         
@@ -523,7 +523,8 @@ class Trio:
         """Plot particle motion on *ax* matplotlib axis object.
         """
         
-        data = self.chop().copy()
+        data = self.copy().chop()
+        data.rotate2eye()
         x, y, z = data.x, data.y, data.z
         t = data.t()
         
@@ -539,11 +540,9 @@ class Trio:
         norm = plt.Normalize(t.min(),t.max())
         points = np.array([x,y,z]).T.reshape(-1, 1, 3)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
-
         lc = Line3DCollection(segments,cmap='plasma',norm=norm,alpha=0.7)
         lc.set_array(t)
         lc.set_linewidth(2)
-
         line = ax.add_collection(lc)
         # plt.colorbar(line)
                 
@@ -559,7 +558,7 @@ class Trio:
             
         # plot ray arrow
         rayx, rayy, rayz = self.rayvecs[0,2], self.rayvecs[1,2], self.rayvecs[2,2]
-        l = length=1.5*lim
+        l = 1.5*lim
         ax.quiver(0,0,0,rayx,rayy,rayz,
                   pivot='middle', color='r', length=l, alpha=0.5)
                   
