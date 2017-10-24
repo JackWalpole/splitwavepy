@@ -124,6 +124,55 @@ class Trio:
         self.x, self.y , self.z = core3d.unsplit(self.x,self.y,self.z,fast,samps)
         self.rotateto(origvecs)
         
+
+
+    def rotate2ray(self):
+        """
+        Rotate data with shear plane normal to 3 axis and project 1 from "up" direction.
+        """
+        self.rotateto(self.rayvecs)                
+    
+    def rotate2eye(self):
+        self.rotateto(np.eye(3))
+        
+    def rotate2eig(self):
+        self.rotateto(self.eigvecs())
+        
+    def p_rotate(self):
+        """
+        Rotate data given P in window
+        """
+        p = self.eigvecs()[:,0]
+        self.set_ray(p)
+        self.rotate2ray()       
+
+    def rotateto(self,vecs):
+        """
+        Rotate data so that trace1 lines up with *degrees*
+        """
+        if not np.allclose(np.eye(3),np.dot(vecs,vecs.T)):
+            raise Exception('vecs must be orthogonal 3x3 matrix')
+        # define the new cmpvecs
+        backoff = self.cmpvecs.T
+        self.cmpvecs = vecs
+        rot = np.dot(vecs,backoff)
+        # rotate data and ray to vecs
+        xyz = np.dot(rot,self.data())
+        self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
+        # reset label
+        # self.set_labels()
+
+    # def rotz(self,degs):
+    #     """Rotate about z axis."""
+    #     rads = math.radians(degs)
+    #     rot = np.array([[ np.cos(phi), np.sin(phi), 0],
+    #                     [-np.sin(phi), np.cos(phi), 0],
+    #                     [           0,           0, 1]])
+    #     rotateto(rot)
+
+        
+    # Windowing
+    
     def set_ray(self,*args):
         """
         Set the ray direction.
@@ -171,50 +220,6 @@ class Trio:
             
         # if reached here then raise exception
         raise ValueError('Unexpected arguments')
-
-    def rotate2ray(self):
-        """
-        Rotate data with shear plane normal to 3 axis and project 1 from "up" direction.
-        """
-        self.rotateto(self.rayvecs)                
-    
-    def rotate2eye(self):
-        self.rotateto(np.eye(3))
-        
-    def p_rotate(self):
-        """
-        Rotate data given P in window
-        """
-        p = self.eigvecs()[:,0]
-        self.set_ray(p)
-        self.rotate2ray()       
-
-    def rotateto(self,vecs):
-        """
-        Rotate data so that trace1 lines up with *degrees*
-        """
-        if not np.allclose(np.eye(3),np.dot(vecs,vecs.T)):
-            raise Exception('vecs must be orthogonal 3x3 matrix')
-        # define the new cmpvecs
-        backoff = self.cmpvecs.T
-        self.cmpvecs = vecs
-        rot = np.dot(vecs,backoff)
-        # rotate data and ray to vecs
-        xyz = np.dot(rot,self.data())
-        self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
-        # reset label
-        # self.set_labels()
-
-    # def rotz(self,degs):
-    #     """Rotate about z axis."""
-    #     rads = math.radians(degs)
-    #     rot = np.array([[ np.cos(phi), np.sin(phi), 0],
-    #                     [-np.sin(phi), np.cos(phi), 0],
-    #                     [           0,           0, 1]])
-    #     rotateto(rot)
-
-        
-    # Windowing
                 
     def set_window(self,*args,**kwargs):
         """
@@ -353,17 +358,17 @@ class Trio:
     def eigvals(self):
         """Return principal component vector."""
         # rotate to I
-        data = self.copy()
+        data = self.copy().chop()
         data.rotate2eye()
-        eigvals,_ = core.eigcov(data.chop().data())
+        eigvals,_ = core.eigcov(data.data())
         return(eigvals)  
         
     def eigvecs(self):
         """Return principal component vector."""
         # rotate to I
-        data = self.copy()
-        data.rotate2eye()
-        _,eigvecs = core.eigcov(data.chop().data())
+        data = self.copy().chop()
+        # data.rotate2eye()
+        _,eigvecs = core.eigcov(data.data())
         return(eigvecs)
         
 
@@ -540,7 +545,7 @@ class Trio:
         lc.set_linewidth(2)
 
         line = ax.add_collection(lc)
-        plt.colorbar(line)
+        # plt.colorbar(line)
                 
         # plot data
         # xyz = self.copy().chop().data()

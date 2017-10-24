@@ -346,7 +346,7 @@ class Pair:
         if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
         ax.plot( t, self.x, label=kwargs['cmplabels'][0])
         ax.plot( t, self.y, label=kwargs['cmplabels'][1])
-        ax.legend()
+        ax.legend(framealpha=0.5)
     
         # set limits
         lim = np.abs(self.data()).max() * 1.1
@@ -388,7 +388,7 @@ class Pair:
         lc.set_linewidth(2)
 
         line = ax.add_collection(lc)
-        plt.colorbar(line)
+        # plt.colorbar(line)
     
         # set limit
         lim = np.abs(self.data()).max() * 1.1

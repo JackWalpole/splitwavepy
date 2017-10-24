@@ -78,9 +78,9 @@ class EigenM:
                 lags = kwargs['lags']                
             elif isinstance(kwargs['lags'],tuple):                
                 if len(kwargs['lags']) == 1:
-                    lags = np.linspace( minlag, kwargs['lags'], nlags)
+                    lags = np.linspace( minlag, kwargs['lags'][0], nlags)
                 elif len(kwargs['lags']) == 2:
-                    lags = np.linspace( minlag, *kwargs['lags'])
+                    lags = np.linspace( minlag,*kwargs['lags'])
                 elif len(kwargs['lags']) == 3:
                     lags = np.linspace( *kwargs['lags'])
                 else:
