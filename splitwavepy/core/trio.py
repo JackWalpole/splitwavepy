@@ -153,14 +153,14 @@ class Trio:
         if not np.allclose(np.eye(3),np.dot(vecs,vecs.T)):
             raise Exception('vecs must be orthogonal 3x3 matrix')
         # define the new cmpvecs
-        backoff = self.cmpvecs.T
+        backoff = self.cmpvecs
         self.cmpvecs = vecs
-        rot = np.dot(vecs,backoff)
+        rot = np.dot(vecs.T,backoff)
         # rotate data and ray to vecs
         xyz = np.dot(rot,self.data())
         self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
         # reset label
-        # self.set_labels()
+        self.set_labels()
 
     # def rotz(self,degs):
     #     """Rotate about z axis."""
@@ -171,7 +171,7 @@ class Trio:
     #     rotateto(rot)
 
         
-    # Windowing
+    # Set things
     
     def set_ray(self,*args):
         """
@@ -188,8 +188,10 @@ class Trio:
         """
         
         if len(args) == 0:
-            self.rayvecs = self.eigvecs()
-            self.ray = self.rayvecs[:,2]
+            self.ray = self.eigvecs()[:,2]
+            sv = geom.vunit(geom.vreject([0,0,1],self.ray))
+            sh = np.cross(sv,self.ray)
+            self.rayvecs = np.column_stack((sv,sh,self.ray))
             return
         
         if len(args) == 1:
@@ -569,7 +571,7 @@ class Trio:
  
     
         # set labels
-        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
+        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = data.cmplabels
         ax.set_xlabel(kwargs['cmplabels'][0])
         ax.set_ylabel(kwargs['cmplabels'][1])
         ax.set_zlabel(kwargs['cmplabels'][2])
