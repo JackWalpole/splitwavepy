@@ -2,7 +2,7 @@
 ####### example-requirements.txt #######
 #
 ###### Requirements without Version Specifiers ######
-# numpy
+numpy
 matplotlib
 scipy
 nb2plots
