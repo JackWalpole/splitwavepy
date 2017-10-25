@@ -97,8 +97,9 @@ class Pair:
         self.cmpvecs = np.eye(2)  
         if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']
         
-        self.rayvec = [0,0,1] # normal to shear plane, along Z-axis
-        if ('rayvec' in kwargs): self.rayvec = kwargs['rayvec']
+        # self.rayvec = [0,0,1] # normal to shear plane, along Z-axis
+        # if ('rayvec' in kwargs): self.rayvec = kwargs['rayvec']
+        # Always just assume ray vector is normal to components
         
         # source and receiver location info
         if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']     
@@ -156,16 +157,10 @@ class Pair:
         # find appropriate rotation matrix
         ang = math.radians(degrees)
         # define the new cmpvecs
-        backoff = self.cmpvecs.T
-        self.cmpvecs = np.array([[ math.cos(ang), math.sin(ang)],
-                                 [-math.sin(ang), math.cos(ang)]])
-        # find the rotation matrix. 
-        # Linear algebra: if a and b are rotation matrices, 
-        # then: a.T = inv(a) and b.T = inv(b)
-        # then: dot(a.T,a) = dot(b.T,b) = I
-        # and (multiply by b): dot(dot(b,a.T),a) = b.
-        # i.e., dot(b,a.T) is the rotation matrix that converts a to b.
-        rot = np.dot(self.cmpvecs, backoff)
+        backoff = self.cmpvecs
+        self.cmpvecs = np.array([[ math.cos(ang),-math.sin(ang)],
+                                 [ math.sin(ang), math.cos(ang)]])
+        rot = np.dot(self.cmpvecs.T, backoff)
         # rotate data
         xy = np.dot(rot, self.data())
         self.x, self.y = xy[0], xy[1]
@@ -372,7 +367,7 @@ class Pair:
         """
         
         data = self.copy().chop()
-        data.rotate2eye()
+        data.rotateto(0)
         x, y = data.x, data.y
         t = data.t()
                 
@@ -397,7 +392,7 @@ class Pair:
         ax.set_ylim(kwargs['lims'])
     
         # set labels
-        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
+        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = data.cmplabels
         ax.set_xlabel(kwargs['cmplabels'][1])
         ax.set_ylabel(kwargs['cmplabels'][0])
         
