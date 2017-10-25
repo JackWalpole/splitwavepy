@@ -2,8 +2,8 @@
 ####### example-requirements.txt #######
 #
 ###### Requirements without Version Specifiers ######
-numpy
+# numpy
 matplotlib
 scipy
 nb2plots
-obspy==1.0.2
+obspy
