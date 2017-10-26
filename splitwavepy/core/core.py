@@ -27,7 +27,7 @@ def time2samps(t,delta,mode='near'):
     """
     convert a time to number of samples given the sampling interval.
     """
-    rat = t / delta        
+    rat = (t / delta)  
     if mode == 'near': return near(rat)
     if mode == 'even': return even(rat)
     if mode == 'odd' : return odd(rat)

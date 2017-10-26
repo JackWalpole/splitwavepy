@@ -260,7 +260,7 @@ class Trio:
             tcs = core.time2samps(time_centre,self.delta)
             offset = tcs - self._centresamp()
             # convert time to nsamples -- must be odd
-            width = core.time2samps(time_width,self.delta,'odd')       
+            width = core.time2samps(time_width,self.delta,'even') + 1
             self.window = Window(width,offset,**kwargs) 
             return
         else:
@@ -391,7 +391,7 @@ class Trio:
         Chop data to window
         """
         chop = self.copy()
-        chop.x, chop.y, chop.z = core.chop(self.x,self.y,self.z,window=self.window)
+        chop.x, chop.y, chop.z = core.chop(chop.x,chop.y,chop.z,window=chop.window)
         chop.window.offset = 0
         return chop
         
@@ -420,7 +420,7 @@ class Trio:
         """
         Window width.
         """
-        return self.window.width * self.delta
+        return (self.window.width-1) * self.delta
 
     # Plotting
  
@@ -525,7 +525,7 @@ class Trio:
         """Plot particle motion on *ax* matplotlib axis object.
         """
         
-        data = self.copy().chop()
+        data = self.chop()
         data.rotate2eye()
         x, y, z = data.x, data.y, data.z
         t = data.t()

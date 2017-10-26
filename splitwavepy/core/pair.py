@@ -205,8 +205,8 @@ class Pair:
             time_width = end - start
             tcs = core.time2samps(time_centre,self.delta)
             offset = tcs - self._centresamp()
-            # convert time to nsamples -- must be odd
-            width = core.time2samps(time_width,self.delta,'odd')       
+            # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
+            width = core.time2samps(time_width,self.delta,'even') + 1     
             self.window = Window(width,offset,**kwargs) 
             return
         else:
@@ -278,8 +278,8 @@ class Pair:
         Chop data to window
         """
         chop = self.copy()
-        chop.x, chop.y = core.chop(self.x,self.y,window=self.window)
-        self.window.offset = 0
+        chop.x, chop.y = core.chop(chop.x,chop.y,window=chop.window)
+        chop.window.offset = 0
         return chop
         
     def chopt(self):
@@ -307,7 +307,7 @@ class Pair:
         """
         Window width.
         """
-        return self.window.width * self.delta
+        return (self.window.width-1) * self.delta
         
     # Plotting
                 
@@ -366,7 +366,7 @@ class Pair:
         """Plot particle motion on *ax* matplotlib axis object.
         """
         
-        data = self.copy().chop()
+        data = self.chop()
         data.rotateto(0)
         x, y = data.x, data.y
         t = data.t()

@@ -100,20 +100,20 @@ To use this method on your data.
 .. nbplot::
 	:include-source:
 	
-	measure = sw.EigenM(data,ndegs=90,lags=(4,))
+	measure = sw.EigenM(data)
 	measure.plot()
 
-Changing the surface display
-``````````````````````````````
-
-It is quite common to plot the :math:`\lambda_2` surface.  To do this you use the keyword ``vals = measure.lam2``, in fact any combination of :math:`\lambda_1` and :math:`\lambda_2` can be plotted in this way, for example you might have noticed that by default the code plots :math:`(\lambda_1-\lambda_2)/\lambda_2`.  Additionally, the title can be changed ``title = r'$\lambda_2$'``, a marker can be added at the max :math:`\lambda_1/\lambda_2` location ``marker=True``, and the 95\% confidence contour can be plotted ``conf95=True``.  
-
-.. This latter is the contour at the value of :math:`\lambda_2` that is 95% of the time, according to an F-test, which uses the noise level on the corrected residual trace (:math:\lambda_2 min) and a data determined estimate of the degrees of freedom (the code uses the coefficients of `Walsh et al., 2014 <http://onlinelibrary.wiley.com/doi/10.1002/jgrb.50386/full>`_).  To change the colour bar use ``cmap`` to a valid matplotlib colourmap.
-
-.. nbplot::
-	:include-source:
-	
-	measure.plot(vals=measure.lam2, title=r'$\lambda_2$', marker=True, conf95=True, cmap='viridis_r')
+.. Changing the surface display
+.. ``````````````````````````````
+..
+.. It is quite common to plot the :math:`\lambda_2` surface.  To do this you use the keyword ``vals = measure.lam2``, in fact any combination of :math:`\lambda_1` and :math:`\lambda_2` can be plotted in this way, for example you might have noticed that by default the code plots :math:`(\lambda_1-\lambda_2)/\lambda_2`.  Additionally, the title can be changed ``title = r'$\lambda_2$'``, a marker can be added at the max :math:`\lambda_1/\lambda_2` location ``marker=True``, and the 95\% confidence contour can be plotted ``conf95=True``.
+..
+.. .. This latter is the contour at the value of :math:`\lambda_2` that is 95% of the time, according to an F-test, which uses the noise level on the corrected residual trace (:math:\lambda_2 min) and a data determined estimate of the degrees of freedom (the code uses the coefficients of `Walsh et al., 2014 <http://onlinelibrary.wiley.com/doi/10.1002/jgrb.50386/full>`_).  To change the colour bar use ``cmap`` to a valid matplotlib colourmap.
+..
+.. .. nbplot::
+.. 	:include-source:
+..
+.. 	measure.plot(vals=measure.lam2, title=r'$\lambda_2$', marker=True, conf95=True, cmap='viridis_r')
 	
 .. This example demonstrates that the ratio of :math:`\lambda_1` to :math:`\lambda_2` is much more sharply focused around the solution than a single eigenvalue :math:`\lambda_2` or :math:`\lambda_1` surface.
 ..
@@ -175,7 +175,7 @@ Let's consider a simple 2-layer case.
 	
 	# srcside and rceiver splitting parameters
 	srcsplit = (  30, 1.3)
-	rcvsplit = ( -45, 1.7)
+	rcvsplit = ( -44, 1.7)
 	
 	# Create synthetic
 	a = sw.Pair( split=([ srcsplit, rcvsplit]), noise=0.03, delta=0.02)
@@ -193,7 +193,7 @@ If we know the layer 2 contribution we can back this off and resolve the splitti
 .. nbplot::
 	:include-source:
 	
-	m = sw.EigenM(a, lags=(3,), rcvcorr=(-45,1.7))
+	m = sw.EigenM(a, lags=(3,), rcvcorr=(-44,1.7))
 	m.plot()
 	
 If it's worked we should have measured splitting parameters of :math:`\phi=30` and :math:`\delta t =1.3`.
@@ -210,14 +210,14 @@ Alternatively, if we know the layer 1 contribution we can use
 	m = sw.EigenM(a, lags=(3,), srccorr=(30,1.3))	
 	m.plot()
 	
-If this has worked we should have measured splitting parameters of :math:`\phi=-45` and :math:`\delta t =1.7`.
+If this has worked we should have measured splitting parameters of :math:`\phi=-44` and :math:`\delta t =1.7`.
 
 If we apply both the source and receiver correction to the above synthetic example we should yield a *null* result (no splitting).
 
 .. nbplot::
 	:include-source:
 	
-	m = sw.EigenM(a, lags=(3,), rcvcorr=(-45,1.7), srccorr=(30,1.3))
+	m = sw.EigenM(a, lags=(3,), rcvcorr=(-44,1.7), srccorr=(30,1.3))
 	m.plot()
 
 We do as can be seen by the concentration of energy at delay time 0.

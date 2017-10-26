@@ -3,6 +3,7 @@ tips from http://peterdowns.com/posts/first-time-with-pypi.html
 checklist:
 • change version number in setup.py
 	- number should be updated using: major.minor.patch
+• change version number in docs/config.py
 • create a git tag:
 	- e.g. 
 	git tag 0.1 -m "Adds a tag so that we can put this on PyPI."
@@ -11,7 +12,7 @@ checklist:
 
 UPLOAD TO PYPI
 
--- (optional test first)
+-- (test first)
 	python setup.py sdist upload -r pypitest
 
 ---THE REAL DEAL 

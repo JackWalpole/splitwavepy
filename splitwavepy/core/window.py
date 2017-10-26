@@ -95,9 +95,9 @@ class Window:
     def retukey(self,tukey):
         self.tukey = tukey
         
-    def plot(self,samps):
-        plt.plot(self.asarray(samps))
-        plt.show()
+    # def plot(self,samps):
+    #     plt.plot(self.asarray(samps))
+    #     plt.show()
         
     # Comparison
     
@@ -106,8 +106,8 @@ class Window:
         if set(self.__dict__) != set(other.__dict__): return False
         return True
         
-    def save(self,filename):
-        """
-        Save just the data for future referral
-        """
-        io.save(self,filename)
+    # def save(self,filename):
+    #     """
+    #     Save just the data for future referral
+    #     """
+    #     io.save(self,filename)
