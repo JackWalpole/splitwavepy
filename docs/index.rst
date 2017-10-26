@@ -16,7 +16,7 @@ https://github.com/JackWalpole/splitwavepy
 .. toctree::
    get_started
    tutorial
-   real_data
+   .. real_data
    threeD_data
 
 
