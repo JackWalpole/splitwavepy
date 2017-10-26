@@ -143,11 +143,14 @@ class Eig3dM:
                 
         # get some measurement attributes
         # maximise lam1/(lam2*lam3)
-        maxloc = core.max_idx( self.lam1 / (self.lam2*self.lam3))
+        # Using signal to noise ratio as defined by:
+        # Jackson, Mason, and Greenhalgh, Geophysics (1991)
+        self.snrsurf = ( self.lam1 - (self.lam2+self.lam3)/2 ) / \
+                   ( self.lam3 + self.lam2 + (self.lam2+self.lam3)/2 )                               
+        maxloc = core.max_idx(self.snrsurf)
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
-        # estimate signal to noise level (lam1-lam2)/lam2
-        self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
+        self.snr = self.snrsurf[maxloc]
         # get errors
         self.dfast, self.dlag = self.f_errors()
         
@@ -243,13 +246,13 @@ class Eig3dM:
     def srcpoldata(self):
         srcpoldata = self.data.copy()
         srcpoldata.rotateto(self.srcpol())
-        srcpoldata.set_labels(['srcpol','residual1','residual2'])
+        srcpoldata.set_labels(['srcpol','residual','ray'])
         return srcpoldata
         
     def srcpoldata_corr(self):
         srcpoldata_corr = self.data_corr()        
         srcpoldata_corr.rotateto(self.srcpol())
-        srcpoldata_corr.set_labels(['srcpol','residual1','residual2'])
+        srcpoldata_corr.set_labels(['srcpol','residual','ray'])
         return srcpoldata_corr
         
     def fastdata(self,flipslow=False):
@@ -397,8 +400,8 @@ class Eig3dM:
 
         # error surface
         if 'vals' not in kwargs:
-            kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
-            kwargs['title'] = r'$\lambda_1 / (\lambda_2 \cdot \lambda_3)$'
+            kwargs['vals'] = self.snrsurf
+            kwargs['title'] = r'$[\lambda_1 - (\lambda_2 + \lambda_3)/2] / [\lambda_3 + \lambda_2 + (\lambda_2 + \lambda_3)/2]$'
 
         # add marker and info box by default
         if 'marker' not in kwargs: kwargs['marker'] = True

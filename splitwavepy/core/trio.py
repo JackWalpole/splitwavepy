@@ -161,6 +161,7 @@ class Trio:
         self.x, self.y, self.z = xyz[0], xyz[1], xyz[2]
         # reset label
         self.set_labels()
+        
 
     # def rotz(self,degs):
     #     """Rotate about z axis."""
@@ -339,14 +340,23 @@ class Trio:
         return np.vstack(( self.x, self.y, self.z))
         
     def pol(self):
-        """Return principal component orientation"""
-        # rotate to zero
-        rot = self.cmpvecs.T
-        data = self.copy()
-        xy = np.dot(rot,data.chop().data())
-        _,eigvecs = core.eigcov(xy)
-        pol = eigvecs
-        return pol
+        """Return polarisation vectors constrained normal to ray"""
+        # rotate to ray
+        data = self.chop()
+        data.rotate2ray()
+        # project to plane normal to ray
+        proj = np.array([[1,0,0],
+                         [0,1,0],
+                         [0,0,0]])
+        xyz = np.dot(proj,data.data())
+        data.x, data.y, data.z = xyz[0], xyz[1], xyz[2]
+        # rotate to I
+        data.rotate2eye()
+        # find eigvecs
+        eigvecs = data.eigvecs()
+        # return
+        return eigvecs
+
 
     # def eigdata(self):
     #     """Return to maximum, intermediate, and minimum directions."""

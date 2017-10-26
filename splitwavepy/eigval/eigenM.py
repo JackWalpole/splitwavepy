@@ -139,12 +139,13 @@ class EigenM:
         self.lags = self.samplags * self.delta
                 
         # get some measurement attributes
-        # maximise lam1/lam2
-        maxloc = core.max_idx(self.lam1/self.lam2)
+        # Using signal to noise ratio in 2-D inspired by 3-D treatment of:
+        # Jackson, Mason, and Greenhalgh, Geophysics (1991)
+        self.snrsurf = (self.lam1-self.lam2) / (2*self.lam2)
+        maxloc = core.max_idx(self.snrsurf)
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
-        # estimate signal to noise level (lam1-lam2)/lam2
-        self.snr = (self.lam1[maxloc]-self.lam2[maxloc])/(self.lam2[maxloc])
+        self.snr = self.snrsurf[maxloc]
         # get errors
         self.dfast, self.dlag = self.f_errors()
         
@@ -394,8 +395,10 @@ class EigenM:
 
         # error surface
         if 'vals' not in kwargs:
-            kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
-            kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
+            # kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
+            # kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
+            kwargs['vals'] = self.snrsurf
+            kwargs['title'] = r'$(\lambda_1 - \lambda_2) / 2\lambda_2$'
         
         # add marker and info box by default
         if 'marker' not in kwargs: kwargs['marker'] = True
