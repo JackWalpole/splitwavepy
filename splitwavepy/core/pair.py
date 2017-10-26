@@ -80,12 +80,9 @@ class Pair:
             raise Exception('Unexpected number of arguments')
                     
         # some sanity checks
-        if self.x.ndim != 1:
-            raise Exception('data must be one dimensional')
-        if self.x.size%2 == 0:
-            raise Exception('data must have odd number of samples')
-        if (self.x.size != self.y.size):
-            raise Exception('x and y must be the same length')
+        if self.x.ndim != 1: raise Exception('data must be one dimensional')
+        if self.x.size%2 == 0: raise Exception('data must have odd number of samples')
+        if (self.x.size != self.y.size): raise Exception('x and y must be the same length')
                    
         # Pair must have a window
         self.set_window(**kwargs)
