@@ -6,4 +6,4 @@ numpy
 matplotlib
 scipy
 nb2plots
-# obspy
+obspy

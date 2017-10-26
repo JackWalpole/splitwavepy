@@ -223,8 +223,8 @@ If we apply both the source and receiver correction to the above synthetic examp
 We do as can be seen by the concentration of energy at delay time 0.
 
 
-Measurement stacking
----------------------
+.. Measurement stacking
+.. ---------------------
 
 
 
