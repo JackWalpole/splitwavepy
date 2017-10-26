@@ -1,0 +1,2 @@
+0.2.3 Getting towards a stable version, now includes decent support for 3-component data.
+
