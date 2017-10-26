@@ -65,7 +65,7 @@ When measuring splitting we need to have a specific shear wave arrival to target
 Measuring splitting
 ````````````````````
 
-Now we have prepared data we are ready to measure splitting using **SplitWavePy**.
+Now we have prepared data we are ready to measure splitting.
 
 First read the shear plane components (horizontals in this case) into a *Pair* object.
 
@@ -80,6 +80,10 @@ First read the shear plane components (horizontals in this case) into a *Pair* o
 	realdata = sw.Pair(north, east, delta=sample_interval)
 	realdata.plot()
 	
+.. note::
+
+	Order is important.  SplitWavePy expects the North component first.
+	
 By chance the window looks not bad.  If you want to change it see :ref:`window`.  For now let's press on with measuring the splitting.
 
 .. nbplot::
@@ -88,7 +92,7 @@ By chance the window looks not bad.  If you want to change it see :ref:`window`.
 	measure = sw.EigenM(realdata)
 	measure.plot()
 
-It worked, kind of.  The maximum delay time in the grid search is a bit high.  We can change this as explained in :ref:`setgrid`.
+It worked, kind of.  The maximum delay time in the grid search is a bit high.  We can change this using the lags keyword ``lags=(2,)`` as explained in :ref:`setgrid`.
 
 .. nbplot::
 	:include-source:
@@ -96,5 +100,4 @@ It worked, kind of.  The maximum delay time in the grid search is a bit high.  W
 	measure = sw.EigenM(realdata, lags=(2,))
 	measure.plot(marker=True,conf95=True)
 
-That looks better.  Notice I've added a marker at the max :math:`\lambda_1/\lambda_2` location using ``marker=True`` and a contour at the 95% confidence level using ``conf95=True``.
 	

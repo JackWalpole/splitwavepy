@@ -264,8 +264,7 @@ class Pair:
     def snrRH(self):
         data = self.copy()
         data.rotateto(data.pol())
-        data.chop()
-        return core.snrRH(data.data())
+        return core.snrRH(data.chop().data())
 
     def cmpangs(self):
         cmp1 = self.cmpvecs[:,0]
