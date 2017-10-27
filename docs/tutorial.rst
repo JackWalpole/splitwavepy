@@ -73,8 +73,9 @@ Set the window using the ``set_window(start,end)`` method.
 
 .. note::
     By default the window will be centred on the middle of the trace with width 1/3 of the trace length, which is likely to be inappropriate, so make sure to set your window sensibly.
-
-.. Interactive plotting window picking is supported by ``plot(interactive=True)``.  Left click to pick the window and right click to set the window and close the plot.
+	 
+.. tip::
+	Interactive window picking is supported by ``plot(pick=True)``.  Left click to pick the window and right click to save and close.
 
 .. .. nbplot::
 	:include-source:

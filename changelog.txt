@@ -1,2 +1,2 @@
 0.2.3 Getting towards a stable version, now includes decent support for 3-component data.
-
+0.2.4 Added interactive window picker
