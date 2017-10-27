@@ -40,9 +40,9 @@ class Pair:
 
     Methods:
         # display
-            - p()
-            - p_pm() # plot particle motion
-            - p_tr() # plot waveform trace
+            - plot() # plot traces and partice motion
+            - ppm() # plot particle motion
+            - ptr() # plot waveform trace
         # splitting
             - split(fast,lag)
             - unsplit(fast,lag)
@@ -51,8 +51,6 @@ class Pair:
             - data()        # both x and y in one array
             - chop()        # windowed data
             - rotateto()
-            - pca()         # principal component analysis
-            - suggest_labels()
         # windowing
             - set_window(start,end,Tukey=None)
             
@@ -196,15 +194,8 @@ class Pair:
             return
         # if start/end given
         if len(args) == 2:
-            start, end = args 
-            if start > end: raise ValueError('start is larger than end')
-            time_centre = (start + end)/2
-            time_width = end - start
-            tcs = core.time2samps(time_centre,self.delta)
-            offset = tcs - self._centresamp()
-            # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
-            width = core.time2samps(time_width,self.delta,'even') + 1     
-            self.window = Window(width,offset,**kwargs) 
+            start, end = args  
+            self.window = self._construct_window(start,end,**kwargs) 
             return
         else:
             raise Exception ('unexpected number of arguments')
@@ -304,6 +295,16 @@ class Pair:
         Window width.
         """
         return (self.window.width-1) * self.delta
+
+    def _construct_window(self,start,end,**kwargs): 
+        if start > end: raise ValueError('start is larger than end')
+        time_centre = (start + end)/2
+        time_width = end - start
+        tcs = core.time2samps(time_centre,self.delta)
+        offset = tcs - self._centresamp()
+        # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
+        width = core.time2samps(time_width,self.delta,'even') + 1     
+        return Window(width,offset,**kwargs) 
         
     # Plotting
                 
@@ -322,10 +323,27 @@ class Pair:
         # particle  motion
         ax1 = plt.subplot(gs[1])
         self._ppm( ax1, **kwargs)   
+        
+        # optional pick window
+        if 'pick' in kwargs and kwargs['pick'] == True:
+            windowpicker = WindowPicker(self,fig,ax0)
+            windowpicker.connect()
                                  
         # show
         plt.tight_layout()
-        plt.show()      
+        plt.show()
+        
+    def ppm(self,**kwargs):
+        """Plot particle motion"""
+        fig, ax = plt.subplots()
+        self._ppm(ax, **kwargs)
+        plt.show()
+        
+    def ptr(self,**kwargs):
+        """Plot trace data"""
+        fig, ax = plt.subplots()
+        self._ptr(ax, **kwargs)
+        plt.show()
 
     def _ptr( self, ax, **kwargs):
         """Plot trace data on *ax* matplotlib axis object.
@@ -350,12 +368,9 @@ class Pair:
         ax.set_xlabel('Time (' + kwargs['units'] +')')
 
         # plot window markers
-        # if 'window' not in kwargs and kwargs['window'] != False:
         if self.window.width < self._nsamps():
             w1 = ax.axvline(self.wbeg(),linewidth=1,color='k')
-            w2 = ax.axvline(self.wend(),linewidth=1,color='k')
-            w1.aname = 'w1'
-            w2.aname = 'w2'       
+            w2 = ax.axvline(self.wend(),linewidth=1,color='k')    
         return
 
     def _ppm(self,ax,**kwargs):
@@ -396,38 +411,7 @@ class Pair:
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
         return
-        
-        
-    # Interactive
-
-    def pick_window(self,**kwargs):
-        """
-        Plot trace data and particle motion
-        """
-
-        fig = plt.figure(figsize=(12, 3))     
-        gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
-        
-        # trace
-        ax0 = plt.subplot(gs[0])
-        self._ptr( ax0, **kwargs)
-        
-        # particle  motion
-        ax1 = plt.subplot(gs[1])
-        self._ppm( ax1, **kwargs)
-        
-        windowpicker = WindowPicker(fig,ax0,self)
-        windowpicker.connect()   
-                                 
-        # show
-        plt.tight_layout()
-        plt.show() 
-        
-
-        # windowpicker.disconnec
-        # fig.close()
-        
-
+            
       
     # I/O stuff  
 
@@ -535,46 +519,47 @@ class WindowPicker:
     Pick a Window
     """
 
-    def __init__(self,fig,ax,pair):
+    def __init__(self,pair,fig,ax):
            
         self.canvas = fig.canvas
         self.ax = ax
+        self.pair = pair
         # window limit lines
-        self.start = pair.wbeg()
-        self.end = pair.wend()
-        self.wbegline = self.ax.axvline(self.start,linewidth=1,color='k',visible=False)
-        self.wendline = self.ax.axvline(self.end,linewidth=1,color='k',visible=False)
-        self.cursorline = self.ax.axvline(self.start,linewidth=1,color='0.5',visible=False)
-        _,self.origydat = self.wbegline.get_data()
+        self.x1 = pair.wbeg()
+        self.x2 = pair.wend()
+        self.wbegline = self.ax.axvline(self.x1,linewidth=1,color='r',visible=True)
+        self.wendline = self.ax.axvline(self.x2,linewidth=1,color='r',visible=True)
+        self.cursorline = self.ax.axvline(pair._centretime(),linewidth=1,color='0.5',visible=False)
+        _,self.ydat = self.wbegline.get_data()
             
 
-    def connect(self):
-    
-        # mouse interaction
+    def connect(self):  
         self.cidclick = self.canvas.mpl_connect('button_press_event', self.click)
         self.cidmotion = self.canvas.mpl_connect('motion_notify_event', self.motion)
-        self.cidrelease = self.canvas.mpl_connect('button_release_event', self.release)
+        # self.cidrelease = self.canvas.mpl_connect('button_release_event', self.release)
         self.cidenter = self.canvas.mpl_connect('axes_enter_event', self.enter)
         self.cidleave = self.canvas.mpl_connect('axes_leave_event', self.leave)
        
     def click(self,event):
         if event.inaxes is not self.ax: return
         x = event.xdata
-        self.wbegline.set_data([x,x],self.origydat)
-        self.wbegline.set_visible(True)
-        self.canvas.draw()       
+        d1 = math.fabs(self.x1 - x)
+        d2 = math.fabs(self.x2 - x)
+        if event.button == 1:
+            if d1 < d2:
+                self.x1 = x
+                self.wbegline.set_data([x,x],self.ydat)
+            else:
+                self.x2 = x
+                self.wendline.set_data([x,x], self.ydat)
+            self.canvas.draw() 
+        if event.button == 3:
+            self.disconnect()
 
-    def release(self,event):
-        if event.inaxes is not self.ax: return
-        x = event.xdata
-        self.wendline.set_data([x,x],self.origydat)
-        self.wendline.set_visible(True)
-        self.canvas.draw()
-        
     def enter(self,event):
         if event.inaxes is not self.ax: return
         x = event.xdata
-        self.cursorline.set_data([x,x],self.origydat)
+        self.cursorline.set_data([x,x],self.ydat)
         self.cursorline.set_visible(True)
         self.canvas.draw()
 
@@ -586,5 +571,15 @@ class WindowPicker:
     def motion(self,event):
         if event.inaxes is not self.ax: return
         x = event.xdata
-        self.cursorline.set_data([x,x],self.origydat)
+        self.cursorline.set_data([x,x],self.ydat)
         self.canvas.draw()
+        
+    def disconnect(self):
+        'disconnect all the stored connection ids'
+        self.canvas.mpl_disconnect(self.cidclick)
+        self.canvas.mpl_disconnect(self.cidmotion)
+        self.canvas.mpl_disconnect(self.cidenter)
+        self.canvas.mpl_disconnect(self.cidleave)
+        plt.close()
+        self.pair.set_window(self.x1, self.x2)
+      
