@@ -23,6 +23,16 @@ def eigvalcov(data):
     lambda1 first, lambda2 second
     """
     return np.sort(np.linalg.eigvalsh(np.cov(data)))
+ 
+energy = lambda x: np.sum(np.square(x))
+  
+def transenergy(x,y):
+    """
+    return energy
+    lambda1 first, lambda2 second
+    """
+    return energy(x), energy(y)
+
     
     
 def grideigval(x, y, degs, slags, window, **kwargs):
@@ -76,6 +86,62 @@ def grideigval(x, y, degs, slags, window, **kwargs):
             ux, uy = chop(ux,uy,window=window)
             # measure eigenvalues of covariance matrix
             lam2[jj,ii], lam1[jj,ii] = eigvalcov(np.vstack((ux,uy)))
+            
+    return degs,lags,lam1,lam2
+    
+def gridtrans(x, y, degs, slags, window, **kwargs):
+    """
+    Grid search for splitting parameters applied to data.
+    
+    x is srcpol
+    y is transverse
+    lags = 1-D array of sample shifts to search over, if None an attempt at finding sensible values is made
+    degs = 1-D array of rotations to search over, if None an attempt at finding sensible values is made
+    window = Window object (if None will guess an appropriate window)
+    rcvcorr = receiver correction parameters in tuple (fast,lag) 
+    srccorr = source correction parameters in tuple (fast,lag) 
+    """
+                                 
+    # grid of degs and lags to search over
+    degs, lags = np.meshgrid(degs,slags)
+    shape = degs.shape
+    lam1 = np.zeros(shape)
+    lam2 = np.zeros(shape)
+    
+    # avoid using "dots" in loops for performance
+    rotate = core.rotate
+    lag = core.lag
+    chop = core.chop
+    
+    # pre-apply receiver correction
+    if 'rcvcorr' in kwargs:
+        x,y = core.unsplit(x,y,*kwargs['rcvcorr'])
+    
+    # make function to do source correction (used in loop)
+    if 'srccorr' in kwargs:
+        srcphi, srclag = kwargs['srccorr']
+        def srccorr(x,y,ang):
+            # unwind rotation
+            x,y = rotate(x,y,srcphi-ang)
+            # remove splitting
+            x,y = lag(x,y,-srclag)
+            return x,y
+    else:
+        def srccorr(x,y,ang):
+            # no source correction so do nothing
+            return x,y
+    
+    for ii in np.arange(shape[1]):
+        tx, ty = rotate(x,y,degs[0,ii])
+        for jj in np.arange(shape[0]):
+            # remove splitting so use inverse operator (negative lag)
+            ux, uy = lag(tx,ty,-lags[jj,ii])
+            # if requested -- post-apply source correction
+            ux, uy = srccorr(ux,uy,degs[0,ii])
+            # chop to analysis window
+            ux, uy = chop(ux,uy,window=window)
+            # measure energy on components
+            lam1[jj,ii], lam2[jj,ii] = transenergy(ux,uy)
             
     return degs,lags,lam1,lam2
 
