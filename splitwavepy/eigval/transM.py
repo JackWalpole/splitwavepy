@@ -22,7 +22,17 @@ import os.path
 class TransM:
     
     """
-    Silver and Chan (1991) eigenvalue method measurement.
+    Silver and Chan (1991) transverse minimisation method.
+    
+    requires polarisation.
+    
+    With data:
+    
+    TransM(data, pol)
+    
+    For synthetic:
+    
+    TransM(pol, **kwargs)
     
     args:
     None = create synthetic
@@ -56,21 +66,19 @@ class TransM:
         """
         Populates an EigenM instance.
         """
-        
+
         # process input
-        if len(args) == 2 and \
-           isinstance(args[0],Pair) and \
-           isinstance(args[1],float):
-              self.data = args[0]
-              self.pol = args[1]
+        if 'pol' not in kwargs:
+            raise Exception('Polarisation must be specified, e.g., pol=30.')
+        
+        if len(args) == 1 and isinstance(args[0],Pair):
+            self.data = args[0]
         else:
-              self.data = Pair(args[0],pol=args[1],**kwargs)
-              self.pol = args[1]
+            self.data = Pair(*args,**kwargs)
         
         # convert times to nsamples
         self.delta = self.data.delta
         self.units = self.data.units
-        
                 
         # LAGS               
         minlag = 0
@@ -114,21 +122,23 @@ class TransM:
         # receiver correction 
         self.rcvcorr = None           
         if ('rcvcorr' in kwargs):
+            # parse input
+            deg, lag = kwargs['rcvcorr']
             if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
             if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
             # convert time shift to nsamples -- must be even
-            deg, lag = kwargs['rcvcorr']
-            samps = core.time2samps( lag,self.delta, 'even')
+            samps = core.time2samps( lag, self.delta, 'even')
             kwargs['rcvcorr'] = ( deg, samps)
             self.rcvcorr = ( deg, samps * self.delta)
         
         # source correction
         self.srccorr = None                  
         if ('srccorr' in kwargs):
+            # parse input
+            deg, lag = kwargs['srccorr']
             if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
             if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
             # convert time shift to nsamples -- must be even
-            deg, lag = kwargs['srccorr']
             samps = core.time2samps( lag, self.delta, 'even')
             kwargs['srccorr'] = ( deg, samps)
             self.srccorr = ( deg, samps * self.delta)

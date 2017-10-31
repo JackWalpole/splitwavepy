@@ -23,18 +23,7 @@ def eigvalcov(data):
     lambda1 first, lambda2 second
     """
     return np.sort(np.linalg.eigvalsh(np.cov(data)))
- 
-energy = lambda x: np.sum(np.square(x))
-  
-def transenergy(x,y):
-    """
-    return energy
-    lambda1 first, lambda2 second
-    """
-    return energy(x), energy(y)
-
-    
-    
+     
 def grideigval(x, y, degs, slags, window, **kwargs):
     """
     Grid search for splitting parameters applied to data.
@@ -88,7 +77,16 @@ def grideigval(x, y, degs, slags, window, **kwargs):
             lam2[jj,ii], lam1[jj,ii] = eigvalcov(np.vstack((ux,uy)))
             
     return degs,lags,lam1,lam2
-    
+ 
+energy = lambda x: np.sum(x**2)
+  
+def transenergy(x,y):
+    """
+    return energy
+    lambda1 first, lambda2 second
+    """
+    return energy(x), energy(y) 
+  
 def gridtrans(x, y, degs, slags, window, **kwargs):
     """
     Grid search for splitting parameters applied to data.
@@ -101,6 +99,9 @@ def gridtrans(x, y, degs, slags, window, **kwargs):
     rcvcorr = receiver correction parameters in tuple (fast,lag) 
     srccorr = source correction parameters in tuple (fast,lag) 
     """
+    
+    # if 'pol' not in kwargs: raise Exception('needs pol keyword')
+    pol = kwargs['pol']
                                  
     # grid of degs and lags to search over
     degs, lags = np.meshgrid(degs,slags)
@@ -141,6 +142,7 @@ def gridtrans(x, y, degs, slags, window, **kwargs):
             # chop to analysis window
             ux, uy = chop(ux,uy,window=window)
             # measure energy on components
+            ux, uy = rotate(ux,uy,-degs[0,ii]+pol)
             lam1[jj,ii], lam2[jj,ii] = transenergy(ux,uy)
             
     return degs,lags,lam1,lam2
