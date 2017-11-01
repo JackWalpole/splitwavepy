@@ -22,7 +22,7 @@ import os.path
 class CrossM:
     
     """
-    Ando and Bowman (1987) rotation correlation method.
+    e.g. Ando and Bowman (1987) rotation correlation method.
     
     requires polarisation.
     
@@ -409,7 +409,7 @@ class CrossM:
             # kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
             # kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
             kwargs['vals'] = np.abs(self.xc)
-            kwargs['title'] = 'Cross Correlation'
+            kwargs['title'] = 'Correlation Coefficient'
         
         # add marker and info box by default
         # if 'marker' not in kwargs: kwargs['marker'] = True

@@ -68,8 +68,9 @@ def gridxc(x, y, degs, slags, window, **kwargs):
             ux, uy = srccorr(ux,uy,degs[0,ii])
             # chop to analysis window
             ux, uy = chop(ux,uy,window=window)
-            # measure energy on components
-            xc[jj,ii] = np.correlate(ux,uy)
+            # measure cross-correlation coefficient
+            norm = np.sqrt(np.sum(ux**2) * np.sum(uy**2))
+            xc[jj,ii] = np.correlate(ux,uy)/norm
             
     return degs,lags,xc
 
