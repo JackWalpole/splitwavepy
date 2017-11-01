@@ -157,8 +157,8 @@ class CrossM:
         self.fast = self.degs[maxloc]
         self.lag  = self.lags[maxloc]
         # self.snr = self.snrsurf[maxloc]
-        # # get errors
-        # self.dfast, self.dlag = self.f_errors()
+        # get errors
+        self.dfast, self.dlag = self.f_errors()
         
         # Name
         self.name = 'Untitled'
@@ -279,11 +279,11 @@ class CrossM:
     def ndf(self):
         """Number of degrees of freedom."""
         d = self.srcpoldata_corr().chop()
-        return eigval.ndf(d.y)
+        return rotcorr.ndf(d.y)
     
-    def lam2_95(self):
+    def xc_95(self):
         """Value of lam2 at 95% confidence contour."""
-        return eigval.ftest(self.lam2,self.ndf(),alpha=0.05)
+        return rotcorr.ftest(self.xc,self.ndf(),alpha=0.05)
         
     def f_errors(self):
         """
@@ -299,7 +299,7 @@ class CrossM:
         fast_step = self.degs[0,1]-self.degs[0,0]
 
         # Find nodes where we fall within the 95% confidence region
-        confbool = self.lam2 <= self.lam2_95()
+        confbool = self.xc <= self.xc_95()
 
         # tlag error
         lagbool = confbool.any(axis=1)
@@ -412,9 +412,9 @@ class CrossM:
             kwargs['title'] = 'Correlation Coefficient'
         
         # add marker and info box by default
-        # if 'marker' not in kwargs: kwargs['marker'] = True
-        # if 'info' not in kwargs: kwargs['info'] = True
-        # if 'conf95' not in kwargs: kwargs['conf95'] = True
+        if 'marker' not in kwargs: kwargs['marker'] = True
+        if 'info' not in kwargs: kwargs['info'] = True
+        if 'conf95' not in kwargs: kwargs['conf95'] = True
         self._psurf(ax4,**kwargs)
         
         # title
@@ -449,7 +449,7 @@ class CrossM:
         
         # confidence region
         if 'conf95' in kwargs and kwargs['conf95'] == True:
-            ax.contour(self.lags,self.degs,self.lam2,levels=[self.lam2_95()])
+            ax.contour(self.lags,self.degs,np.abs(self.xc),levels=[self.xc_95()])
             
         # marker
         if 'marker' in kwargs and kwargs['marker'] == True:

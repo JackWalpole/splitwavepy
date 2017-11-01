@@ -14,6 +14,7 @@ from ..core.window import Window
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal, stats
+import math
 
 
      
@@ -106,18 +107,27 @@ def ndf(y,window=None,detrend=False):
     
     return ndf
     
-def ftest(lam2,ndf,alpha=0.05):
+def ftest(xc,ndf,alpha=0.05):
     """
-    returns lambda2 value at 100(1-alpha)% confidence interval
+    returns (positive) xc value at 100(1-alpha)% confidence interval
     by default alpha = 0.05 = 95% confidence interval
-    following Silver and Chan (1991)
+    following Wuestefeld et al. (2008)
     """
-    lam2min = lam2.min()
+    
+    # ensure xc values are positive
+    xcmax = np.max(np.abs(xc))
+    
+    # Fisher Transform
+    z = math.atanh(xcmax)
+    
+    # Lookup F value
     k = 2 # two parameters, phi and dt.
-    # R = ((lam2 - lam2min)/k) /  (lam2min/(ndf-k))
     F = stats.f.ppf(1-alpha,k,ndf)
-    lam2alpha = lam2min * ( 1 + (k/(ndf-k)) * F)
-    return lam2alpha
+    
+    # 
+    z_crit = z - ((z * k ) / ((ndf-k) * F)) * math.sqrt(1/(ndf-3))
+    xc_alpha = math.tanh(z_crit) 
+    return xc_alpha
     
 
      
