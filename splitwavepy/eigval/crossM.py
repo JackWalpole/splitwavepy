@@ -283,7 +283,8 @@ class CrossM:
     
     def xc_95(self):
         """Value of lam2 at 95% confidence contour."""
-        return rotcorr.ftest(self.xc,self.ndf(),alpha=0.05)
+        # return rotcorr.ftest(self.xc,self.ndf(),alpha=0.05)
+        return rotcorr.conf95(self.xc, self.ndf())
         
     def f_errors(self):
         """
@@ -299,7 +300,7 @@ class CrossM:
         fast_step = self.degs[0,1]-self.degs[0,0]
 
         # Find nodes where we fall within the 95% confidence region
-        confbool = self.xc <= self.xc_95()
+        confbool = np.abs(self.xc) >= self.xc_95()
 
         # tlag error
         lagbool = confbool.any(axis=1)

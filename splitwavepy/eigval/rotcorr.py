@@ -125,9 +125,26 @@ def ftest(xc,ndf,alpha=0.05):
     F = stats.f.ppf(1-alpha,k,ndf)
     
     # 
-    z_crit = z - ((z * k ) / ((ndf-k) * F)) * math.sqrt(1/(ndf-3))
+    # z_crit = z - ((z * k ) / ((ndf-k) * F)) * math.sqrt(1/(ndf-3))
+    z_crit = z * ( 1 + (k/(ndf-k)) * F ) * math.sqrt( 1 / (ndf-3) ) 
     xc_alpha = math.tanh(z_crit) 
     return xc_alpha
     
-
+def conf95(xc,ndf):
+    """
+    returns (positive) xc value at 100(1-alpha)% confidence interval
+    by default alpha = 0.05 = 95% confidence interval
+    following Wuestefeld et al. (2008)
+    """
+    
+    # ensure xc values are positive
+    xcmax = np.max(np.abs(xc))
+    
+    # Fisher Transform
+    z = math.atanh(xcmax)
+    std = math.sqrt( 1 / (ndf-3) )
+    z95 = z - 1.96 * std
+    xc95 = math.tanh(z95) 
+    return xc95
+    
      
