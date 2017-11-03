@@ -25,7 +25,7 @@ I will use synthetic data to demonstrate the basic features of the code.
 	data = sw.Pair( split=( 30, 1.4), noise=0.03, pol=-15.8, delta=0.05)
 	data.plot()
 
-You specify the *fast* direction, *lag* time, *noise*, and source *pol* -arisation as shown above.  Order is not important.
+You can simulate splitting by specifying the fast direction and lag time using the ``split = (fast, lag)`` argument, similarly you can specify the *noise* level, and source *pol* -arisation as shown in the example above.  Order is not important.
 
 .. note::
     Don't forget to set the sample interval *delta* appropriately (defaults to 1), it determines how your *lag* time is interpreted. 

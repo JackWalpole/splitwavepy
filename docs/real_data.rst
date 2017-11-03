@@ -98,6 +98,6 @@ It worked, kind of.  The maximum delay time in the grid search is a bit high.  W
 	:include-source:
 	
 	measure = sw.EigenM(realdata, lags=(2,))
-	measure.plot(marker=True,conf95=True)
+	measure.plot()
 
-	
+Now see how to apply the :ref:`transmin`.
