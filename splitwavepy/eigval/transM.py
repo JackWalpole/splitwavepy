@@ -230,7 +230,7 @@ class TransM:
     
     def srcpol(self):
         # recover source polarisation
-        return self.data_corr().pol()
+        return self.pol
         
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""

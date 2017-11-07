@@ -18,7 +18,7 @@ class Pair:
     """
     The Pair: work with 2-component data.
         
-    Usage: Pair()     => create Pair of synthetic data
+    Usage: Pair(**kwargs)     => create Pair of synthetic data
            Pair(x,y) => creates Pair from two traces stored in numpy arrays x and y.
     
     Keyword Arguments:
@@ -57,8 +57,8 @@ class Pair:
         # io
             - copy()
             - save()
-        # in development
-            - plot(pickMode) # pickmode in development
+        # window picker
+            - plot(pick=True)
     """
     def __init__(self,*args,**kwargs):
         
@@ -66,8 +66,6 @@ class Pair:
         self.delta = 1.
         if ('delta' in kwargs): self.delta = kwargs['delta']
                        
-        # if pol specified set
-        if ('pol' in kwargs): self.pol = kwargs['pol']
                        
         # if no args make synthetic
         if len(args) == 0: 
@@ -94,6 +92,12 @@ class Pair:
            
         self.cmpvecs = np.eye(2)  
         if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']
+        
+        # if pol specified set
+        if ('pol' in kwargs): 
+            self.set_pol(kwargs['pol'])
+        else:
+            self.set_pol()
         
         # self.rayvec = [0,0,1] # normal to shear plane, along Z-axis
         # if ('rayvec' in kwargs): self.rayvec = kwargs['rayvec']
@@ -226,6 +230,15 @@ class Pair:
             return
         else:
             raise Exception('unexpected number of arguments')
+            
+    def set_pol(self,*args):
+        if len(args) == 0:
+            self.pol = self.get_pol()
+        elif len(args) == 1:
+            self.pol = float(args[0])
+        else:
+            raise Exception('Unexpected number of arguments')
+        return
     
     # Utility 
     
@@ -252,10 +265,10 @@ class Pair:
     def power(self):
         return self.x**2,self.y**2
         
-    def snrRH(self):
-        data = self.copy()
-        data.rotateto(data.pol())
-        return core.snrRH(data.chop().data())
+    # def snrRH(self):
+    #     data = self.copy()
+    #     data.rotateto(data.pol())
+    #     return core.snrRH(data.chop().data())
 
     def cmpangs(self):
         cmp1 = self.cmpvecs[:,0]
@@ -283,16 +296,8 @@ class Pair:
         """
         Calculate the splitting intensity as defined by Chevrot (2000).
         """
-        
-        if 'pol' in kwargs:
-            pol = kwargs['pol']
-        elif hasattr(self,'pol'):
-            pol = self.pol
-        else:
-            pol = self.get_pol()
-            
         copy = self.copy()
-        copy.rotateto(pol)
+        copy.rotateto(copy.pol)
         copy.x = np.gradient(copy.x)
         copy.chop()
         rdiff, trans = copy.x, copy.y
@@ -497,8 +502,6 @@ def _synth(**kwargs):
     # defaults
     pol = 0.
     delta = 1.
-    # fast = 0.
-    # lag = 0.
     split = []
     noise = 0.001
     nsamps = 1001

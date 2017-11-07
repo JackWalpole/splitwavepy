@@ -24,15 +24,8 @@ class CrossM:
     """
     e.g. Ando and Bowman (1987) rotation correlation method.
     
-    requires polarisation.
-    
-    With data:
-    
-    CrossM(data, pol)
-    
-    For synthetic:
-    
-    CrossM(pol, **kwargs)
+    Usage:
+    m = CrossM(pair)
     
     args:
     None = create synthetic
@@ -226,7 +219,7 @@ class CrossM:
     
     def srcpol(self):
         # recover source polarisation
-        return self.data_corr().pol()
+        return self.data_corr().get_pol()
         
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""

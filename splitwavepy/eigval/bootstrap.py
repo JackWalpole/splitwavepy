@@ -73,7 +73,7 @@ def bs_pair(pair,fast,lag,**kwargs):
     origang = bs.cmpangs()[0]
     # replace noise sequence
     bs.unsplit(fast,lag)
-    bs.rotateto(bs.pol())
+    bs.rotateto(bs.pol)
     bs.y = core.resample_noise(bs.y)
     bs.rotateto(origang)
     bs.split(fast,lag)

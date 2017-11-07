@@ -220,7 +220,7 @@ class Eig3dM:
     
     def srcpol(self):
         # recover source polarisation
-        return self.data_corr().pol()
+        return self.data_corr().get_pol()
         
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""

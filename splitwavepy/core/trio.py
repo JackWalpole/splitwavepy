@@ -41,6 +41,12 @@ class Trio:
         self.delta = 1.
         if ('delta' in kwargs): self.delta = kwargs['delta']
         
+        # if pol specified set
+        if ('pol' in kwargs): 
+            self.set_pol(kwargs['pol'])
+        else:
+            self.set_pol()
+        
         # geometry info 
         self.geom = 'geo'
         self.cmpvecs = np.eye(3)
@@ -339,7 +345,7 @@ class Trio:
     def data(self):
         return np.vstack(( self.x, self.y, self.z))
         
-    def pol(self):
+    def get_pol(self):
         """Return polarisation vectors constrained normal to ray"""
         # rotate to ray
         data = self.chop()
