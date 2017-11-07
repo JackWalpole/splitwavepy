@@ -68,8 +68,8 @@ class TransM:
         """
 
         # process input
-        if 'pol' not in kwargs:
-            raise Exception('Polarisation must be specified, e.g., pol=30.')
+        if 'pol' not in kwargs: raise Exception('Polarisation must be specified, e.g., pol=30.')
+        self.pol = kwargs['pol']
         
         if len(args) == 1 and isinstance(args[0],Pair):
             self.data = args[0]
