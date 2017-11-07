@@ -279,12 +279,20 @@ class Pair:
         t = core.chop(self.t(),window=self.window)
         return t
     
-    def splitintens(self):
+    def splitting_intensity(self,**kwargs):
         """
         Calculate the splitting intensity as defined by Chevrot (2000).
         """
+        
+        if 'pol' in kwargs:
+            pol = kwargs['pol']
+        elif hasattr(self,'pol'):
+            pol = self.pol
+        else:
+            pol = self.get_pol()
+            
         copy = self.copy()
-        copy.rotateto(copy.pol)
+        copy.rotateto(pol)
         copy.x = np.gradient(copy.x)
         copy.chop()
         rdiff, trans = copy.x, copy.y
