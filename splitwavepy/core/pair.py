@@ -66,6 +66,9 @@ class Pair:
         self.delta = 1.
         if ('delta' in kwargs): self.delta = kwargs['delta']
                        
+        # if pol specified set
+        if ('pol' in kwargs): self.pol = kwargs['pol']
+                       
         # if no args make synthetic
         if len(args) == 0: 
             self.x, self.y = _synth(**kwargs)               
@@ -232,7 +235,7 @@ class Pair:
     def data(self):
         return np.vstack((self.x,self.y))
 
-    def pol(self):
+    def get_pol(self):
         """Return principal component orientation"""
         # rotate to zero
         rot = self.cmpvecs.T
@@ -275,6 +278,20 @@ class Pair:
         """        
         t = core.chop(self.t(),window=self.window)
         return t
+    
+    def splitintens(self):
+        """
+        Calculate the splitting intensity as defined by Chevrot (2000).
+        """
+        copy = self.copy()
+        copy.rotateto(copy.pol)
+        copy.x = np.gradient(copy.x)
+        copy.chop()
+        rdiff, trans = copy.x, copy.y
+        s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
+        return s
+        
+    # Window
     
     def wbeg(self):
         """
@@ -371,6 +388,13 @@ class Pair:
         if self.window.width < self._nsamps():
             w1 = ax.axvline(self.wbeg(),linewidth=1,color='k')
             w2 = ax.axvline(self.wend(),linewidth=1,color='k')    
+        
+        # plot additional markers
+        if 'marker' in kwargs:
+            print('here')
+            if type(kwargs['marker']) is not list: kwargs['marker'] = [ kwargs['marker'] ]
+            [ ax.axvline(float(mark),linewidth=1,color='b') for mark in kwargs['marker'] ]
+            
         return
 
     def _ppm(self,ax,**kwargs):
