@@ -563,21 +563,22 @@ class WindowPicker:
         # self.cidrelease = self.canvas.mpl_connect('button_release_event', self.release)
         self.cidenter = self.canvas.mpl_connect('axes_enter_event', self.enter)
         self.cidleave = self.canvas.mpl_connect('axes_leave_event', self.leave)
+        self.cidkey = self.canvas.mpl_connect('key_press_event', self.keypress) 
        
     def click(self,event):
         if event.inaxes is not self.ax: return
         x = event.xdata
-        d1 = math.fabs(self.x1 - x)
-        d2 = math.fabs(self.x2 - x)
         if event.button == 1:
-            if d1 < d2:
-                self.x1 = x
-                self.wbegline.set_data([x,x],self.ydat)
-            else:
-                self.x2 = x
-                self.wendline.set_data([x,x], self.ydat)
+            self.x1 = x
+            self.wbegline.set_data([x,x],self.ydat)
             self.canvas.draw() 
         if event.button == 3:
+            self.x2 = x
+            self.wendline.set_data([x,x], self.ydat)
+            self.canvas.draw()
+    
+    def keypress(self,event):
+        if event.key == " ":
             self.disconnect()
 
     def enter(self,event):
@@ -605,5 +606,6 @@ class WindowPicker:
         self.canvas.mpl_disconnect(self.cidenter)
         self.canvas.mpl_disconnect(self.cidleave)
         plt.close()
-        self.pair.set_window(self.x1, self.x2)
+        wbeg, wend = sorted((self.x1, self.x2)) 
+        self.pair.set_window(wbeg, wend)
       
