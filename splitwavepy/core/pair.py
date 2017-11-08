@@ -5,6 +5,7 @@ from __future__ import print_function
 
 from . import core, geom, io
 from .window import Window
+from .meta import Traces
 
 import numpy as np
 import math
@@ -14,7 +15,7 @@ from matplotlib import gridspec
 from matplotlib.collections import LineCollection
 
 
-class Pair:
+class Pair(Traces):
     """
     The Pair: work with 2-component data.
         
@@ -62,14 +63,12 @@ class Pair:
     """
     def __init__(self,*args,**kwargs):
         
-        # important to do first
-        self.delta = 1.
-        if ('delta' in kwargs): self.delta = kwargs['delta']
-                       
-                       
+        # inherit from Traces
+        Traces.__init__(self,*args,**kwargs)
+        
         # if no args make synthetic
         if len(args) == 0: 
-            self.x, self.y = _synth(**kwargs)               
+            self.x, self.y = core.synth(**kwargs)               
         # otherwise read in data                
         elif len(args) == 2:
             if not (isinstance(args[0],np.ndarray) & isinstance(args[1],np.ndarray)):
@@ -168,44 +167,7 @@ class Pair:
         self.x, self.y = xy[0], xy[1]
         # reset label
         self.set_labels()
-        
-    # Windowing
-                
-    def set_window(self,*args,**kwargs):
-        """
-        Return a window object at user defined start and end times.
-        
-        args
-        - Window
-        - start,end
-        
-        kwargs
-        - tukey
-        
-        The window will be adjusted to ensure it occupies an odd number 
-        of samples.
-        """
-                
-        # if Window provided
-        if 'window' in kwargs:  
-            if isinstance(kwargs['window'],Window):
-                self.window = kwargs['window']
-                return
-            else:
-                raise TypeError('expecting a window')
-        
-        # if no arguments provided
-        if len(args) == 0:
-            width = core.odd(self._nsamps() / 3)
-            self.window = Window(width)
-            return
-        # if start/end given
-        if len(args) == 2:
-            start, end = args  
-            self.window = self._construct_window(start,end,**kwargs) 
-            return
-        else:
-            raise Exception ('unexpected number of arguments')
+
 
     def set_labels(self,*args):
         if len(args) == 0:
@@ -304,37 +266,7 @@ class Pair:
         s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
         return s
         
-    # Window
-    
-    def wbeg(self):
-        """
-        Window start time.
-        """
-        sbeg = self.window.start(self._nsamps())
-        return sbeg * self.delta
-    
-    def wend(self):
-        """
-        Window end time.
-        """
-        send = self.window.end(self._nsamps())
-        return send * self.delta
-        
-    def wwidth(self):
-        """
-        Window width.
-        """
-        return (self.window.width-1) * self.delta
 
-    def _construct_window(self,start,end,**kwargs): 
-        if start > end: raise ValueError('start is larger than end')
-        time_centre = (start + end)/2
-        time_width = end - start
-        tcs = core.time2samps(time_centre,self.delta)
-        offset = tcs - self._centresamp()
-        # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
-        width = core.time2samps(time_width,self.delta,'even') + 1     
-        return Window(width,offset,**kwargs) 
         
     # Plotting
                 

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-The eigenvalue method of Silver and Chan (1991)
-Uses Pair to do high level work
+The measurement class
 """
 
 from __future__ import absolute_import
@@ -11,8 +10,7 @@ from __future__ import print_function
 from ..core import core,io
 from ..core.pair import Pair
 from ..core.window import Window
-from ..core.meta import Measure
-from . import eigval
+from . import eigval, rotcorr, transmin, sintens
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,7 +18,7 @@ import matplotlib.gridspec as gridspec
 import os.path
 
 
-class EigenM(Measure):
+class Measure:
     
     """
     Silver and Chan (1991) eigenvalue method measurement.
@@ -64,17 +62,80 @@ class EigenM(Measure):
         else:
             self.data = Pair(*args,**kwargs)
         
-        # inherit from Measure
-        kwargs['delta'] = self.data.delta
-        Measure.__init__(self, *args, **kwargs)        
-
-        # convert sample lags to meaningful time lags
-        # self.lags = self.samplags * self.delta
-      
-        # MAKE MEASUREMENT
-        self.lam1, self.lam2 = eigval.grideigval(self)
+        # convert times to nsamples
+        self.delta = self.data.delta
+        self.units = self.data.units
+                
+        # LAGS               
+        minlag = 0
+        maxlag = self.data.wwidth() / 4
+        nlags  = 40
+        if 'lags' not in kwargs:
+            lags = np.linspace( minlag, maxlag, nlags)
+        else:
+            if isinstance(kwargs['lags'],np.ndarray):
+                lags = kwargs['lags']                
+            elif isinstance(kwargs['lags'],tuple):                
+                if len(kwargs['lags']) == 1:
+                    lags = np.linspace( minlag, kwargs['lags'][0], nlags)
+                elif len(kwargs['lags']) == 2:
+                    lags = np.linspace( minlag,*kwargs['lags'])
+                elif len(kwargs['lags']) == 3:
+                    lags = np.linspace( *kwargs['lags'])
+                else:
+                    raise Exception('Can\'t parse lags keyword')                   
+            else:
+                raise TypeError('lags keyword must be a tuple or numpy array')                
+        # convert lags to samples (must be even)
+        slags = np.unique( core.time2samps( lags, self.delta, mode='even')).astype(int)
         
+        # DEGS
+        mindeg = -90
+        maxdeg = 90
+        degs = 90        
+        if 'degs' not in kwargs:
+            degs = np.linspace( mindeg, maxdeg, degs, endpoint=False)
+        else:
+            if isinstance(kwargs['degs'],np.ndarray):
+                degs = kwargs['degs']
+            elif isinstance(kwargs['degs'],int):
+                degs = np.linspace( mindeg, maxdeg, kwargs['degs'], endpoint=False)
+            else:
+                raise TypeError('degs must be an integer or numpy array') 
+        sdegs=degs
+        kwargs.pop('degs', None)
+                
+        # receiver correction 
+        self.rcvcorr = None           
+        if ('rcvcorr' in kwargs):
+            if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
+            if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
+            # convert time shift to nsamples -- must be even
+            deg, lag = kwargs['rcvcorr']
+            samps = core.time2samps( lag,self.delta, 'even')
+            kwargs['rcvcorr'] = ( deg, samps)
+            self.rcvcorr = ( deg, samps * self.delta)
+        
+        # source correction
+        self.srccorr = None                  
+        if ('srccorr' in kwargs):
+            if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
+            if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
+            # convert time shift to nsamples -- must be even
+            deg, lag = kwargs['srccorr']
+            samps = core.time2samps( lag, self.delta, 'even')
+            kwargs['srccorr'] = ( deg, samps)
+            self.srccorr = ( deg, samps * self.delta)
+            
+        # ensure trace1 at zero angle
+        self.data.rotateto(0)        
 
+        # MAKE MEASUREMENT
+        window = self.data.window
+        self.degs, self.samplags, self.lam1, self.lam2 \
+        = eigval.grideigval(self.data.x, self.data.y, sdegs, slags, window, **kwargs)
+        # convert sample lags to meaningful time lags
+        self.lags = self.samplags * self.delta
                 
         # get some measurement attributes
         # Using signal to noise ratio in 2-D inspired by 3-D treatment of:
@@ -153,7 +214,7 @@ class EigenM(Measure):
     
     def srcpol(self):
         # recover source polarisation
-        return self.data_corr().get_pol()
+        return self.data_corr().pol()
         
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
@@ -419,63 +480,6 @@ class EigenM(Measure):
         ax1.set_title('lag direction')
 
         plt.show()
-        
-
-     
-    def _grideigval(self, **kwargs):
-        """
-        Grid search for splitting parameters applied to data.
-        rcvcorr = receiver correction parameters in tuple (fast,lag) 
-        srccorr = source correction parameters in tuple (fast,lag) 
-        """
-                                 
-        # grid of degs and lags to search over
-        degs, lags = np.meshgrid(self.degs,self.slags)
-        shape = degs.shape
-        lam1 = np.zeros(shape)
-        lam2 = np.zeros(shape)
-    
-        # avoid using "dots" in loops for performance
-        rotate = core.rotate
-        lag = core.lag
-        chop = core.chop
-        eigvalcov = core.eigvalcov
-        
-        # ensure trace1 at zero angle
-        self.data.rotateto(0)
-        x, y = self.data.x, self.data.y
-    
-        # pre-apply receiver correction
-        if 'rcvcorr' in kwargs:
-            x,y = core.unsplit(x,y,*kwargs['rcvcorr'])
-    
-        # make function to do source correction (used in loop)
-        if 'srccorr' in kwargs:
-            srcphi, srclag = kwargs['srccorr']
-            def srccorr(x,y,ang):
-                # unwind rotation
-                x,y = rotate(x,y,srcphi-ang)
-                # remove splitting
-                x,y = lag(x,y,-srclag)
-                return x,y
-        else:
-            def srccorr(x,y,ang):
-                # no source correction so do nothing
-                return x,y
-    
-        for ii in np.arange(shape[1]):
-            tx, ty = rotate(x,y,degs[0,ii])
-            for jj in np.arange(shape[0]):
-                # remove splitting so use inverse operator (negative lag)
-                ux, uy = lag(tx,ty,-lags[jj,ii])
-                # if requested -- post-apply source correction
-                ux, uy = srccorr(ux,uy,degs[0,ii])
-                # chop to analysis window
-                ux, uy = chop(ux,uy,window=self.window)
-                # measure eigenvalues of covariance matrix
-                lam2[jj,ii], lam1[jj,ii] = eigvalcov(np.vstack((ux,uy)))
-            
-        return lam1, lam2
 
     # Report
     

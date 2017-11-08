@@ -76,7 +76,7 @@ def grideigval(x, y, degs, slags, window, **kwargs):
             # measure eigenvalues of covariance matrix
             lam2[jj,ii], lam1[jj,ii] = eigvalcov(np.vstack((ux,uy)))
             
-    return degs,lags,lam1,lam2
+    return lam1,lam2
  
 energy = lambda x: np.sum(x**2)
   

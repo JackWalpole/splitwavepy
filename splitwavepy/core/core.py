@@ -118,6 +118,8 @@ def chop(*args,**kwargs):
         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey
     elif len(args)==3:
         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
+
+## Measurement 
    
 def eigcov(data):
     """
@@ -129,16 +131,62 @@ def eigcov(data):
     eigenVectors = eigenVectors[:,idx]
     return eigenValues, eigenVectors
     
+def eigvalcov(data):
+    """
+    return sorted eigenvalues of covariance matrix
+    lambda2 first, lambda1 second
+    """
+    return np.sort(np.linalg.eigvalsh(np.cov(data)))
+  
+def transenergy(x,y):
+    """
+    return energy
+    lambda1 first, lambda2 second
+    """
+    energy = lambda x: np.sum(x**2)
+    return energy(x), energy(y) 
+
+# Errors
+
+def ndf(y):
+    """
+    Estimates number of degrees of freedom using noise trace y.
+    Uses the improvement found by Walsh et al (2013).
+    """
+  
+    Y = np.fft.fft(y)
+    amp = np.absolute(Y)
     
-# def snr(data):
-#     """
-#     Returns signal to noise ratio assuming signal on trace1 and noise on trace2
-#     Calculates on each trace by sum of squares and then takes the ratio
-#     """samps
-#     signal = np.sum(data[0,:]**2)
-#     noise = np.sum(data[1,:]**2)
-#     return signal / noise
+    # estimate E2 and E4 following Walsh et al (2013) 
+    a = np.ones(Y.size)
+    a[0] = a[-1] = 0.5
     
+    # equation (25)
+    E2 = np.sum( a * amp**2)
+    # equation (26)
+    E4 = np.sum( (4 * a**2 / 3) * amp**4)
+    
+    # equation (31)
+    ndf = 2 * ( 2 * E2**2 / E4 - 1 )
+    
+    return ndf
+    
+def ftest(lam2,ndf,alpha=0.05):
+    """
+    returns lambda2 value at 100(1-alpha)% confidence interval
+    by default alpha = 0.05 = 95% confidence interval
+    following Silver and Chan (1991)
+    """
+    lam2min = lam2.min()
+    k = 2 # two parameters, phi and dt.
+    F = stats.f.ppf(1-alpha,k,ndf)
+    lam2alpha = lam2min * ( 1 + (k/(ndf-k)) * F)
+    return lam2alpha    
+
+
+
+# Signal to noise
+
 def snrRH(data):
     """
     Returns signal to noise ratio assuming signal on trace1 and noise on trace2
@@ -150,8 +198,57 @@ def snrRH(data):
     return signal / noise
 
 # Useful bits and pieces
+
+def synth(**kwargs):
+    """return ricker wavelet synthetic data"""
     
-def noise(size,amp,smooth):
+    # defaults
+    pol = 0.
+    delta = 1.
+    split = []
+    noise = 0.001
+    nsamps = 1001
+    width = 32.
+    
+    # override defaults
+    if ('pol' in kwargs): pol = kwargs['pol']   
+    if ('delta' in kwargs): delta = kwargs['delta']  
+    if ('split') in kwargs: split = kwargs['split']
+    if ('noise' in kwargs): noise = kwargs['noise']   
+    if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
+    if ('width' in kwargs): width = kwargs['width'] 
+    noisewidth = width/4  
+    if ('noisewidth' in kwargs): noisewidth = kwargs['noisewidth']
+
+    # initiate data with clean ricker wavelet
+    nsamps = int(nsamps)  
+    x = signal.ricker(nsamps, width)
+    y = np.zeros(nsamps)
+    
+    # rotate to polarisation 
+    # negative because we are doing the active rotation of data, whereas
+    # core.rotate does the passive transormation of the co-ordinate system
+    x,y = rotate(x,y,-pol)
+
+    if isinstance(split,tuple):
+        fast, lag = split
+        # add any splitting -- lag samples must be even
+        slag = time2samps(lag,delta,mode='even')
+        x,y = split(x,y,fast,slag)
+    elif isinstance(split,list):        
+        for parms in split:
+            fast, lag = parms
+            # add any splitting -- lag samples must be even
+            slag = time2samps(lag,delta,mode='even')
+            x,y = split(x,y,fast,slag)
+    
+    # add noise - do this last to avoid splitting the noise
+    x = x + makenoise(x.size,noise,int(noisewidth))    
+    y = y + makenoise(x.size,noise,int(noisewidth))
+
+    return x,y
+    
+def makenoise(size,amp,smooth):
     """Gaussian noise convolved with a (normalised) gaussian wavelet.
        samps = size,
        sigma  = amp,
