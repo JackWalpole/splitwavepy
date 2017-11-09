@@ -42,8 +42,8 @@ def samps2time(samps,delta):
 
 def lag(x,y,samps):
     """
-    Lag x samps/2 to the left and
-    lag y samps/2 to the right.
+    Lag x samps to the left and
+    lag y samps to the right.
     samps must be even.
     If samps is negative x shifted to the right and y to the left.
     This process truncates trace length by samps and preserves centrality.
@@ -202,53 +202,44 @@ def snrRH(data):
 def synth(**kwargs):
     """return ricker wavelet synthetic data"""
     
-    # defaults
-    pol = 0.
-    delta = 1.
-    split = []
-    noise = 0.001
-    nsamps = 1001
-    width = 32.
-    
-    # override defaults
-    if ('pol' in kwargs): pol = kwargs['pol']   
-    if ('delta' in kwargs): delta = kwargs['delta']  
-    if ('split') in kwargs: split = kwargs['split']
-    if ('noise' in kwargs): noise = kwargs['noise']   
-    if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
-    if ('width' in kwargs): width = kwargs['width'] 
-    noisewidth = width/4  
-    if ('noisewidth' in kwargs): noisewidth = kwargs['noisewidth']
+    # defaults    
+    if 'pol' not in kwargs: kwargs['pol'] = 0.
+    if 'delta' not in kwargs: kwargs['delta'] = 1.
+    if 'split' not in kwargs: kwargs['split'] = []
+    if 'noise' not in kwargs: kwargs['noise'] = 0.001
+    if 'nsamps' not in kwargs: kwargs['nsamps'] = 1001
+    if 'width' not in kwargs: kwargs['width'] = 32
+    if 'noisewidth' not in kwargs: kwargs['noisewidth'] = kwargs['width']/4
 
     # initiate data with clean ricker wavelet
-    nsamps = int(nsamps)  
-    x = signal.ricker(nsamps, width)
+    nsamps = int(kwargs['nsamps'])  
+    x = signal.ricker(nsamps, kwargs['width'])
     y = np.zeros(nsamps)
     
     # rotate to polarisation 
     # negative because we are doing the active rotation of data, whereas
     # core.rotate does the passive transormation of the co-ordinate system
-    x,y = rotate(x,y,-pol)
+    x,y = rotate(x, y, -kwargs['pol'])
 
-    if isinstance(split,tuple):
-        fast, lag = split
+    if isinstance(kwargs['split'], tuple):
+        fast, lag = kwargs['split']
         # add any splitting -- lag samples must be even
-        slag = time2samps(lag,delta,mode='even')
-        x,y = split(x,y,fast,slag)
-    elif isinstance(split,list):        
-        for parms in split:
+        slag = time2samps(lag, kwargs['delta'], mode='even')
+        x,y = split(x, y, fast, slag)
+    elif isinstance(kwargs['split'], list):        
+        for parms in kwargs['split']:
             fast, lag = parms
             # add any splitting -- lag samples must be even
-            slag = time2samps(lag,delta,mode='even')
-            x,y = split(x,y,fast,slag)
+            slag = time2samps(lag, kwargs['delta'], mode='even')
+            x,y = split(x, y, fast, slag)
     
     # add noise - do this last to avoid splitting the noise
-    x = x + makenoise(x.size,noise,int(noisewidth))    
-    y = y + makenoise(x.size,noise,int(noisewidth))
+    x = x + noise(x.size, kwargs['noise'], int(kwargs['noisewidth']))    
+    y = y + noise(x.size, kwargs['noise'], int(kwargs['noisewidth']))
 
     return x,y
     
-def makenoise(size,amp,smooth):
+def noise(size,amp,smooth):
     """Gaussian noise convolved with a (normalised) gaussian wavelet.
        samps = size,
        sigma  = amp,

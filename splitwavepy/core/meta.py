@@ -7,85 +7,84 @@ from __future__ import print_function
 from . import core
 from .window import Window
 
-class Traces:
-    
-    def __init__(self, *args, **kwargs):
-        
-        # set delta
-        self.delta = kwargs['delta']
-        
-        # set window
-        self.window(self, *args, **kwargs)
-        
+# class Traces:
+#
+#     def __init__(self, delta=None, *args, **kwargs):
+#
+#         # set delta
+#         if delta is None: raise ValueError('delta must be set')
+#         self.delta = delta
+#
+#         # set window
+#         if 'window' in kwargs:
+#             if isinstance(kwargs['window'], Window):
+#                 self.__window = kwargs['window']
+#                 return
+#             else:
+#                 raise TypeError('expecting a window')
+#         # if no arguments provided
+#         if len(args) == 0:
+#             width = core.odd(self._nsamps() / 3)
+#             self.__window = Window(width)
+#             return
+#         # if start/end given
+#         if len(args) == 2:
+#             start, end = args
+#             self.__window = self._construct_window(start, end, **kwargs)
+#             return
+#         else:
+#             raise Exception ('unexpected number of arguments')
+#
+#
+#     @property
+#     def delta(self):
+#         return self.__delta
+#
+#     @delta.setter
+#     def delta(self, delta):
+#         self.__delta = delta
+#
+#     @property
+#     def window(self):
+#         return self.__window
+#
+#
+#
+#     # Window
+#
+#     def wbeg(self):
+#         """
+#         Window start time.
+#         """
+#         sbeg = self.__window.start(self._nsamps())
+#         return sbeg * self.delta
+#
+#     def wend(self):
+#         """
+#         Window end time.
+#         """
+#         send = self.__window.end(self._nsamps())
+#         return send * self.delta
+#
+#     def wwidth(self):
+#         """
+#         Window width.
+#         """
+#         return (self.__window.width-1) * self.delta
+#
+#     def _construct_window(self,start,end,**kwargs):
+#         if start > end: raise ValueError('start is larger than end')
+#         time_centre = (start + end)/2
+#         time_width = end - start
+#         tcs = core.time2samps(time_centre,self.delta)
+#         offset = tcs - self._centresamp()
+#         # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
+#         width = core.time2samps(time_width,self.delta,'even') + 1
+#         return Window(width,offset,**kwargs)
             
-    @property
-    def delta(self):
-        return self.__delta
-              
-    @delta.setter
-    def delta(self, delta):
-        self.__delta = delta 
-        
-    @property
-    def window(self):
-        return self.__window
-
-    @window.setter
-    def window(self, *args, **kwargs):
-        if 'window' in kwargs:
-            if isinstance(kwargs['window'], Window):
-                self.__window = kwargs['window']
-                return
-            else:
-                raise TypeError('expecting a window')
-        # if no arguments provided
-        if len(args) == 0:
-            width = core.odd(self._nsamps() / 3)
-            self.__window = Window(width)
-            return
-        # if start/end given
-        if len(args) == 2:
-            start, end = args
-            self.__window = self._construct_window(start, end, **kwargs)
-            return
-        else:
-            raise Exception ('unexpected number of arguments')
-            
-    # Window
-    
-    def wbeg(self):
-        """
-        Window start time.
-        """
-        sbeg = self.window.start(self._nsamps())
-        return sbeg * self.delta
-    
-    def wend(self):
-        """
-        Window end time.
-        """
-        send = self.window.end(self._nsamps())
-        return send * self.delta
-        
-    def wwidth(self):
-        """
-        Window width.
-        """
-        return (self.window.width-1) * self.delta
-
-    def _construct_window(self,start,end,**kwargs): 
-        if start > end: raise ValueError('start is larger than end')
-        time_centre = (start + end)/2
-        time_width = end - start
-        tcs = core.time2samps(time_centre,self.delta)
-        offset = tcs - self._centresamp()
-        # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
-        width = core.time2samps(time_width,self.delta,'even') + 1     
-        return Window(width,offset,**kwargs) 
-            
             
     
-class Measure(Traces):
+class Measure():
     pass
     
 #
