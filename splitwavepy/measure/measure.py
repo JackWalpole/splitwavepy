@@ -142,12 +142,13 @@ class Measure:
                 return func(x, y)
                     
         # Do the grid search
-        # prerot = [ rotate(x, y, ang) for ang in self.__degs ]
-        out = [ [ getout(ux, uy, ang, shift) for shift in self.__slags ] 
-                for ang in self.__degs for (ux,uy) in rotate(x, y, ang)  ] 
+        prerot = [ (rotate(x, y, ang), ang) for ang in self.__degs ]
+        
+        out = [ [ getout(ux, uy, ang, shift) for shift in self.__slags ]
+                for (ux,uy,ang) in rotate(x, y, ang), ang) for ang in self.__degs  ]
                 
                 
-        return out
+        return prerot
             
             
             # deg in self.degs ]
