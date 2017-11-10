@@ -14,6 +14,7 @@ from .core import core
 from .core import geom
 from .core.window import Window
 from .core.io import load
+from .measure.measure import Measure
 
 
 

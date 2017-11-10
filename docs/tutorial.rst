@@ -75,7 +75,7 @@ Set the window using the ``set_window(start,end)`` method.
     By default the window will be centred on the middle of the trace with width 1/3 of the trace length, which is likely to be inappropriate, so make sure to set your window sensibly.
 	 
 .. tip::
-	Interactive window picking is supported by ``plot(pick=True)``.  Left click to pick the window start, right click to pick the window end, hit the space bar to save and close.  If you don't want to save your window, simply quit the figure using one of the built in matplotlib methods (e.g. click on the cross in the top left corner or hit the ``q`` key).
+	Interactive window picking is supported by ``plot(pick=True)``.  Left click to pick the window start, right click to pick the window end, hit the space bar to save and close.  If you don't want to save your window, simply quit the figure using one of the built in matplotlib methods (e.g. click on the cross in the top left corner or hit the ``q`` key).pwd
 
 .. .. nbplot::
 	:include-source:

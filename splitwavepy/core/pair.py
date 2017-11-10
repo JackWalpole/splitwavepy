@@ -451,12 +451,12 @@ class Pair:
       
     # I/O stuff  
 
-    def save(self,filename):
-        """
-        Save Measurement for future referral
-        """
-        io.save(self,filename)
-                       
+    # def save(self,filename):
+    #     """
+    #     Save Measurement for future referral
+    #     """
+    #     io.save(self,filename)
+    #
     def copy(self):
         return io.copy(self)
 
