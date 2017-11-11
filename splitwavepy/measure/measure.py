@@ -131,24 +131,24 @@ class Measure:
                 # Apply source correction
                 x, y = unsplit(x, y, srcphi-ang, srclag)
                 # chop
-                x, y = chop(x, y, window=self.window)
+                x, y = chop(x, y, window=self.data.window)
                 return func(x, y)
         else:
             def getout(x, y, ang, shift):
                 # remove shift
                 x, y = lag(x, y, -shift)
                 # no source correction so just chop
-                x, y = chop(x, y, window=self.window)
+                x, y = chop(x, y, window=self.data.window)
                 return func(x, y)
                     
         # Do the grid search
         prerot = [ (rotate(x, y, ang), ang) for ang in self.__degs ]
         
-        out = [ [ getout(ux, uy, ang, shift) for shift in self.__slags ]
-                for (ux,uy,ang) in rotate(x, y, ang), ang) for ang in self.__degs  ]
+        out = [ [ getout(data[0], data[1], ang, shift) for shift in self.__slags ]
+                for (data,ang) in prerot  ]
                 
                 
-        return prerot
+        return out
             
             
             # deg in self.degs ]
