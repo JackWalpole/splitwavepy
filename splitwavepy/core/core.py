@@ -14,7 +14,7 @@ from __future__ import print_function
 from .window import Window
 
 import numpy as np
-from scipy import signal
+from scipy import signal, stats
 import math
 
 ##############

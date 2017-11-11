@@ -74,7 +74,7 @@ class Measure:
                 raise TypeError('degs must be an integer or numpy array')
         self.__degs = degs
         
-        self.degs, self.lags = np.meshgrid(self.__degs, self.__slags * self.delta)
+        self.lags, self.degs = np.meshgrid(self.__slags * self.delta, self.__degs)
 
 
         # receiver correction
@@ -148,8 +148,7 @@ class Measure:
         
         out = [ [ getout(data[0], data[1], ang, shift) for shift in self.__slags ]
                 for (data,ang) in prerot  ]
-                
-                
+                               
         return out
             
             
@@ -278,7 +277,7 @@ class Measure:
     
     def srcpol(self):
         # recover source polarisation
-        return self.data_corr().pol()
+        return self.data_corr().get_pol()
         
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
@@ -290,7 +289,7 @@ class Measure:
     
     def data_corr(self):        
         # copy data     
-        data_corr = self.data().copy()
+        data_corr = self.data.copy()
         # rcv side correction     
         if self.rcvcorr is not None:
             data_corr.unsplit(*self.rcvcorr)    
@@ -331,12 +330,8 @@ class Measure:
     def ndf(self):
         """Number of degrees of freedom."""
         d = self.srcpoldata_corr().chop()
-        return eigval.ndf(d.y)
+        return core.ndf(d.y)
     
-    def lam2_95(self):
-        """Value of lam2 at 95% confidence contour."""
-        return eigval.ftest(self.lam2,self.ndf(),alpha=0.05)
-        
     def f_errors(self):
         """
         Return dfast and dtlag.
@@ -347,11 +342,11 @@ class Measure:
         """
 
         # search interval steps
-        lag_step = self.lags[1,0]-self.lags[0,0]
-        fast_step = self.degs[0,1]-self.degs[0,0]
+        lag_step = self.lags[1,0] - self.lags[0,0]
+        fast_step = self.degs[0,1] - self.degs[0,0]
 
         # Find nodes where we fall within the 95% confidence region
-        confbool = self.lam2 <= self.lam2_95()
+        confbool = self.lam2 <= self.conf_95()
 
         # tlag error
         lagbool = confbool.any(axis=1)
@@ -370,7 +365,7 @@ class Measure:
         fdfast = lengthTrue * fast_step * 0.25
 
         # return
-        return fdfast, fdlag
+        return fdfast, fdlag 
         
         
     # "squashed" profiles
@@ -385,20 +380,7 @@ class Measure:
         surf = surf / surf.sum()
         return np.sum(surf, axis=1)
     
-    # auto null classification  
-    
-    def ni(self):
-        """
-        development.
-        measure of self-similarity in measurements at 90 degree shift in fast direction
-        """
-        fastprof = self.fastprofile()
-        halfway = int(self.degs.shape[1]/2)
-        diff = fastprof - np.roll(fastprof,halfway)
-        mult = fastprof * np.roll(fastprof,halfway)
-        sumdiffsq = np.sum(diff**2)
-        summult = np.sum(mult)
-        return summult/sumdiffsq
+
     
     # Output
     
@@ -422,60 +404,6 @@ class Measure:
             
     
     # Plotting
-    
-    def plot(self,**kwargs):
-          
-        # setup figure and subplots
-        fig = plt.figure(figsize=(12,6)) 
-        gs = gridspec.GridSpec(2, 3,
-                           width_ratios=[1,1,2]
-                           )    
-        ax0 = plt.subplot(gs[0,0])
-        ax1 = plt.subplot(gs[0,1])
-        ax2 = plt.subplot(gs[1,0])
-        ax3 = plt.subplot(gs[1,1])
-        ax4 = plt.subplot(gs[:,2])
-        
-        # data to plot
-        d1 = self.data.chop()
-        d1f = self.srcpoldata().chop()
-        d2 = self.data_corr().chop()
-        d2s = self.srcpoldata_corr().chop()
-        
-        # flip polarity of slow wave in panel one if opposite to fast
-        # d1f.y = d1f.y * np.sign(np.tan(self.srcpol()-self.fast))
-        
-        # get axis scaling
-        lim = np.abs(d2s.data()).max() * 1.1
-        ylim = [-lim,lim]
-
-        # original
-        d1f._ptr(ax0,ylim=ylim,**kwargs)
-        d1._ppm(ax1,lims=ylim,**kwargs)
-        # corrected
-        d2s._ptr(ax2,ylim=ylim,**kwargs)
-        d2._ppm(ax3,lims=ylim,**kwargs)
-
-        # error surface
-        if 'vals' not in kwargs:
-            # kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
-            # kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
-            kwargs['vals'] = self.snrsurf
-            kwargs['title'] = r'$(\lambda_1 - \lambda_2) / 2\lambda_2$'
-        
-        # add marker and info box by default
-        if 'marker' not in kwargs: kwargs['marker'] = True
-        if 'info' not in kwargs: kwargs['info'] = True
-        if 'conf95' not in kwargs: kwargs['conf95'] = True
-        self._psurf(ax4,**kwargs)
-        
-        # title
-        if self.name != 'Untitled':
-            plt.suptitle(self.name)
-        
-        # neaten
-        plt.tight_layout()
-        plt.show()
         
     def _psurf(self,ax,**kwargs):
         """
@@ -501,7 +429,7 @@ class Measure:
         
         # confidence region
         if 'conf95' in kwargs and kwargs['conf95'] == True:
-            ax.contour(self.lags,self.degs,self.lam2,levels=[self.lam2_95()])
+            ax.contour(self.lags,self.degs,self.lam2,levels=[self.conf_95()])
             
         # marker
         if 'marker' in kwargs and kwargs['marker'] == True:
@@ -545,14 +473,6 @@ class Measure:
 
         plt.show()
 
-    # Report
-    
-    class Report:        
-        """
-        Handle reporting of measurement.
-        """
-        def __init__(self):
-            self.choose = []
 
     # Comparison
     
