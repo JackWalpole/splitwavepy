@@ -11,8 +11,7 @@ from __future__ import print_function
 from ..core import core,io
 from ..core.pair import Pair
 from ..core.window import Window
-from ..core.meta import Measure
-from . import eigval
+from .measure import Measure
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -59,11 +58,10 @@ class EigenM(Measure):
         # Derice from Measure
         Measure.__init__(self, *args, **kwargs)
 
-        # MAKE MEASUREMENT        
-        self.lam1, self.lam2 = eigval.grideigval(self)
-        
-
-                
+        # MAKE MEASUREMENT
+        stuff = np.asarray(self.gridsearch(core.eigvalcov))
+        self.lam1, self.lam2 = stuff[:,:,0], stuff[:,:,1]
+                        
         # get some measurement attributes
         # Using signal to noise ratio in 2-D inspired by 3-D treatment of:
         # Jackson, Mason, and Greenhalgh, Geophysics (1991)

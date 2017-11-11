@@ -73,6 +73,8 @@ class Measure:
             else:
                 raise TypeError('degs must be an integer or numpy array')
         self.__degs = degs
+        
+        self.degs, self.lags = np.meshgrid(self.__degs, self.__slags * self.delta)
 
 
         # receiver correction
@@ -271,6 +273,7 @@ class Measure:
     #
     #     # if file exists
     #     # exists append
+    
 
     
     def srcpol(self):
