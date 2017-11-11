@@ -131,11 +131,19 @@ def eigcov(data):
     eigenVectors = eigenVectors[:,idx]
     return eigenValues, eigenVectors
     
-def eigvalcov(data):
+# def eigvalcov(data):
+#     """
+#     return sorted eigenvalues of covariance matrix
+#     lambda2 first, lambda1 second
+#     """
+#     return np.sort(np.linalg.eigvalsh(np.cov(data)))
+    
+def eigvalcov(x,y):
     """
     return sorted eigenvalues of covariance matrix
     lambda2 first, lambda1 second
     """
+    data = np.vstack((x,y))
     return np.sort(np.linalg.eigvalsh(np.cov(data)))
   
 def transenergy(x,y):
