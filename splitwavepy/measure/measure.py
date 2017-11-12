@@ -74,8 +74,8 @@ class Measure:
                 raise TypeError('degs must be an integer or numpy array')
         self.__degs = degs
         
-        self.lags, self.degs = np.meshgrid(self.__slags * self.delta, self.__degs)
-
+        # self.lags, self.degs = np.meshgrid(self.__slags * self.delta, self.__degs)
+        self.degs, self.lags = np.meshgrid(self.__degs, self.__slags * self.delta)
 
         # receiver correction
         self.rcvcorr = None
