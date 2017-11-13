@@ -58,8 +58,6 @@ class EigenM(Measure):
         # Derive from Measure
         Measure.__init__(self, *args, **kwargs)
 
-        self.method = 'eigenvalue'
-
         # MAKE MEASUREMENT
         stuff = np.asarray(self.gridsearch(core.eigvalcov))
         self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
@@ -75,8 +73,8 @@ class EigenM(Measure):
         self.lag  = self.lags[maxloc]
         # self.snr = self.snrsurf[maxloc]
         # # get errors
-        self.errsurf = -self.lam2
-        self.dfast, self.dlag = self.f_errors()
+        self.errsurf = self.lam2
+        self.dfast, self.dlag = self.get_errors(surftype='min')
         
         # Name
         self.name = 'Untitled'

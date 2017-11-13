@@ -7,7 +7,7 @@ from .core.pair import Pair
 # from .core.trio import Trio
 from .measure.eigenM import EigenM
 # from .eigval.eig3dM import Eig3dM
-# from .eigval.transM import TransM
+from .measure.transM import TransM
 from .measure.crossM import CrossM
 from .core import core, geom
 from .core.window import Window

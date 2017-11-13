@@ -151,70 +151,62 @@ class Measure:
                                
         return out
             
-            
-            # deg in self.degs ]
-            #
-            #
-            #
-            # eigvalcov = core.eigvalcov
-            #
-            #
-            #
-            #
-            #
-            #
-            #
-            # for ii in np.arange(shape[1]):
-            #     tx, ty = rotate(x,y,degs[0,ii])
-            #     for jj in np.arange(shape[0]):
-            #         # remove splitting so use inverse operator (negative lag)
-            #         ux, uy = lag(tx,ty,-lags[jj,ii])
-            #         # if requested -- post-apply source correction
-            #         ux, uy = srccorr(ux,uy,degs[0,ii])
-            #         # chop to analysis window
-            #         ux, uy = chop(ux,uy,window=self.window)
-            #         # measure eigenvalues of covariance matrix
-            #         lam2[jj,ii], lam1[jj,ii] = eigvalcov(np.vstack((ux,uy)))
-            #
-            # return lam1, lam2           
+    def gridsearchtrans(self, func, **kwargs):
         
- 
- # class EigenM(Measure):
- #
- #     "Silver and Chan (1991) eigenvalue method"
- #
- #     def __init__(self,*args,**kwargs):
- #
- #         # inherit from Measure
- #         Measure.__init__(*args,**kwargs)
- #
- #
- #        # ensure trace1 at zero angle
- #        self.data.rotateto(0)
- #
- #        # MAKE MEASUREMENT
- #        window = self.data.window
- #        self.degs, self.samplags, self.lam1, self.lam2 \
- #        = eigval.grideigval(self.data.x, self.data.y, sdegs, slags, window, **kwargs)
- #        # convert sample lags to meaningful time lags
- #        self.lags = self.samplags * self.delta
- #
- #        # get some measurement attributes
- #        # Using signal to noise ratio in 2-D inspired by 3-D treatment of:
- #        # Jackson, Mason, and Greenhalgh, Geophysics (1991)
- #        self.snrsurf = (self.lam1-self.lam2) / (2*self.lam2)
- #        maxloc = core.max_idx(self.snrsurf)
- #        self.fast = self.degs[maxloc]
- #        self.lag  = self.lags[maxloc]
- #        self.snr = self.snrsurf[maxloc]
- #        # get errors
- #        self.dfast, self.dlag = self.f_errors()
- #
- #        # Name
- #        self.name = 'Untitled'
- #        if 'name' in kwargs: self.name = kwargs['name']
-
-    
+        """
+        Grid search for splitting parameters applied to data using the function defined in func
+        rcvcorr = receiver correction parameters in tuple (fast,lag) 
+        srccorr = source correction parameters in tuple (fast,lag) 
+        """
+        
+        pol = self.data.pol
+        
+        # avoid using "dots" in loops for performance
+        rotate = core.rotate
+        lag = core.lag
+        chop = core.chop
+        unsplit = core.unsplit
+        
+        # ensure trace1 at zero angle
+        copy = self.data.copy()
+        copy.rotateto(0)
+        x, y = copy.x, copy.y
+        
+        # pre-apply receiver correction
+        if 'rcvcorr' in kwargs:
+            x, y = unsplit(x, y, *self.__rcvcorr)
+                            
+        # inner loop function
+        if 'srccorr' in kwargs:
+            srcphi, srclag = self.__srccorr
+            def getout(x, y, ang, shift):
+                # remove shift
+                x, y = lag(x, y, -shift)
+                # Apply source correction
+                x, y = unsplit(x, y, srcphi-ang, srclag)
+                # chop
+                x, y = chop(x, y, window=self.data.window)
+                # rotate to pol
+                x, y = rotate(x,y,-ang + pol)
+                return func(x, y)
+        else:
+            def getout(x, y, ang, shift):
+                # remove shift
+                x, y = lag(x, y, -shift)
+                # no source correction so just chop
+                x, y = chop(x, y, window=self.data.window)
+                # rotate to pol
+                x, y = rotate(x,y,-ang + pol)
+                return func(x, y)
+                    
+        # Do the grid search
+        prerot = [ (rotate(x, y, ang), ang) for ang in self.__degs ]
+        
+        out = [ [ getout(data[0], data[1], ang, shift) for shift in self.__slags ]
+                for (data,ang) in prerot  ]
+                               
+        return out
+            
     # METHODS 
     #---------    
                 
@@ -332,7 +324,7 @@ class Measure:
         d = self.srcpoldata_corr().chop()
         return core.ndf(d.y)
     
-    def f_errors(self,**kwargs):
+    def get_errors(self,surftype=None):
         """
         Return dfast and dtlag.
 
@@ -346,7 +338,12 @@ class Measure:
         fast_step = self.degs[0,1] - self.degs[0,0]
 
         # Find nodes where we fall within the 95% confidence region
-        confbool = self.errsurf >= self.conf_95()
+        if surftype == 'max':
+            confbool = self.errsurf >= self.conf_95()
+        elif surftype == 'min':
+            confbool = self.errsurf <= self.conf_95()
+        else:
+            raise ValueError('surftype must be min or max')
 
         # tlag error
         lagbool = confbool.any(axis=1)

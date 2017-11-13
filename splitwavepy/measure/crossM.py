@@ -61,8 +61,6 @@ class CrossM(Measure):
         # Derive from Measure
         Measure.__init__(self, *args, **kwargs)
 
-        self.method = 'cross-correlation'
-
         # MAKE MEASUREMENT
         stuff = np.asarray(self.gridsearch(core.crosscorr))
         self.xc = np.abs(stuff[:,:,0].T)
@@ -74,7 +72,7 @@ class CrossM(Measure):
 
         # # get errors
         self.errsurf = self.xc
-        self.dfast, self.dlag = self.f_errors()
+        self.dfast, self.dlag = self.get_errors(surftype='max')
 
         # Name
         self.name = 'Untitled'
