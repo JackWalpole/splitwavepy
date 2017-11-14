@@ -84,8 +84,8 @@ class Measure:
             if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['rcvcorr']
-            samps = core.time2samps( lag,self.delta, 'even')
-            self.__rcvcorr = ( deg, samps )
+            samps = core.time2samps(lag, self.delta, 'even')
+            self.__rcvcorr = (deg, samps)
             self.rcvcorr = kwargs['rcvcorr']
 
         # source correction
@@ -95,8 +95,8 @@ class Measure:
             if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['srccorr']
-            samps = core.time2samps( lag, self.delta, 'even')
-            self.__srccorr = ( deg, samps)
+            samps = core.time2samps(lag, self.delta, 'even')
+            self.__srccorr = (deg, samps)
             self.srccorr = kwargs['srccorr']
                 
     # Common methods
@@ -122,7 +122,8 @@ class Measure:
         
         # pre-apply receiver correction
         if 'rcvcorr' in kwargs:
-            x, y = unsplit(x, y, *self.__rcvcorr)
+            rcvphi, rcvlag = self.__rcvcorr
+            x, y = unsplit(x, y, rcvphi, rcvlag)
                             
         # inner loop function
         if 'srccorr' in kwargs:
@@ -174,7 +175,8 @@ class Measure:
         
         # pre-apply receiver correction
         if 'rcvcorr' in kwargs:
-            x, y = unsplit(x, y, *self.__rcvcorr)
+            rcvphi, rcvlag = self.__rcvcorr
+            x, y = unsplit(x, y, rcvphi, rcvlag)
                             
         # inner loop function
         if 'srccorr' in kwargs:

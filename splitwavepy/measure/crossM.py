@@ -62,7 +62,7 @@ class CrossM(Measure):
         Measure.__init__(self, *args, **kwargs)
 
         # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearch(core.crosscorr))
+        stuff = np.asarray(self.gridsearch(core.crosscorr,**kwargs))
         self.xc = np.abs(stuff[:,:,0].T)
         maxloc = core.max_idx(self.xc)
 
