@@ -168,63 +168,75 @@ class Measure:
                 for (data,ang) in prerot  ]
                                
         return out
+        
+    def gridsearch3d(self, func, **kwargs):
+        
+        """
+        Grid search for splitting parameters applied to data using the function defined in func
+        rcvcorr = receiver correction parameters in tuple (fast,lag) 
+        srccorr = source correction parameters in tuple (fast,lag) 
+        """
+        
+        # avoid using "dots" in loops for performance
+        rotate = core3d.rotate
+        lag = core3d.lag
+        chop = core3d.chop
+        unsplit = core3d.unsplit
+        
+        # ensure trace1 at zero angle
+        copy = self.data.copy()
+        copy.rotate2ray()
+        x, y, z = copy.x, copy.y, copy.z
+        
+        # pre-apply receiver correction
+        if 'rcvcorr' in kwargs:
+            rcvphi, rcvlag = self.__rcvcorr
+            x, y, z = unsplit(x, y, z, rcvphi, rcvlag)
+                            
+        ######################                  
+        # inner loop function
+        ######################
+    
+        # source correction  
+        
+        if 'srccorr' in kwargs:
+            srcphi, srclag = self.__srccorr
+            def srccorr(x, y, z, ang):
+                x, y, z = unsplit(x, y, z, srcphi-ang, srclag)
+                return x, y, z
+        else:
+            def srccorr(x, y, z, ang):
+                return x, y, z
+                
+        # rotate to polaristation (needed for tranverse min)
+        if 'mode' in kwargs and kwargs['mode'] == 'rotpol':
+            pol = self.data.pol
+            def rotpol(x, y, z, ang):
+                # rotate to pol
+                x, y, z = rotate(x, y, z, pol-ang)
+                return x, y, z
+        else:
+            def rotpol(x, y, z, ang):
+                return x, y, z
+        
+        # actual inner loop function   
+        def getout(x, y, z, ang, shift):
+            # remove shift
+            x, y, z = lag(x, y, z, -shift)
+            x, y, z = srccorr(x, y, z, ang)
+            x, y, z = chop(x, y, z, window=self.data.window)
+            x, y, z = rotpol(x, y, z, ang)
+            return func(x, y, z)
+                    
+        # Do the grid search
+        prerot = [ (rotate(x, y, z, ang), ang) for ang in self.__degs ]
+        
+        out = [ [ getout(data[0], data[1], data[2], ang, shift) for shift in self.__slags ]
+                for (data,ang) in prerot  ]
+                               
+        return out
             
-    # def gridsearchtrans(self, func, **kwargs):
-    #
-    #     """
-    #     Grid search for splitting parameters applied to data using the function defined in func
-    #     rcvcorr = receiver correction parameters in tuple (fast,lag)
-    #     srccorr = source correction parameters in tuple (fast,lag)
-    #     """
-    #
-    #
-    #
-    #     # avoid using "dots" in loops for performance
-    #     rotate = core.rotate
-    #     lag = core.lag
-    #     chop = core.chop
-    #     unsplit = core.unsplit
-    #
-    #     # ensure trace1 at zero angle
-    #     copy = self.data.copy()
-    #     copy.rotateto(0)
-    #     x, y = copy.x, copy.y
-    #
-    #     # pre-apply receiver correction
-    #     if 'rcvcorr' in kwargs:
-    #         rcvphi, rcvlag = self.__rcvcorr
-    #         x, y = unsplit(x, y, rcvphi, rcvlag)
-    #
-    #     # inner loop function
-    #     if 'srccorr' in kwargs:
-    #         srcphi, srclag = self.__srccorr
-    #         def getout(x, y, ang, shift):
-    #             # remove shift
-    #             x, y = lag(x, y, -shift)
-    #             # Apply source correction
-    #             x, y = unsplit(x, y, srcphi-ang, srclag)
-    #             # chop
-    #             x, y = chop(x, y, window=self.data.window)
-    #             # rotate to pol
-    #             x, y = rotate(x,y,-ang + pol)
-    #             return func(x, y)
-    #     else:
-    #         def getout(x, y, ang, shift):
-    #             # remove shift
-    #             x, y = lag(x, y, -shift)
-    #             # no source correction so just chop
-    #             x, y = chop(x, y, window=self.data.window)
-    #             # rotate to pol
-    #             x, y = rotate(x,y,-ang + pol)
-    #             return func(x, y)
-    #
-    #     # Do the grid search
-    #     prerot = [ (rotate(x, y, ang), ang) for ang in self.__degs ]
-    #
-    #     out = [ [ getout(data[0], data[1], ang, shift) for shift in self.__slags ]
-    #             for (data,ang) in prerot  ]
-    #
-    #     return out
+
             
     # METHODS 
     #---------    
