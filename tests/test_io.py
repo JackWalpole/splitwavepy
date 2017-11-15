@@ -39,7 +39,7 @@ class CoreTestCases(unittest.TestCase):
     def test_pickle_TransM_io(self):
         
         # generate an eigenM object
-        a = sw.TransM(delta=0.1)
+        a = sw.TransM(delta=0.1,pol=0)
         
         # save to file
         filename = 'temp.trsm'
