@@ -61,16 +61,34 @@ def chop(*args,**kwargs):
     """Chop trace, or traces, using window"""
     return core.chop(*args,**kwargs)
     
-
-
-# def pca(data):
-#     """
-#     Principal component analysis
-#     Returns direction of strongest component in degrees anti-clockwise from x
-#     """
-#     w,v = np.linalg.eig(np.cov(data))
-#     m = np.argmax(w)
-#     return np.rad2deg(np.arctan2(v[1,m],v[0,m]))
+## Measurement 
+   
+def eigcov(data):
+    """
+    Return eigen values and vectors of covariance matrix
+    """
+    eigenValues, eigenVectors = np.linalg.eig(np.cov(data))
+    idx = eigenValues.argsort()[::-1]   
+    eigenValues = eigenValues[idx]
+    eigenVectors = eigenVectors[:,idx]
+    return eigenValues, eigenVectors
+        
+def eigvalcov(x,y,z):
+    """
+    return sorted eigenvalues of covariance matrix
+    lambda2 first, lambda1 second
+    """
+    data = np.vstack((x,y,z))
+    return np.sort(np.linalg.eigvalsh(np.cov(data)))
+  
+def transenergy(x,y,z):
+    """
+    return energy
+    lambda1 first, lambda2 second
+    """
+    energy = lambda x: np.sum(x**2)
+    return energy(x), energy(y), energy(z) 
+    
 
 
     

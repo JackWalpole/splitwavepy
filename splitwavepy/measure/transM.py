@@ -76,7 +76,7 @@ class TransM(Measure):
         Measure.__init__(self, *args, **kwargs)
 
         # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearchtrans(core.transenergy))
+        stuff = np.asarray(self.gridsearchtrans(core.transenergy,**kwargs))
         self.lam1, self.lam2 = stuff[:,:,0].T, stuff[:,:,1].T
         maxloc = core.max_idx(self.lam1/self.lam2)
         

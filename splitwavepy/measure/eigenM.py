@@ -59,7 +59,7 @@ class EigenM(Measure):
         Measure.__init__(self, *args, **kwargs)
 
         # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearch(core.eigvalcov))
+        stuff = np.asarray(self.gridsearch(core.eigvalcov,**kwargs))
         self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
         maxloc = core.max_idx(self.lam1/self.lam2)
         

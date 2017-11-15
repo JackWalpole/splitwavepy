@@ -19,7 +19,7 @@ https://github.com/JackWalpole/splitwavepy
    real_data
    transmin
    rotcorr
-   threeD_data
+   .. threeD_data
 
 
 Acknowledge
