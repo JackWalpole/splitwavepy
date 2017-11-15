@@ -37,15 +37,26 @@ class Trio:
     """
     def __init__(self,*args,**kwargs):
         
-        # important to do first
-        self.delta = 1.
-        if ('delta' in kwargs): self.delta = kwargs['delta']
-        
-        # if pol specified set
-        if ('pol' in kwargs): 
-            self.set_pol(kwargs['pol'])
-        else:
-            self.set_pol()
+        # ensure delta is set as a keyword argment, e.g. delta=0.1
+        if 'delta' not in kwargs: raise Exception('delta must be set')
+        self.delta = kwargs['delta']           
+                       
+        # if no args make synthetic
+        if len(args) == 0: 
+            self.x, self.y, self.z = core3d.synth(**kwargs)                      
+        # otherwise read in data                
+        elif len(args) == 3:
+            if not (isinstance(args[0], np.ndarray) & 
+                    isinstance(args[1], np.ndarray) &
+                    isinstance(args[2], np.ndarray)):
+                raise TypeError('expecting numpy arrays')         
+            self.x, self.y, self.z = args[0], args[1], args[2]           
+        else: raise Exception('Unexpected number of arguments')
+                    
+        # some sanity checks
+        if self.x.ndim != 1: raise Exception('data must be one dimensional')
+        if self.x.size%2 == 0: raise Exception('data must have odd number of samples')
+        if (self.x.size != self.y.size): raise Exception('x and y must be the same length')
         
         # geometry info 
         self.geom = 'geo'
@@ -53,27 +64,7 @@ class Trio:
         self.rayvecs = np.eye(3) # actual ray is assumed to be third column vector
         if ('geom' in kwargs): self.geom = kwargs['geom']
         if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']
-        if ('ray' in kwargs): self.set_ray(*kwargs['ray'])            
-                       
-        # if no args make synthetic
-        if len(args) == 0: 
-            self.x, self.y, self.z = _synth(**kwargs)
-            # rotate data to ray (but not components)
-
-                      
-        # otherwise read in data                
-        elif len(args) == 3:
-            if not (isinstance(args[0], np.ndarray) & 
-                    isinstance(args[1], np.ndarray) &
-                    isinstance(args[2], np.ndarray)):
-                raise TypeError('expecting numpy arrays')         
-            self.x, self.y, self.z = args[0], args[1], args[2]
-        else: raise Exception('Unexpected number of arguments')
-                    
-        # some sanity checks
-        if self.x.ndim != 1: raise Exception('data must be one dimensional')
-        if self.x.size%2 == 0: raise Exception('data must have odd number of samples')
-        if (self.x.size != self.y.size): raise Exception('x and y must be the same length')
+        if ('ray' in kwargs): self.set_ray(*kwargs['ray'])
                    
         # Must have a window
         self.set_window(**kwargs)
@@ -81,6 +72,12 @@ class Trio:
         # Must have a ray
         if 'ray' not in kwargs: kwargs['ray'] = (0,0)
         self.set_ray(*kwargs['ray'])
+        
+        # Must have a pol
+        if ('pol' in kwargs): 
+            self.set_pol(kwargs['pol'])
+        else:
+            self.set_pol()
         
         # source and receiver location info
         if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']     
@@ -303,6 +300,14 @@ class Trio:
         else:
             raise Exception('unexpected number of arguments')
 
+    def set_pol(self,*args):
+        if len(args) == 0:
+            self.pol = self.get_pol()
+        elif len(args) == 1:
+            self.pol = float(args[0])
+        else:
+            raise Exception('Unexpected number of arguments')
+        return
 
     # def geom2ray(self):
     #     """Change geometry to ray frame."""

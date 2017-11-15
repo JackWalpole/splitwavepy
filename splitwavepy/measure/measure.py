@@ -7,7 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from ..core import core,io
+from ..core import core, core3d, io
 from ..core.pair import Pair
 from ..core.window import Window
 # from . import eigval, rotcorr, transmin, sintens
@@ -325,26 +325,26 @@ class Measure:
     def srcpoldata(self):
         srcpoldata = self.data.copy()
         srcpoldata.rotateto(self.srcpol())
-        srcpoldata.set_labels(['srcpol','residual'])
+        srcpoldata.set_labels(['srcpol','trans','ray'])
         return srcpoldata
         
     def srcpoldata_corr(self):
         srcpoldata_corr = self.data_corr()        
         srcpoldata_corr.rotateto(self.srcpol())
-        srcpoldata_corr.set_labels(['srcpol','residual'])
+        srcpoldata_corr.set_labels(['srcpol','trans','ray'])
         return srcpoldata_corr
         
     def fastdata(self):
         """Plot fast/slow data."""
         fastdata = self.data.copy()
         fastdata.rotateto(self.fast)
-        fastdata.set_labels(['fast','slow'])
+        fastdata.set_labels(['fast','slow','ray'])
         return fastdata
 
     def fastdata_corr(self):
         fastdata_corr = self.data_corr()
         fastdata_corr.rotateto(self.fast)
-        fastdata_corr.set_labels(['fast','slow'])
+        fastdata_corr.set_labels(['fast','slow','ray'])
         return fastdata_corr
             
     # F-test utilities

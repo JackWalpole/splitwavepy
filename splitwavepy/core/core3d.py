@@ -89,6 +89,59 @@ def transenergy(x,y,z):
     energy = lambda x: np.sum(x**2)
     return energy(x), energy(y), energy(z) 
     
+def synth(**kwargs):
+    """return ricker wavelet synthetic data"""
+    
+    # defaults    
+    if 'pol' not in kwargs: kwargs['pol'] = 0.
+    if 'delta' not in kwargs: kwargs['delta'] = 1.
+    if 'split' not in kwargs: kwargs['split'] = []
+    if 'noise' not in kwargs: kwargs['noise'] = 0.001
+    if 'nsamps' not in kwargs: kwargs['nsamps'] = 1001
+    if 'width' not in kwargs: kwargs['width'] = 32
+    if 'noisewidth' not in kwargs: kwargs['noisewidth'] = kwargs['width']/4
 
+    # initiate data with clean ricker wavelet
+    nsamps = int(kwargs['nsamps'])  
+    x = signal.ricker(nsamps, kwargs['width'])
+    y = np.zeros(nsamps)
+    
+    # rotate to polarisation 
+    # negative because we are doing the active rotation of data, whereas
+    # core.rotate does the passive transormation of the co-ordinate system
+    x,y = core.rotate(x,y,-kwargs['pol'])
+
+    if isinstance(kwargs['split'],tuple):
+        fast, lag = kwargs['split']
+        # add any splitting -- lag samples must be even
+        slag = core.time2samps(lag,kwargs['delta'],mode='even')
+        x,y = core.split(x,y,fast,slag)
+    elif isinstance(split,list):        
+        for parms in kwargs['split']:
+            fast, lag = parms
+            # add any splitting -- lag samples must be even
+            slag = core.time2samps(lag,kwargs['delta'],mode='even')
+            x,y = core.split(x,y,fast,slag)
+    
+    # add noise - do this last to avoid splitting the noise
+    x = x + core.noise(x.size,kwargs['noise'],int(kwargs['noisewidth']))    
+    y = y + core.noise(x.size,kwargs['noise'],int(kwargs['noisewidth']))
+    z = core.noise(x.size,kwargs['noise'],int(kwargs['noisewidth']))
+    
+    if 'ray' in kwargs:
+        if not isinstance(kwargs['ray'], tuple):
+            raise Exception('ray must be a tuple (azi,inc)')
+        if len(kwargs['ray']) != 2:
+            raise Exception('ray must be length 2 (azi,inc)')
+        az, inc = math.radians(kwargs['ray'][0]), math.radians(kwargs['ray'][1])
+        sinc, cinc = math.sin(inc), math.cos(inc)
+        saz, caz = math.sin(az), math.cos(az)
+        rot = np.array([[-cinc*caz,  saz, sinc*caz],
+                        [-cinc*saz, -caz, sinc*saz],
+                        [     sinc,    0,     cinc]])
+        xyz = np.dot(rot,np.vstack((x,y,z)))
+        x, y, z = xyz[0], xyz[1], xyz[2]
+    
+    return x, y, z
 
     

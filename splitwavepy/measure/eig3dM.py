@@ -11,6 +11,7 @@ from __future__ import print_function
 from ..core import core, core3d, io
 from ..core.trio import Trio
 from ..core.window import Window
+from .measure import Measure
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +20,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import os.path
 
 
-class Eig3dM:
+class Eig3dM(Measure):
     
     """
     Silver and Chan (1991) eigenvalue method measurement.
@@ -69,7 +70,7 @@ class Eig3dM:
         Measure.__init__(self, *args, **kwargs)
         
         # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearch(core3d.eigvalcov,**kwargs))
+        stuff = np.asarray(self.gridsearch3d(core3d.eigvalcov,**kwargs))
         self.lam1, self.lam2, self.lam3 = stuff[:,:,2].T, stuff[:,:,1].T, stuff[:,:,0].T
         maxloc = core.max_idx((2*self.lam1)/(self.lam2+self.lam3))
 
