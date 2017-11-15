@@ -200,14 +200,14 @@ def ftest(lam2,ndf,alpha=0.05):
 
 # Signal to noise
 
-def snrRH(data):
+def snrRH(x,y):
     """
     Returns signal to noise ratio assuming signal on trace1 and noise on trace2
     Uses the method of Restivo and Helffrich (1999):
     peak amplitude on trace1 / 2*std trace2
     """
-    signal = np.max(data[0,:])
-    noise = 2 * np.std(data[1,:])
+    signal = np.max(x)
+    noise = 2 * np.std(y)
     return signal / noise
 
 # Useful bits and pieces

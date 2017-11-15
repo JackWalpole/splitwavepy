@@ -72,11 +72,17 @@ class TransM(Measure):
         if 'pol' not in kwargs: raise Exception('Polarisation must be specified, e.g., pol=30.')
         # self.pol = kwargs['pol']
         
+        # process input
+        if len(args) == 1 and isinstance(args[0],Pair):
+            self.data = args[0]
+        else:
+            self.data = Pair(*args,**kwargs)
+        
         # Derive from Measure
         Measure.__init__(self, *args, **kwargs)
 
         # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearchtrans(core.transenergy,**kwargs))
+        stuff = np.asarray(self.gridsearch(core.transenergy, mode='rotpol', **kwargs))
         self.lam1, self.lam2 = stuff[:,:,0].T, stuff[:,:,1].T
         maxloc = core.max_idx(self.lam1/self.lam2)
         

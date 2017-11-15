@@ -25,12 +25,12 @@ class Measure:
     """
     
     def __init__(self,*args,**kwargs):
-                
-        # process input
-        if len(args) == 1 and isinstance(args[0],Pair):
-            self.data = args[0]
-        else:
-            self.data = Pair(*args,**kwargs)
+        #
+        # # process input
+        # if len(args) == 1 and isinstance(args[0],Pair):
+        #     self.data = args[0]
+        # else:
+        #     self.data = Pair(*args,**kwargs)
         
         # convert times to nsamples
         self.delta = self.data.delta
@@ -124,25 +124,42 @@ class Measure:
         if 'rcvcorr' in kwargs:
             rcvphi, rcvlag = self.__rcvcorr
             x, y = unsplit(x, y, rcvphi, rcvlag)
-                            
+         
+        ######################                  
         # inner loop function
+        ######################
+    
+        # source correction  
+        
         if 'srccorr' in kwargs:
             srcphi, srclag = self.__srccorr
-            def getout(x, y, ang, shift):
-                # remove shift
-                x, y = lag(x, y, -shift)
-                # Apply source correction
+            def srccorr(x, y, ang):
                 x, y = unsplit(x, y, srcphi-ang, srclag)
-                # chop
-                x, y = chop(x, y, window=self.data.window)
-                return func(x, y)
+                return x, y
         else:
-            def getout(x, y, ang, shift):
-                # remove shift
-                x, y = lag(x, y, -shift)
-                # no source correction so just chop
-                x, y = chop(x, y, window=self.data.window)
-                return func(x, y)
+            def srccorr(x, y, ang):
+                return x, y
+                
+        # rotate to polaristation (needed for tranverse min)
+        if 'mode' in kwargs and kwargs['mode'] == 'rotpol':
+            pol = self.data.pol
+            def rotpol(x, y, ang):
+                # rotate to pol
+                x, y = rotate(x, y, pol-ang)
+                return x, y
+        else:
+            def rotpol(x, y, ang):
+                return x, y
+        
+        # actual inner loop function   
+        def getout(x, y, ang, shift):
+            # remove shift
+            x, y = lag(x, y, -shift)
+            x, y = srccorr(x, y, ang)
+            x, y = chop(x, y, window=self.data.window)
+            x, y = rotpol(x, y, ang)
+            return func(x, y)
+
                     
         # Do the grid search
         prerot = [ (rotate(x, y, ang), ang) for ang in self.__degs ]
@@ -152,62 +169,62 @@ class Measure:
                                
         return out
             
-    def gridsearchtrans(self, func, **kwargs):
-        
-        """
-        Grid search for splitting parameters applied to data using the function defined in func
-        rcvcorr = receiver correction parameters in tuple (fast,lag) 
-        srccorr = source correction parameters in tuple (fast,lag) 
-        """
-        
-        pol = self.data.pol
-        
-        # avoid using "dots" in loops for performance
-        rotate = core.rotate
-        lag = core.lag
-        chop = core.chop
-        unsplit = core.unsplit
-        
-        # ensure trace1 at zero angle
-        copy = self.data.copy()
-        copy.rotateto(0)
-        x, y = copy.x, copy.y
-        
-        # pre-apply receiver correction
-        if 'rcvcorr' in kwargs:
-            rcvphi, rcvlag = self.__rcvcorr
-            x, y = unsplit(x, y, rcvphi, rcvlag)
-                            
-        # inner loop function
-        if 'srccorr' in kwargs:
-            srcphi, srclag = self.__srccorr
-            def getout(x, y, ang, shift):
-                # remove shift
-                x, y = lag(x, y, -shift)
-                # Apply source correction
-                x, y = unsplit(x, y, srcphi-ang, srclag)
-                # chop
-                x, y = chop(x, y, window=self.data.window)
-                # rotate to pol
-                x, y = rotate(x,y,-ang + pol)
-                return func(x, y)
-        else:
-            def getout(x, y, ang, shift):
-                # remove shift
-                x, y = lag(x, y, -shift)
-                # no source correction so just chop
-                x, y = chop(x, y, window=self.data.window)
-                # rotate to pol
-                x, y = rotate(x,y,-ang + pol)
-                return func(x, y)
-                    
-        # Do the grid search
-        prerot = [ (rotate(x, y, ang), ang) for ang in self.__degs ]
-        
-        out = [ [ getout(data[0], data[1], ang, shift) for shift in self.__slags ]
-                for (data,ang) in prerot  ]
-                               
-        return out
+    # def gridsearchtrans(self, func, **kwargs):
+    #
+    #     """
+    #     Grid search for splitting parameters applied to data using the function defined in func
+    #     rcvcorr = receiver correction parameters in tuple (fast,lag)
+    #     srccorr = source correction parameters in tuple (fast,lag)
+    #     """
+    #
+    #
+    #
+    #     # avoid using "dots" in loops for performance
+    #     rotate = core.rotate
+    #     lag = core.lag
+    #     chop = core.chop
+    #     unsplit = core.unsplit
+    #
+    #     # ensure trace1 at zero angle
+    #     copy = self.data.copy()
+    #     copy.rotateto(0)
+    #     x, y = copy.x, copy.y
+    #
+    #     # pre-apply receiver correction
+    #     if 'rcvcorr' in kwargs:
+    #         rcvphi, rcvlag = self.__rcvcorr
+    #         x, y = unsplit(x, y, rcvphi, rcvlag)
+    #
+    #     # inner loop function
+    #     if 'srccorr' in kwargs:
+    #         srcphi, srclag = self.__srccorr
+    #         def getout(x, y, ang, shift):
+    #             # remove shift
+    #             x, y = lag(x, y, -shift)
+    #             # Apply source correction
+    #             x, y = unsplit(x, y, srcphi-ang, srclag)
+    #             # chop
+    #             x, y = chop(x, y, window=self.data.window)
+    #             # rotate to pol
+    #             x, y = rotate(x,y,-ang + pol)
+    #             return func(x, y)
+    #     else:
+    #         def getout(x, y, ang, shift):
+    #             # remove shift
+    #             x, y = lag(x, y, -shift)
+    #             # no source correction so just chop
+    #             x, y = chop(x, y, window=self.data.window)
+    #             # rotate to pol
+    #             x, y = rotate(x,y,-ang + pol)
+    #             return func(x, y)
+    #
+    #     # Do the grid search
+    #     prerot = [ (rotate(x, y, ang), ang) for ang in self.__degs ]
+    #
+    #     out = [ [ getout(data[0], data[1], ang, shift) for shift in self.__slags ]
+    #             for (data,ang) in prerot  ]
+    #
+    #     return out
             
     # METHODS 
     #---------    
@@ -273,11 +290,10 @@ class Measure:
         # recover source polarisation
         return self.data_corr().get_pol()
         
-    def snrRH(self):
+    def snr(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
-        d = self.srcpoldata_corr()
-        x,y = d.chop()
-        return core.snrRH(x,y)
+        d = self.srcpoldata_corr().chop()
+        return core.snrRH(d.x,d.y)
                 
     # possibly useful rotations
     

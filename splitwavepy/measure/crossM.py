@@ -58,6 +58,12 @@ class CrossM(Measure):
     
     def __init__(self,*args,**kwargs):
         
+        # process input
+        if len(args) == 1 and isinstance(args[0],Pair):
+            self.data = args[0]
+        else:
+            self.data = Pair(*args,**kwargs)
+        
         # Derive from Measure
         Measure.__init__(self, *args, **kwargs)
 

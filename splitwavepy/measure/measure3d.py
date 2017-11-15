@@ -271,13 +271,15 @@ class Measure:
     
     def srcpol(self):
         # recover source polarisation
+        d = self.srcpoldata_corr()
+        x,y = d.chop()
         return self.data_corr().get_pol()
         
     def snrRH(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
         d = self.srcpoldata_corr()
-        x,y = d.chop()
-        return core.snrRH(x,y)
+        d.chop()
+        return core.snrRH(d.x,d.y)
                 
     # possibly useful rotations
     
