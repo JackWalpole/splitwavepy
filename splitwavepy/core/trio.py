@@ -290,7 +290,7 @@ class Trio:
             return
         elif len(args) == 1:
             if not isinstance(args[0],list): raise TypeError('expecting a list')
-            if not len(args[0]) == 3: raise Exception('list must be length 3')
+            # if not len(args[0]) == 3: raise Exception('list must be length 3')
             if not (isinstance(args[0][0],str) and 
                     isinstance(args[0][1],str) and
                     isinstance(args[0][2],str)):

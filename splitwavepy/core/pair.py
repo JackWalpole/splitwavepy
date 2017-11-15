@@ -222,7 +222,7 @@ class Pair:
             return
         elif len(args) == 1:
             if not isinstance(args[0],list): raise TypeError('expecting a list')
-            if not len(args[0]) == 2: raise Exception('list must be length 2')
+            # if not len(args[0]) == 2: raise Exception('list must be length 2')
             if not (isinstance(args[0][0],str) and isinstance(args[0][1],str)):
                 raise TypeError('cmplabels must be a list of strings')
             self.cmplabels = args[0]
