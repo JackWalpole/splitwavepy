@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core, geom, io
+from .data import Data, WindowPicker
 from .window import Window
 
 import numpy as np
@@ -14,7 +15,7 @@ from matplotlib import gridspec
 from matplotlib.collections import LineCollection
 
 
-class Pair:
+class Pair(Data):
     """
     The Pair: work with 2-component data.
         
@@ -62,9 +63,8 @@ class Pair:
     """
     def __init__(self,*args,**kwargs):
         
-        # ensure delta is set as a keyword argment, e.g. delta=0.1
-        if 'delta' not in kwargs: raise Exception('delta must be set')
-        self.delta = kwargs['delta']
+        # Derive from Data
+        Data.__init__(self, *args, **kwargs)
                                               
         # if no args make synthetic
         if len(args) == 0: 
@@ -167,44 +167,7 @@ class Pair:
         self.x, self.y = xy[0], xy[1]
         # reset label
         self.set_labels()
-        
-    # Windowing
-                
-    def set_window(self,*args,**kwargs):
-        """
-        Return a window object at user defined start and end times.
-        
-        args
-        - Window
-        - start,end
-        
-        kwargs
-        - tukey
-        
-        The window will be adjusted to ensure it occupies an odd number 
-        of samples.
-        """
-                
-        # if Window provided
-        if 'window' in kwargs:  
-            if isinstance(kwargs['window'],Window):
-                self.window = kwargs['window']
-                return
-            else:
-                raise TypeError('expecting a window')
-        
-        # if no arguments provided
-        if len(args) == 0:
-            width = core.odd(self._nsamps() / 3)
-            self.window = Window(width)
-            return
-        # if start/end given
-        if len(args) == 2:
-            start, end = args  
-            self.window = self._construct_window(start,end,**kwargs) 
-            return
-        else:
-            raise Exception ('unexpected number of arguments')
+
 
     def set_labels(self,*args):
         if len(args) == 0:
@@ -241,8 +204,6 @@ class Pair:
     
     # Utility 
     
-    def t(self):
-        return np.arange(self.x.size) * self.delta
   
     def data(self):
         return np.vstack((self.x,self.y))
@@ -283,13 +244,7 @@ class Pair:
         chop.x, chop.y = core.chop(chop.x,chop.y,window=chop.window)
         chop.window.offset = 0
         return chop
-        
-    def chopt(self):
-        """
-        Chop time to window
-        """        
-        t = core.chop(self.t(),window=self.window)
-        return t
+
     
     def splitting_intensity(self,**kwargs):
         """
@@ -302,38 +257,7 @@ class Pair:
         rdiff, trans = copy.x, copy.y
         s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
         return s
-        
-    # Window
-    
-    def wbeg(self):
-        """
-        Window start time.
-        """
-        sbeg = self.window.start(self._nsamps())
-        return sbeg * self.delta
-    
-    def wend(self):
-        """
-        Window end time.
-        """
-        send = self.window.end(self._nsamps())
-        return send * self.delta
-        
-    def wwidth(self):
-        """
-        Window width.
-        """
-        return (self.window.width-1) * self.delta
 
-    def _construct_window(self,start,end,**kwargs): 
-        if start > end: raise ValueError('start is larger than end')
-        time_centre = (start + end)/2
-        time_width = end - start
-        tcs = core.time2samps(time_centre,self.delta)
-        offset = tcs - self._centresamp()
-        # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
-        width = core.time2samps(time_width,self.delta,'even') + 1     
-        return Window(width,offset,**kwargs) 
         
     # Plotting
                 
@@ -448,37 +372,6 @@ class Pair:
         ax.axes.yaxis.set_ticklabels([])
         return
             
-      
-    # I/O stuff  
-
-    # def save(self,filename):
-    #     """
-    #     Save Measurement for future referral
-    #     """
-    #     io.save(self,filename)
-    #
-    def copy(self):
-        return io.copy(self)
-
-        
-    # Geometry stuff
-
-    # def geom_to_geo():
-    # def geom_to_ray():
-    # def geom_to   
-
-    
-    # Hidden
-    
-    def _nsamps(self):
-        return self.x.size
-
-    def _centresamp(self):
-        return int(self.x.size/2)
-    
-    def _centretime(self):
-        return int(self.x.size/2) * self.delta
-
         
     # Special
     
@@ -493,75 +386,3 @@ class Pair:
         # if reached here then the same
         return True
 
-
-class WindowPicker:
-    """
-    Pick a Window
-    """
-
-    def __init__(self,pair,fig,ax):
-           
-        self.canvas = fig.canvas
-        self.ax = ax
-        self.pair = pair
-        # window limit lines
-        self.x1 = pair.wbeg()
-        self.x2 = pair.wend()
-        self.wbegline = self.ax.axvline(self.x1,linewidth=1,color='r',visible=True)
-        self.wendline = self.ax.axvline(self.x2,linewidth=1,color='r',visible=True)
-        self.cursorline = self.ax.axvline(pair._centretime(),linewidth=1,color='0.5',visible=False)
-        _,self.ydat = self.wbegline.get_data()
-            
-
-    def connect(self):  
-        self.cidclick = self.canvas.mpl_connect('button_press_event', self.click)
-        self.cidmotion = self.canvas.mpl_connect('motion_notify_event', self.motion)
-        # self.cidrelease = self.canvas.mpl_connect('button_release_event', self.release)
-        self.cidenter = self.canvas.mpl_connect('axes_enter_event', self.enter)
-        self.cidleave = self.canvas.mpl_connect('axes_leave_event', self.leave)
-        self.cidkey = self.canvas.mpl_connect('key_press_event', self.keypress) 
-       
-    def click(self,event):
-        if event.inaxes is not self.ax: return
-        x = event.xdata
-        if event.button == 1:
-            self.x1 = x
-            self.wbegline.set_data([x,x],self.ydat)
-            self.canvas.draw() 
-        if event.button == 3:
-            self.x2 = x
-            self.wendline.set_data([x,x], self.ydat)
-            self.canvas.draw()
-    
-    def keypress(self,event):
-        if event.key == " ":
-            self.disconnect()
-
-    def enter(self,event):
-        if event.inaxes is not self.ax: return
-        x = event.xdata
-        self.cursorline.set_data([x,x],self.ydat)
-        self.cursorline.set_visible(True)
-        self.canvas.draw()
-
-    def leave(self,event):
-        if event.inaxes is not self.ax: return
-        self.cursorline.set_visible(False)
-        self.canvas.draw()
-
-    def motion(self,event):
-        if event.inaxes is not self.ax: return
-        x = event.xdata
-        self.cursorline.set_data([x,x],self.ydat)
-        self.canvas.draw()
-        
-    def disconnect(self):
-        'disconnect all the stored connection ids'
-        self.canvas.mpl_disconnect(self.cidclick)
-        self.canvas.mpl_disconnect(self.cidmotion)
-        self.canvas.mpl_disconnect(self.cidenter)
-        self.canvas.mpl_disconnect(self.cidleave)
-        plt.close()
-        wbeg, wend = sorted((self.x1, self.x2)) 
-        self.pair.set_window(wbeg, wend)
-      

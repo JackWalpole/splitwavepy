@@ -4,7 +4,8 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core, core3d, geom, io
-from .pair import Pair
+# from .pair import Pair
+from .data import Data, WindowPicker
 from .window import Window
 
 import numpy as np
@@ -15,7 +16,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from matplotlib import gridspec
 
-class Trio:
+class Trio(Data):
     """
     The Trio: work with 3-component data.
         
@@ -37,9 +38,8 @@ class Trio:
     """
     def __init__(self,*args,**kwargs):
         
-        # ensure delta is set as a keyword argment, e.g. delta=0.1
-        if 'delta' not in kwargs: raise Exception('delta must be set')
-        self.delta = kwargs['delta']           
+        # Derive from Data
+        Data.__init__(self, *args, **kwargs)   
                        
         # if no args make synthetic
         if len(args) == 0: 
@@ -56,7 +56,8 @@ class Trio:
         # some sanity checks
         if self.x.ndim != 1: raise Exception('data must be one dimensional')
         if self.x.size%2 == 0: raise Exception('data must have odd number of samples')
-        if (self.x.size != self.y.size): raise Exception('x and y must be the same length')
+        if (self.x.size != self.y.size or self.x.size != self.z.size): 
+            raise Exception('x, y, and z must be the same length')
         
         # geometry info 
         self.geom = 'geo'
@@ -126,8 +127,6 @@ class Trio:
         # apply splitting
         self.x, self.y , self.z = core3d.unsplit(self.x,self.y,self.z,fast,samps)
         self.rotateto(origvecs)
-        
-
 
     def rotate2ray(self):
         """
@@ -227,48 +226,6 @@ class Trio:
         # if reached here then raise exception
         raise ValueError('Unexpected arguments')
                 
-    def set_window(self,*args,**kwargs):
-        """
-        Return a window object at user defined start and end times.
-        
-        args
-        - Window
-        - start,end
-        
-        kwargs
-        - tukey
-        
-        The window will be adjusted to ensure it occupies an odd number 
-        of samples.
-        """
-                
-        # if Window provided
-        if 'window' in kwargs:  
-            if isinstance(kwargs['window'],Window):
-                self.window = kwargs['window']
-                return
-            else:
-                raise TypeError('expecting a window')
-        
-        # if no arguments provided
-        if len(args) == 0:
-            width = core.odd(self._nsamps() / 3)
-            self.window = Window(width)
-            return
-        # if start/end given
-        if len(args) == 2:
-            start, end = args
-            if start > end: raise ValueError('start is larger than end')
-            time_centre = (start + end)/2
-            time_width = end - start
-            tcs = core.time2samps(time_centre,self.delta)
-            offset = tcs - self._centresamp()
-            # convert time to nsamples -- must be odd
-            width = core.time2samps(time_width,self.delta,'even') + 1
-            self.window = Window(width,offset,**kwargs) 
-            return
-        else:
-            raise Exception ('unexpected number of arguments')
 
     def set_labels(self,*args):
         if len(args) == 0:
@@ -343,9 +300,6 @@ class Trio:
 
         
     # Utility 
-    
-    def t(self):
-        return np.arange(self.x.size) * self.delta
   
     def data(self):
         return np.vstack(( self.x, self.y, self.z))
@@ -415,79 +369,8 @@ class Trio:
         chop.x, chop.y, chop.z = core.chop(chop.x,chop.y,chop.z,window=chop.window)
         chop.window.offset = 0
         return chop
-        
-    def chopt(self):
-        """
-        Chop time to window
-        """        
-        t = core.chop(self.t(),window=self.window)
-        return t
-    
-    def wbeg(self):
-        """
-        Window start time.
-        """
-        sbeg = self.window.start(self._nsamps())
-        return sbeg * self.delta
-    
-    def wend(self):
-        """
-        Window end time.
-        """
-        send = self.window.end(self._nsamps())
-        return send * self.delta
-        
-    def wwidth(self):
-        """
-        Window width.
-        """
-        return (self.window.width-1) * self.delta
 
     # Plotting
- 
- # def plot(self,window=None):
- #     """
- #     Plot trace data and particle motion
- #     """
- #     from matplotlib import gridspec
- #     fig = plt.figure(figsize=(12, 3))
- #     if window is None:
- #         gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1])
- #         # trace
- #         ax0 = plt.subplot(gs[0])
- #         plot.trace(self.x,self.y,self.z,time=self.t(),ax=ax0)
- #         # particle  motion
- #         ax1 = plt.subplot(gs[1],projection='3d')
- #         plot.particle(self.x,self.y,self.z,ax=ax1)
- #     else:
- #         gs = gridspec.GridSpec(1, 3, width_ratios=[3,1,1])
- #         # trace with window markers
- #         ax0 = plt.subplot(gs[0])
- #         plot.trace(self.x,self.y,self.z,time=self.t(),window=window,ax=ax0)
- #         # windowed data
- #         d2 = self.copy()
- #         d2.chop(window)
- #         ax1 = plt.subplot(gs[1])
- #         nsamps = self.nsamps()
- #         wbeg = window.start(nsamps)*self.delta
- #         plot.trace(d2.x,d2.y,d2.z,time=d2.t()+wbeg,ax=ax1)
- #         # particle  motion
- #         ax2 = plt.subplot(gs[2],projection='3d')
- #         plot.particle(d2.x,d2.y,d2.z,ax=ax2)
- #     # show
- #     plt.tight_layout()
- #     plt.show()
- #
- #
- # def pt(self,**kwargs):
- #     """Plot traces"""
- #     ax = plot.trace(self.x,self.y,self.z,time=self.t(),**kwargs)
- #     plt.show()
- #
- # def ppm(self,**kwargs):
- #     """Plot particle motion"""
- #     ax = plot.particle(self.x,self.y,self.z,**kwargs)
- #     plt.show()
      
                 
     def plot(self,**kwargs):
@@ -607,113 +490,3 @@ class Trio:
         # ax.invert_zaxis()
         
         return
-
-    # I/O stuff  
-
-    def save(self,filename):
-        """
-        Save Measurement for future referral
-        """
-        io.save(self,filename)
-                       
-    def copy(self):
-        return io.copy(self)
-
-        
-    # Geometry stuff
-
-    # def geom_to_geo():
-    # def geom_to_ray():
-    # def geom_to   
-        
-    # Hidden
-    
-    def _nsamps(self):
-        return self.x.size
-
-    def _centresamp(self):
-        return int(self.x.size/2)
-    
-    def _centretime(self):
-        return int(self.x.size/2) * self.delta
-
-    # Special
-    
-    def __eq__(self, other) :
-        # check same class
-        if self.__class__ != other.__class__: return False
-        # check same keys
-        if set(self.__dict__) != set(other.__dict__): return False
-        # check same values
-        for key in self.__dict__.keys():
-            if not np.all( self.__dict__[key] == other.__dict__[key]): return False
-        # if reached here then the same
-        return True
-
-# Exterior   
-
-def _synth(**kwargs):
-    """return ricker wavelet synthetic data"""
-    
-    # defaults
-    pol = 0.
-    delta = 1.
-    split = []
-    noise = 0.001
-    nsamps = 1001
-    width = 32.
-    noisewidth = width/4  
-    
-    # override defaults
-    if ('pol' in kwargs): pol = kwargs['pol']   
-    if ('delta' in kwargs): delta = kwargs['delta']  
-    # if ('fast' in kwargs): fast = kwargs['fast']
-    # if ('lag' in kwargs): lag = kwargs['lag']
-    if ('split') in kwargs: split = kwargs['split']
-    if ('noise' in kwargs): noise = kwargs['noise']   
-    if ('nsamps' in kwargs): nsamps = kwargs['nsamps']   
-    if ('width' in kwargs): width = kwargs['width'] 
-    if ('noisewidth' in kwargs): noisewidth = kwargs['noisewidth']
-
-    # initiate data with clean ricker wavelet
-    nsamps = int(nsamps)  
-    x = signal.ricker(nsamps, width)
-    y = np.zeros(nsamps)
-    
-    # rotate to polarisation 
-    # negative because we are doing the active rotation of data, whereas
-    # core.rotate does the passive transormation of the co-ordinate system
-    x,y = core.rotate(x,y,-pol)
-
-    if isinstance(split,tuple):
-        fast, lag = split
-        # add any splitting -- lag samples must be even
-        slag = core.time2samps(lag,delta,mode='even')
-        x,y = core.split(x,y,fast,slag)
-    elif isinstance(split,list):        
-        for parms in split:
-            fast, lag = parms
-            # add any splitting -- lag samples must be even
-            slag = core.time2samps(lag,delta,mode='even')
-            x,y = core.split(x,y,fast,slag)
-    
-    # add noise - do this last to avoid splitting the noise
-    x = x + core.noise(x.size,noise,int(noisewidth))    
-    y = y + core.noise(x.size,noise,int(noisewidth))
-    z = core.noise(x.size,noise,int(noisewidth))
-    
-    if 'ray' in kwargs:
-        if not isinstance(kwargs['ray'], tuple):
-            raise Exception('ray must be a tuple (azi,inc)')
-        if len(kwargs['ray']) != 2:
-            raise Exception('ray must be length 2 (azi,inc)')
-        az, inc = math.radians(kwargs['ray'][0]), math.radians(kwargs['ray'][1])
-        sinc, cinc = math.sin(inc), math.cos(inc)
-        saz, caz = math.sin(az), math.cos(az)
-        rot = np.array([[-cinc*caz,  saz, sinc*caz],
-                        [-cinc*saz, -caz, sinc*saz],
-                        [     sinc,    0,     cinc]])
-        xyz = np.dot(rot,np.vstack((x,y,z)))
-        x, y, z = xyz[0], xyz[1], xyz[2]
-    
-    return x,y,z
