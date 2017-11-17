@@ -158,7 +158,32 @@ def crosscorr(x,y):
     norm = math.sqrt(np.sum(x**2) * np.sum(y**2))
     xc = np.correlate(x,y)/norm
     return xc
+
+def crossconv(obsx, obsy, prex, prey):
+    """
+    Cross convolve 
+    """
+    x = np.convolve(obsx, prey)
+    y = np.convolve(prex, obsy)
+    return x, y
+
+def misfit(x, y):
+    num = np.trapz((x - y)**2)
+    den = np.trapz(x**2) + np.trapz(y**2)
+    return num / den  
     
+def crossconvmf(obsx, obsy, prex, prey):
+    x, y = crossconv(obsx, obsy, prex, prey)
+    return misfit(x, y)  
+
+def splittingintensity(rad,trans):
+    """
+    Calculate splitting intensity.
+    """    
+    rdiff = np.gradient(rad)
+    s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
+    return s
+
 # Errors
 
 def ndf(y):
@@ -196,7 +221,18 @@ def ftest(lam2,ndf,alpha=0.05):
     lam2alpha = lam2min * ( 1 + (k/(ndf-k)) * F)
     return lam2alpha    
 
+# Null Criterion
 
+def Q(fastev,lagev,fastrc,lagrc):
+    """Following Wuestefeld et al. 2010"""
+    omega = math.fabs((fastev - fastrc + 3645)%90 - 45) / 45
+    delta = lagrc / lagev
+    dnull = math.sqrt(delta**2 + (omega-1)**2) * math.sqrt(2)
+    dgood = math.sqrt((delta-1)**2 + omega**2) * math.sqrt(2)
+    if dnull < dgood:
+        return -(1 - dnull)
+    else:
+        return (1 - dgood)
 
 # Signal to noise
 
