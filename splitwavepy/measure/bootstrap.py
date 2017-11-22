@@ -10,7 +10,7 @@ from __future__ import print_function
 
 from ..core.pair import Pair
 from ..core import core
-from . import EigenM
+from .eigenM import EigenM
 
 import numpy as np
 
