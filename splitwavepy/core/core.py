@@ -215,6 +215,11 @@ def ftest(lam2,ndf,alpha=0.05):
     by default alpha = 0.05 = 95% confidence interval
     following Silver and Chan (1991)
     """
+    
+    # check ndf is big enough
+    if ndf < 3:
+        raise Exception('Number of degrees of freedom is less than 3.  This likely indicates a problem which would lead to a spurios mesaurement.  Check window length.')
+    
     lam2min = lam2.min()
     k = 2 # two parameters, phi and dt.
     F = stats.f.ppf(1-alpha,k,ndf)
