@@ -6,6 +6,7 @@ from __future__ import print_function
 from . import core, geom, io
 from .data import Data, WindowPicker
 from .window import Window
+from .measure import Measure
 
 import numpy as np
 import math
@@ -95,8 +96,8 @@ class Pair(Data):
         # if pol specified set
         if ('pol' in kwargs): 
             self.set_pol(kwargs['pol'])
-        else:
-            self.set_pol()
+        # else:
+        #    self.set_pol()
         
         # self.rayvec = [0,0,1] # normal to shear plane, along Z-axis
         # if ('rayvec' in kwargs): self.rayvec = kwargs['rayvec']
@@ -223,7 +224,7 @@ class Pair(Data):
         self.eigvals, self.eigvecs = core.eigcov(self.data())
         
     def power(self):
-        return self.x**2,self.y**2
+        return self.x**2, self.y**2
         
     # def snrRH(self):
     #     data = self.copy()
@@ -233,15 +234,15 @@ class Pair(Data):
     def cmpangs(self):
         cmp1 = self.cmpvecs[:,0]
         cmp2 = self.cmpvecs[:,1]
-        def getang(c) : return np.rad2deg(np.arctan2(c[1],c[0]))
-        return getang(cmp1),getang(cmp2)          
+        def getang(c) : return np.rad2deg(np.arctan2(c[1], c[0]))
+        return getang(cmp1), getang(cmp2)          
     
     def chop(self):
         """
         Chop data to window
         """
         chop = self.copy()
-        chop.x, chop.y = core.chop(chop.x,chop.y,window=chop.window)
+        chop.x, chop.y = core.chop(chop.x, chop.y, window=chop.window)
         chop.window.offset = 0
         return chop
 
@@ -250,6 +251,7 @@ class Pair(Data):
         """
         Calculate the splitting intensity as defined by Chevrot (2000).
         """
+        # if self.pol is None: raise Exception('pol must be set')
         copy = self.copy()
         copy.rotateto(copy.pol)
         copy.x = np.gradient(copy.x)
@@ -279,7 +281,7 @@ class Pair(Data):
         
         # optional pick window
         if 'pick' in kwargs and kwargs['pick'] == True:
-            windowpicker = WindowPicker(self,fig,ax0)
+            windowpicker = WindowPicker(self, fig, ax0)
             windowpicker.connect()
                                  
         # show
@@ -312,7 +314,7 @@ class Pair(Data):
     
         # set limits
         lim = np.abs(self.data()).max() * 1.1
-        if 'ylim' not in kwargs: kwargs['ylim'] = [-lim,lim]
+        if 'ylim' not in kwargs: kwargs['ylim'] = [-lim, lim]
         ax.set_ylim(kwargs['ylim'])
         if 'xlim' in kwargs: ax.set_xlim(kwargs['xlim'])
     
@@ -322,14 +324,14 @@ class Pair(Data):
 
         # plot window markers
         if self.window.width < self._nsamps():
-            w1 = ax.axvline(self.wbeg(),linewidth=1,color='k')
-            w2 = ax.axvline(self.wend(),linewidth=1,color='k')    
+            w1 = ax.axvline(self.wbeg(), linewidth=1, color='k')
+            w2 = ax.axvline(self.wend(), linewidth=1, color='k')    
         
         # plot additional markers
         if 'marker' in kwargs:
             print('here')
             if type(kwargs['marker']) is not list: kwargs['marker'] = [ kwargs['marker'] ]
-            [ ax.axvline(float(mark),linewidth=1,color='b') for mark in kwargs['marker'] ]
+            [ ax.axvline(float(mark), linewidth=1, color='b') for mark in kwargs['marker'] ]
             
         return
 
@@ -346,10 +348,10 @@ class Pair(Data):
         # ax.plot(self.chop().y,self.chop().x)
         
         # multi-colored
-        norm = plt.Normalize(t.min(),t.max())
+        norm = plt.Normalize(t.min(), t.max())
         points = np.array([y, x]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments,cmap='plasma',norm=norm,alpha=0.7)
+        lc = LineCollection(segments, cmap='plasma', norm=norm, alpha=0.7)
         lc.set_array(t)
         lc.set_linewidth(2)
         line = ax.add_collection(lc)
@@ -357,7 +359,7 @@ class Pair(Data):
     
         # set limit
         lim = np.abs(self.data()).max() * 1.1
-        if 'lims' not in kwargs: kwargs['lims'] = [-lim,lim] 
+        if 'lims' not in kwargs: kwargs['lims'] = [-lim, lim] 
         ax.set_aspect('equal')
         ax.set_xlim(kwargs['lims'])
         ax.set_ylim(kwargs['lims'])
@@ -372,6 +374,18 @@ class Pair(Data):
         ax.axes.yaxis.set_ticklabels([])
         return
             
+    # Measure
+    
+    def EigenM(self, *args, **kwargs):
+        self.EigenM = EigenM(self, *args, **kwargs)
+        
+    def TransM(self, *args, **kwargs):
+        self.TransM = TransM(self, *args, **kwargs)
+        
+    def XcorrM(self, *args, **kwargs):
+        self.XcorrM = XcorrM(self, *args, **kwargs)
+        
+    
         
     # Special
     

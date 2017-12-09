@@ -9,7 +9,7 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core, io
-from ..core.pair import Pair
+#from ..core.pair import Pair
 from ..core.window import Window
 from .measure import Measure
 
@@ -55,11 +55,11 @@ class EigenM(Measure):
         Populates an EigenM instance.
         """        
 
-        # process input
-        if len(args) == 1 and isinstance(args[0],Pair):
-            self.data = args[0]
-        else:
-            self.data = Pair(*args,**kwargs)
+ #       # process input
+ #       if len(args) == 1 and isinstance(args[0],Pair):
+ #           self.data = args[0]
+ #       else:
+ #           self.data = Pair(*args,**kwargs)
         
         # Derive from Measure
         Measure.__init__(self, *args, **kwargs)
