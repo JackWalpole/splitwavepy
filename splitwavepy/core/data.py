@@ -9,7 +9,7 @@ from __future__ import print_function
 
 from ..core import core, core3d, io
 # from ..core.pair import Pair
-from ..core.window import Window
+# from ..core.window import Window
 # from . import eigval, rotcorr, transmin, sintens
 
 import numpy as np
