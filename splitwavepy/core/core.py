@@ -121,14 +121,15 @@ def chop(*args,**kwargs):
 
 ## Measurement 
    
-def eigcov(data):
+def eigcov(x, y):
     """
     Return eigen values and vectors of covariance matrix
     """
+    data = np.vstack((x, y))
     eigenValues, eigenVectors = np.linalg.eig(np.cov(data))
     idx = eigenValues.argsort()[::-1]   
     eigenValues = eigenValues[idx]
-    eigenVectors = eigenVectors[:,idx]
+    eigenVectors = eigenVectors[:, idx]
     return eigenValues, eigenVectors
     
 # def eigvalcov(data):
@@ -176,10 +177,10 @@ def crossconvmf(obsx, obsy, prex, prey):
     x, y = crossconv(obsx, obsy, prex, prey)
     return misfit(x, y)  
 
-def splittingintensity(rad,trans):
+def splittingintensity(rad, trans):
     """
     Calculate splitting intensity.
-    """    
+    """
     rdiff = np.gradient(rad)
     s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
     return s

@@ -64,19 +64,21 @@ class Pair(Data):
     """
     def __init__(self,*args,**kwargs):
         
+        # if no args make synthetic
+        if len(args) == 0: 
+            args[0], args[1] = core.synth(**kwargs)
+        
         # Derive from Data
         Data.__init__(self, *args, **kwargs)
                                               
-        # if no args make synthetic
-        if len(args) == 0: 
-            self.x, self.y = core.synth(**kwargs)               
-        # otherwise read in data                
-        elif len(args) == 2:
-            if not (isinstance(args[0],np.ndarray) & isinstance(args[1],np.ndarray)):
-                raise TypeError('expecting numpy arrays')         
-            self.x, self.y = args[0], args[1]
-        else: 
-            raise Exception('Unexpected number of arguments')
+        #
+        # # otherwise read in data
+        # elif len(args) == 2:
+        #     if not (isinstance(args[0],np.ndarray) & isinstance(args[1],np.ndarray)):
+        #         raise TypeError('expecting numpy arrays')
+        #     self.x, self.y = args[0], args[1]
+        # else:
+        #     raise Exception('Unexpected number of arguments')
                     
         # some sanity checks
         if self.x.ndim != 1: raise Exception('data must be one dimensional')
@@ -95,7 +97,8 @@ class Pair(Data):
         
         # if pol specified set
         if ('pol' in kwargs): 
-            self.set_pol(kwargs['pol'])
+            self.pol = kwargs['pol']
+            # self.set_pol(kwargs['pol'])
         # else:
         #    self.set_pol()
         
@@ -104,13 +107,13 @@ class Pair(Data):
         # Always just assume ray vector is normal to components
         
         # source and receiver location info
-        if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']     
-        if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
-        if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
+        # if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']
+        # if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
+        # if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
 
         # labels
-        self.units = 's'   
-        if ('units' in kwargs): self.units = kwargs['units']      
+        # self.units = 's'
+        # if ('units' in kwargs): self.units = kwargs['units']
         self.set_labels()
         if ('cmplabels' in kwargs): self.cmplabels = kwargs['cmplabels']
         # A user defined name # maybe useful?
@@ -194,37 +197,42 @@ class Pair(Data):
         else:
             raise Exception('unexpected number of arguments')
             
-    def set_pol(self,*args):
-        if len(args) == 0:
-            self.pol = self.get_pol()
-        elif len(args) == 1:
-            self.pol = float(args[0])
-        else:
-            raise Exception('Unexpected number of arguments')
-        return
+    # def set_pol(self,*args):
+    #     if len(args) == 0:
+    #         self.pol = self.get_pol()
+    #     elif len(args) == 1:
+    #         self.pol = float(args[0])
+    #     else:
+    #         raise Exception('Unexpected number of arguments')
+    #     return
     
     # Utility 
-    
-  
+      
     def data(self):
         return np.vstack((self.x,self.y))
 
-    def get_pol(self):
+    def guess_pol(self):
         """Return principal component orientation"""
         # rotate to zero
         rot = self.cmpvecs.T
         data = self.chop().data()
-        xy = np.dot(rot,data)
-        _,eigvecs = core.eigcov(xy)
-        x,y = eigvecs[:,0]
-        pol = np.rad2deg(np.arctan2(y,x))
+        xy = np.dot(rot, data)
+        _, eigvecs = core.eigcov(xy)
+        x, y = eigvecs[:, 0]
+        pol = np.rad2deg(np.arctan2(y, x))
         return pol
         
-    def eigen(self,window=None):
-        self.eigvals, self.eigvecs = core.eigcov(self.data())
+    def eigen(self):
+        """Return eigvals and eigvecs"""
+        return core.eigcov(self.x, self.y)
         
-    def power(self):
-        return self.x**2, self.y**2
+    def eigvalcov(self):
+        """Return eigenvalues of covariance matrix"""
+        return core.eigvalcov(self.x, self.y)
+        
+    def transenergy(self):
+        """Return sum of squ"""
+        return core.transenergy(self.x, self.y)
         
     # def snrRH(self):
     #     data = self.copy()
@@ -245,19 +253,15 @@ class Pair(Data):
         chop.x, chop.y = core.chop(chop.x, chop.y, window=chop.window)
         chop.window.offset = 0
         return chop
-
     
-    def splitting_intensity(self,**kwargs):
+    def splitintens(self,**kwargs):
         """
         Calculate the splitting intensity as defined by Chevrot (2000).
         """
-        # if self.pol is None: raise Exception('pol must be set')
+        if 'pol' not in kwargs: raise Exception('Polarisation must be specified, e.g., pol=30.')
         copy = self.copy()
         copy.rotateto(copy.pol)
-        copy.x = np.gradient(copy.x)
-        copy.chop()
-        rdiff, trans = copy.x, copy.y
-        s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
+        s = core.splittingintensity(copy.x, copy.y)
         return s
 
         
@@ -376,14 +380,21 @@ class Pair(Data):
             
     # Measure
     
-    def EigenM(self, *args, **kwargs):
-        self.EigenM = EigenM(self, *args, **kwargs)
+    def grid_eigm(self, **kwargs):
+        self.eigm = {}
+        self.eigm['']
+        self.eigm['lam1'] = self.x * 2
+        self.EigenM = EigenM(self, **kwargs)
+        # MAKE MEASUREMENT
+        stuff = np.asarray(self.gridsearch(core.eigvalcov,**kwargs))
+        self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
+        maxloc = core.max_idx(self.lam1/self.lam2)
         
-    def TransM(self, *args, **kwargs):
-        self.TransM = TransM(self, *args, **kwargs)
-        
-    def XcorrM(self, *args, **kwargs):
-        self.XcorrM = XcorrM(self, *args, **kwargs)
+    # def TransM(self, *args, **kwargs):
+    #     self.TransM = TransM(self, **kwargs)
+    #
+    # def XcorrM(self, *args, **kwargs):
+    #     self.XcorrM = XcorrM(self, **kwargs)
         
     
         

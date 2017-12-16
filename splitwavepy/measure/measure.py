@@ -8,7 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core, core3d, io
-from ..core.pair import Pair
+# from ..core.pair import Pair
 from ..core.window import Window
 # from . import eigval, rotcorr, transmin, sintens
 
@@ -27,8 +27,8 @@ class Measure:
     def __init__(self,*args,**kwargs):
         
         # convert times to nsamples
-        self.delta = self.data.delta
-        self.units = self.data.units
+        #self.delta = self.data.delta
+        #self.units = self.data.units
 
         # LAGS
         minlag = 0
@@ -69,7 +69,7 @@ class Measure:
         self.__degs = degs
         
         # self.lags, self.degs = np.meshgrid(self.__slags * self.delta, self.__degs)
-        self.degs, self.lags = np.meshgrid(self.__degs, self.__slags * self.delta)
+       # self.degs, self.lags = np.meshgrid(self.__degs, self.__slags * self.delta)
 
         # receiver correction
         self.rcvcorr = None
@@ -94,6 +94,10 @@ class Measure:
             self.srccorr = kwargs['srccorr']
                 
     # Common methods
+    
+    def meshgrid(self):
+        """returns grids: degs, lags"""
+        return np.meshgrid(self.__degs, self.__slags * self.delta)
     
     def gridsearch(self, func, **kwargs):
         

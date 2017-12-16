@@ -50,7 +50,7 @@ class EigenM(Measure):
     noise = 0.001  | float       
     """
     
-    def __init__(self,*args,**kwargs):
+    def __init__(self, Pair, *args, **kwargs):
         """
         Populates an EigenM instance.
         """        
