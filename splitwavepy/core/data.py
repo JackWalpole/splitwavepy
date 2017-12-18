@@ -19,7 +19,6 @@ import os.path
 from scipy import signal
 
 
-
 class Data:
     
     """
@@ -28,7 +27,7 @@ class Data:
     
     def __init__(self,*args,**kwargs):
 
-        # ensure delta is set as a keyword argment, e.g. delta=0.1
+        # ensure delta is set as a keyword argument, e.g. delta=0.1
         if 'delta' not in kwargs: raise Exception('delta must be set')
         self.delta = kwargs['delta']
         
@@ -40,7 +39,11 @@ class Data:
             self.y = args[1]
             self.z = args[2]
         else:
-            raise Exception('expects x, y, (and maybe z) in numpy arrays')               
+            raise Exception('expects x, y, (and maybe z) in numpy arrays')
+            
+        # defaults
+        self.cmpvecs = np.eye(3)
+        self.set_window()      
         
     # COMMON PROPERTIES
     
@@ -58,7 +61,17 @@ class Data:
         return self.__pol
         
     @pol.setter
+    def pol(self, pol):
         self.__pol = float(pol)
+        
+    @property
+    def polvec(self):
+        return self.__polvec
+        
+    @polvec.setter
+    def polvec(self, polvec):
+        if not isinstance(polvec, np.ndarray):
+            raise TypeError('polvec must be a numpy array')
         
     @property
     def window(self):
@@ -67,14 +80,34 @@ class Data:
     @window.setter
     def window(self, window):    
         self.__window = window
+        
+    @property
+    def cmpvecs(self):
+        return self.__cmpvecs
+        
+    @cmpvecs.setter
+    def cmpvecs(self, cmpvecs):
+        if not isinstance(cmpvecs, np.ndarray):
+            raise TypeError('cmpvecs must be a numpy array')
+        # check components are orthogonal
+        self.__cmpvecs = cmpvecs
    
     @property
-    def units(self):
-        return self.__units
-    
-    @units.setter
-    def units(self, units):
-        self.__units = units
+    def rayvec(self):
+        return self.__rayvec
+        
+    @rayvec.setter
+    def rayvec(self, rayvec):
+        self.__rayvec = rayvec
+        
+   
+    # @property
+    # def units(self):
+    #     return self.__units
+    #
+    # @units.setter
+    # def units(self, units):
+    #     self.__units = units
                 
     # Common methods
                 
@@ -99,19 +132,19 @@ class Data:
         else:
             raise Exception ('unexpected number of arguments')
     
-    def set_pol(self, **kwargs):
-        """
-        Set polarisation
-        """
-        if 'pol' not in kwargs:
-            raise Exception('pol must be a keyword argument')
-            
-        self.pol = kwargs['pol']
+    # def set_pol(self, **kwargs):
+    #     """
+    #     Set polarisation
+    #     """
+    #     if 'pol' not in kwargs:
+    #         raise Exception('pol must be a keyword argument')
+    #
+    #     self.pol = kwargs['pol']
         
-    # Utility 
+    # Time
     
     def t(self):
-        return np.arange(self._nsamps()) * self.delta
+        return np.arange(self._nsamps()) * self.__delta
         
     def chopt(self):
         """
@@ -127,35 +160,35 @@ class Data:
         Window start time.
         """
         sbeg = self.window.start(self._nsamps())
-        return sbeg * self.delta
-    
+        return sbeg * self.__delta
+
     def wend(self):
         """
         Window end time.
         """
         send = self.window.end(self._nsamps())
-        return send * self.delta
+        return send * self.__delta
         
     def wwidth(self):
         """
         Window width.
         """
-        return (self.window.width-1) * self.delta
+        return (self.window.width-1) * self.__delta
         
     def wcentre(self):
         """
         Window centre
         """
-        return self.window.centre(self._nsamps()) * self.delta
+        return self.window.centre(self._nsamps()) * self.__delta
         
     def construct_window(self,start,end,**kwargs): 
         if start > end: raise ValueError('start is larger than end')
         time_centre = (start + end)/2
         time_width = end - start
-        tcs = core.time2samps(time_centre,self.delta)
+        tcs = core.time2samps(time_centre,self.__delta)
         offset = tcs - self._centresamp()
         # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
-        width = core.time2samps(time_width,self.delta,'even') + 1     
+        width = core.time2samps(time_width,self.__delta,'even') + 1     
         return Window(width,offset,**kwargs) 
         
     # Hidden
