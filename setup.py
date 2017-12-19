@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'SplitWavePy',
-    version = '0.2.6',
+    version = '0.3.0',
     description = "Shearwave splitting measurement tools",
     author = 'Jack Walpole',
     author_email = 'j.walpole@gmail.com',

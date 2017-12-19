@@ -2,4 +2,4 @@
 0.2.4 Added interactive window picker
 0.2.5 Added Crosscorrelation, transverse min, splitting intensity, and changed picking behaviour.
 0.2.6 Minor bug fix.
-
+0.3.0 Added base classes for Measurement and data which should make the code more maintainable going forward.

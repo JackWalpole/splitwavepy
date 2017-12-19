@@ -11,7 +11,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .window import Window
+# from .window import Window
 
 import numpy as np
 from scipy import signal, stats
@@ -23,7 +23,7 @@ def near(x): return np.rint(x).astype(int)
 def even(x): return 2*np.rint(x/2).astype(int)    
 def odd(x): return (2*np.rint(np.ceil(x/2))-1).astype(int)
 
-def time2samps(t,delta,mode='near'):
+def time2samps(t, delta, mode='near'):
     """
     convert a time to number of samples given the sampling interval.
     """
@@ -32,7 +32,7 @@ def time2samps(t,delta,mode='near'):
     if mode == 'even': return even(rat)
     if mode == 'odd' : return odd(rat)
 
-def samps2time(samps,delta):
+def samps2time(samps, delta):
     """
     convert a number of samples to time given the sampling interval.
     """
@@ -40,7 +40,7 @@ def samps2time(samps,delta):
     
 ################
 
-def lag(x,y,samps):
+def lag(x, y, samps):
     """
     Lag x samps to the left and
     lag y samps to the right.
@@ -51,7 +51,7 @@ def lag(x,y,samps):
     to ensure even trace lengths when measuring splitting.
     """
     if samps == 0:
-        return x,y
+        return x, y
 
     if samps > 0:
         # positive shift
@@ -60,64 +60,65 @@ def lag(x,y,samps):
         # negative shift
         return x[:samps], y[-samps:]
       
-def rotate(x,y,degrees):
+def rotate(x, y, degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis
        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
     ang = math.radians(degrees)
     rot = np.array([[ np.cos(ang), np.sin(ang)],
                     [-np.sin(ang), np.cos(ang)]])
-    xy = np.dot(rot, np.vstack((x,y)))
+    xy = np.dot(rot, np.vstack((x, y)))
     return xy[0], xy[1]
 
-def split(x,y,degrees,samps):
+def split(x, y, degrees, samps):
     """Apply forward splitting and rotate back"""
     if samps == 0:
-        return x,y
-    x,y = rotate(x,y,degrees)
-    x,y = lag(x,y,samps)
-    x,y = rotate(x,y,-degrees)
-    return x,y
+        return x, y
+    x, y = rotate(x, y, degrees)
+    x, y = lag(x, y, samps)
+    x, y = rotate(x, y, -degrees)
+    return x, y
 
-def unsplit(x,y,degrees,samps):
+def unsplit(x, y, degrees, samps):
     """Apply inverse splitting and rotate back"""
-    return split(x,y,degrees,-samps)
+    return split(x, y, degrees, -samps)
 
-def chop(*args,**kwargs):
-    """Chop trace, or traces, using window"""
-    
-    if ('window' in kwargs):
-        window = kwargs['window']
-    
-    if not isinstance(window,Window):
-        raise Exception('window must be a Window')
-    
-    length = args[0].size
-          
-    if window.width > length:
-        raise Exception('window width is greater than trace length')
-    
-    centre = int(length/2) + window.offset
-    hw = int(window.width/2)    
-    t0 = centre - hw
-    t1 = centre + hw
-    
-    if t0 < 0:
-        raise Exception('chop starts before trace data')
-    elif t1 > length:
-        raise Exception('chop ends after trace data')
+# def chop(*args, **kwargs):
+#     """Chop trace, or traces, using window"""
+#
+#     if ('window' in kwargs):
+#         window = kwargs['window']
+#
+#     if not isinstance(window, Window):
+#         raise Exception('window must be a Window')
+#
+#     length = args[0].size
+#
+#     if window.width > length:
+#         raise Exception('window width is greater than trace length')
+#
+#     centre = int(length/2) + window.offset
+#     hw = int(window.width/2)
+#     t0 = centre - hw
+#     t1 = centre + hw
+#
+#     if t0 < 0:
+#         raise Exception('chop starts before trace data')
+#     elif t1 > length:
+#         raise Exception('chop ends after trace data')
+#
+#     if window.tukey is not None:
+#         tukey = signal.tukey(window.width,alpha=window.tukey)
+#     else:
+#         tukey = 1.
+#
+#     if len(args)==1:
+#         return args[0][t0:t1+1] * tukey
+#     elif len(args)==2:
+#         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey
+#     elif len(args)==3:
+#         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
         
-    if window.tukey is not None:
-        tukey = signal.tukey(window.width,alpha=window.tukey)
-    else:
-        tukey = 1.
-    
-    if len(args)==1:    
-        return args[0][t0:t1+1] * tukey
-    elif len(args)==2:
-        return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey
-    elif len(args)==3:
-        return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
 
 ## Measurement 
    
@@ -139,33 +140,35 @@ def eigcov(x, y):
 #     """
 #     return np.sort(np.linalg.eigvalsh(np.cov(data)))
     
-def eigvalcov(x,y):
+def eigvalcov(x, y):
     """
     return sorted eigenvalues of covariance matrix
     lambda2 first, lambda1 second
     """
-    data = np.vstack((x,y))
+    data = np.vstack((x, y))
     return np.sort(np.linalg.eigvalsh(np.cov(data)))
+    
+def energy(x):
+    return np.sum(x**2)
   
-def transenergy(x,y):
+def transenergy(x, y):
     """
     return energy
     lambda1 first, lambda2 second
     """
-    energy = lambda x: np.sum(x**2)
     return energy(x), energy(y) 
     
-def crosscorr(x,y):
+def crosscorr(x, y):
     norm = math.sqrt(np.sum(x**2) * np.sum(y**2))
-    xc = np.correlate(x,y)/norm
+    xc = np.correlate(x, y) / norm
     return xc
 
-def crossconv(obsx, obsy, prex, prey):
+def crossconv(obsx, obsy, synx, syny):
     """
     Cross convolve 
     """
-    x = np.convolve(obsx, prey)
-    y = np.convolve(prex, obsy)
+    x = np.convolve(obsx, syny)
+    y = np.convolve(synx, obsy)
     return x, y
 
 def misfit(x, y):
@@ -173,8 +176,8 @@ def misfit(x, y):
     den = np.trapz(x**2) + np.trapz(y**2)
     return num / den  
     
-def crossconvmf(obsx, obsy, prex, prey):
-    x, y = crossconv(obsx, obsy, prex, prey)
+def crossconvmf(obsx, obsy, synx, syny):
+    x, y = crossconv(obsx, obsy, synx, syny)
     return misfit(x, y)  
 
 def splittingintensity(rad, trans):
@@ -219,7 +222,7 @@ def ftest(lam2,ndf,alpha=0.05):
     
     # check ndf is big enough
     if ndf < 3:
-        raise Exception('Number of degrees of freedom is less than 3.  This likely indicates a problem which would lead to a spurios mesaurement.  Check window length.')
+        raise Exception('Number of degrees of freedom is less than 3.  Check window length.')
     
     lam2min = lam2.min()
     k = 2 # two parameters, phi and dt.
@@ -242,7 +245,7 @@ def Q(fastev,lagev,fastrc,lagrc):
 
 # Signal to noise
 
-def snrRH(x,y):
+def snr(x,y):
     """
     Returns signal to noise ratio assuming signal on trace1 and noise on trace2
     Uses the method of Restivo and Helffrich (1999):
