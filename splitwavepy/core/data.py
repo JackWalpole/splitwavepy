@@ -32,12 +32,11 @@ class Data:
         self.delta = kwargs['delta']
         
         if len(args) == 2:
-            self.x = args[0]
-            self.y = args[1]
+            self.x, self.y = args[0], args[1]
+            self.__ncomps = 2
         elif len(args) == 3:
-            self.x = args[0]
-            self.y = args[1]
-            self.z = args[2]
+            self.x, self.y, self.z = args[0], args[1], args[2]
+            self.__ncomps = 3
         else:
             raise Exception('expects x, y, (and maybe z) in numpy arrays')
             
@@ -64,14 +63,14 @@ class Data:
     def pol(self, pol):
         self.__pol = float(pol)
         
-    @property
-    def polvec(self):
-        return self.__polvec
-        
-    @polvec.setter
-    def polvec(self, polvec):
-        if not isinstance(polvec, np.ndarray):
-            raise TypeError('polvec must be a numpy array')
+    # @property
+    # def polvec(self):
+    #     return self.__polvec
+    #
+    # @polvec.setter
+    # def polvec(self, polvec):
+    #     if not isinstance(polvec, np.ndarray):
+    #         raise TypeError('polvec must be a numpy array')
         
     @property
     def window(self):
@@ -92,13 +91,13 @@ class Data:
         # check components are orthogonal
         self.__cmpvecs = cmpvecs
    
-    @property
-    def rayvec(self):
-        return self.__rayvec
-        
-    @rayvec.setter
-    def rayvec(self, rayvec):
-        self.__rayvec = rayvec
+    # @property
+    # def rayvec(self):
+    #     return self.__rayvec
+    #
+    # @rayvec.setter
+    # def rayvec(self, rayvec):
+    #     self.__rayvec = rayvec
         
    
     # @property
@@ -131,6 +130,29 @@ class Data:
             self.window = self.construct_window(start,end,**kwargs) 
         else:
             raise Exception ('unexpected number of arguments')
+            
+    def set_labels(self,*args):
+        if len(args) == 0:
+            if np.allclose(self.cmpvecs,np.eye(3),atol=1e-02):
+                self.cmplabels = ['North','East','Up'] #
+                return
+            if np.allclose(self.rayvecs,self.cmpvecs):
+                self.cmplabels = ['SV','SH','P']
+                return
+            # if reached here we have a non-standard orientation
+            self.cmplabels = ['Comp1','Comp2','Comp3']
+            return
+        elif len(args) == 1:
+            if not isinstance(args[0],list): raise TypeError('expecting a list')
+            # if not len(args[0]) == 3: raise Exception('list must be length 3')
+            if not (isinstance(args[0][0],str) and 
+                    isinstance(args[0][1],str) and
+                    isinstance(args[0][2],str)):
+                raise TypeError('cmplabels must be a list of strings')
+            self.cmplabels = args[0]
+            return
+        else:
+            raise Exception('unexpected number of arguments')
     
     # def set_pol(self, **kwargs):
     #     """
