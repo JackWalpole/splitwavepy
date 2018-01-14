@@ -4,9 +4,8 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core, geom, io
-from .data import Data, WindowPicker
-from .window import Window
-from .measure import Measure
+from .data import Data
+# from .measure import Measure
 
 import numpy as np
 import math
@@ -65,7 +64,7 @@ class Pair(Data):
     def __init__(self,*args,**kwargs):
         
         # if no args make synthetic
-        if len(args) == 0: 
+        if len(args) == 0:
             args[0], args[1] = core.synth(**kwargs)
         
         # Derive from Data

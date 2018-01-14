@@ -25,14 +25,7 @@ class CoreTestCases(unittest.TestCase):
         """rotation of traces (co-ordinate frame)"""
         x = np.array([0,1,1])
         y = np.array([1,0,1])
-        npt.assert_array_equal(sw.core.rotate(x,y,90),np.array([[-1,0,-1][0,1,1]]))
-
-    def test_split(self):
-        """check splitting ok"""
-        x = np.array([0, 1, 2])
-        y = np.array([1, 0, 2])
-        npt.assert_array_equal(sw.core.split(x,y,90,2), np.array([-2,0]))
-        npt.assert_array_equal(sw.core.unsplit(x,y,90,2), np.array([-1,2]))
+        npt.assert_array_almost_equal(sw.core.rotate(x,y,90),np.array([[1,0,1],[0,-1,-1]]))
         
     def test_round_to_int(self):
         """get nearest integer"""

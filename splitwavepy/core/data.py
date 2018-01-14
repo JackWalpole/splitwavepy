@@ -15,9 +15,10 @@ from ..core import core
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import os.path
-from scipy import signal
-
+# import os.path
+# from scipy import signal
+# import pickle
+# import copy
 
 class Data:
     
@@ -31,7 +32,9 @@ class Data:
         if 'delta' not in kwargs: raise Exception('delta must be set')
         self.delta = kwargs['delta']
         
-        if len(args) == 2:
+        if len(args) == 0:
+            self.x, self.y = core.synth(**kwargs)
+        elif len(args) == 2:
             self.x, self.y = args[0], args[1]
             self.__ncomps = 2
         elif len(args) == 3:
@@ -43,6 +46,7 @@ class Data:
         # defaults
         self.cmpvecs = np.eye(3)
         self.set_window()      
+        self.set_labels()
         
     # COMMON PROPERTIES
     
@@ -213,6 +217,133 @@ class Data:
         width = core.time2samps(time_width,self.__delta,'even') + 1     
         return Window(width,offset,**kwargs) 
         
+    # Utility
+    
+    def data(self):
+        return np.vstack((self.x,self.y))
+        
+    def chop(self):
+        """
+        Chop data to window
+        """
+        chop = self.copy()
+        chop.x, chop.y = core.chop(chop.x, chop.y, window=chop.window)
+        chop.window.offset = 0
+        return chop
+        
+    # Plotting
+                
+    def plot(self,**kwargs):
+        """
+        Plot trace data and particle motion
+        """
+
+        fig = plt.figure(figsize=(12, 3))     
+        gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+        
+        # trace
+        ax0 = plt.subplot(gs[0])
+        self._ptr( ax0, **kwargs)
+        
+        # particle  motion
+        ax1 = plt.subplot(gs[1])
+        self._ppm( ax1, **kwargs)   
+        
+        # optional pick window
+        if 'pick' in kwargs and kwargs['pick'] == True:
+            windowpicker = WindowPicker(self, fig, ax0)
+            windowpicker.connect()
+                                 
+        # show
+        plt.tight_layout()
+        plt.show()
+        
+    def ppm(self,**kwargs):
+        """Plot particle motion"""
+        fig, ax = plt.subplots()
+        self._ppm(ax, **kwargs)
+        plt.show()
+        
+    def ptr(self,**kwargs):
+        """Plot trace data"""
+        fig, ax = plt.subplots()
+        self._ptr(ax, **kwargs)
+        plt.show()
+
+    def _ptr( self, ax, **kwargs):
+        """Plot trace data on *ax* matplotlib axis object.
+        """    
+        # plot data
+        t = self.t()
+        
+        # set labels
+        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
+        ax.plot( t, self.x, label=kwargs['cmplabels'][0])
+        ax.plot( t, self.y, label=kwargs['cmplabels'][1])
+        ax.legend(framealpha=0.5)
+    
+        # set limits
+        lim = np.abs(self.data()).max() * 1.1
+        if 'ylim' not in kwargs: kwargs['ylim'] = [-lim, lim]
+        ax.set_ylim(kwargs['ylim'])
+        if 'xlim' in kwargs: ax.set_xlim(kwargs['xlim'])
+    
+        # set axis label
+        if 'units' not in kwargs: kwargs['units'] = 's'            
+        ax.set_xlabel('Time (' + kwargs['units'] +')')
+
+        # plot window markers
+        if self.window.width < self._nsamps():
+            w1 = ax.axvline(self.wbeg(), linewidth=1, color='k')
+            w2 = ax.axvline(self.wend(), linewidth=1, color='k')    
+        
+        # plot additional markers
+        if 'marker' in kwargs:
+            print('here')
+            if type(kwargs['marker']) is not list: kwargs['marker'] = [ kwargs['marker'] ]
+            [ ax.axvline(float(mark), linewidth=1, color='b') for mark in kwargs['marker'] ]
+            
+        return
+
+    def _ppm(self,ax,**kwargs):
+        """Plot particle motion on *ax* matplotlib axis object.
+        """
+        
+        data = self.chop()
+        data.rotateto(0)
+        x, y = data.x, data.y
+        t = data.t()
+                
+        # plot data
+        # ax.plot(self.chop().y,self.chop().x)
+        
+        # multi-colored
+        norm = plt.Normalize(t.min(), t.max())
+        points = np.array([y, x]).T.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+        lc = LineCollection(segments, cmap='plasma', norm=norm, alpha=0.7)
+        lc.set_array(t)
+        lc.set_linewidth(2)
+        line = ax.add_collection(lc)
+        # plt.colorbar(line)
+    
+        # set limit
+        lim = np.abs(self.data()).max() * 1.1
+        if 'lims' not in kwargs: kwargs['lims'] = [-lim, lim] 
+        ax.set_aspect('equal')
+        ax.set_xlim(kwargs['lims'])
+        ax.set_ylim(kwargs['lims'])
+    
+        # set labels
+        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = data.cmplabels
+        ax.set_xlabel(kwargs['cmplabels'][1])
+        ax.set_ylabel(kwargs['cmplabels'][0])
+        
+        # turn off tick annotation
+        ax.axes.xaxis.set_ticklabels([])
+        ax.axes.yaxis.set_ticklabels([])
+        return
+        
     # Hidden
     
     def _nsamps(self):
@@ -227,7 +358,14 @@ class Data:
     # I/O stuff  
                        
     def copy(self):
-        return io.copy(self)
+        return copy.deepcopy(self)
+        
+    def save(self,filename):
+        """
+        Save me to a file
+        """       
+        with open(filename, 'wb') as f:
+            pickle.dump(self,f)
 
     # Special
     
@@ -241,6 +379,13 @@ class Data:
             if not np.all( self.__dict__[key] == other.__dict__[key]): return False
         # if reached here then the same
         return True
+        
+def load(filename):
+    """
+    Load an EigenM object
+    """
+    with open(filename, 'rb') as f:
+        return pickle.load(f)
         
 # import numpy as np
 # import matplotlib.pyplot as plt
