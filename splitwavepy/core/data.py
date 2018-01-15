@@ -28,7 +28,11 @@ class Data:
 
         # ensure delta is set as a keyword argment, e.g. delta=0.1
         if 'delta' not in kwargs: raise Exception('delta must be set')
-        self.delta = kwargs['delta']                    
+        self.delta = kwargs['delta']
+        
+        # labels
+        self.units = 's'
+        if ('units' in kwargs): self.units = kwargs['units']               
         
     # COMMON PROPERTIES
     

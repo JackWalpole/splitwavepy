@@ -29,15 +29,15 @@ class Pair(Data):
     Naming Keyword Arguments:
         - name = 'untitled' (should be unique identifier) | string
         - cmplabels = ['cmp1','cmp2'] | list of strings
-        - units = 's' (for labelling) | string
+        # - units = 's' (for labelling) | string
     
     Geometry Keyword Arguments (if in doubt don't use):
-        - geom = 'geo' (N,E) / 'ray' (SV,SH) / 'cart' (X,Y)
-        - cmpvecs = np.eye(2)
-        - rcvloc = (lat,lon,r) / (x,y,z)
-        - srcloc =  (lat,lon,r) / (x,y,z)
-        - rayloc =  rcvloc # arbirary point specified by user
-        - rayvec = [0,0,1] # wave plane normal
+        # - geom = 'geo' (N,E) / 'ray' (SV,SH) / 'cart' (X,Y)
+        # - cmpvecs = np.eye(2)
+        # - rcvloc = (lat,lon,r) / (x,y,z)
+        # - srcloc =  (lat,lon,r) / (x,y,z)
+        # - rayloc =  rcvloc # arbirary point specified by user
+        # - rayvec = [0,0,1] # wave plane normal
 
     Methods:
         # display
@@ -53,8 +53,7 @@ class Pair(Data):
             - chop()        # windowed data
             - rotateto()
         # windowing
-            - set_window(start,end,Tukey=None)
-            
+            - set_window(start,end,Tukey=None)         
         # io
             - copy()
             - save()
@@ -93,23 +92,24 @@ class Pair(Data):
         if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']
         
         # if pol specified set
-        if ('pol' in kwargs): 
-            self.set_pol(kwargs['pol'])
-        else:
-            self.set_pol()
+        # if ('pol' in kwargs):
+        #     self.set_pol(kwargs['pol'])
+        # else:
+        #     self.set_pol()
         
         # self.rayvec = [0,0,1] # normal to shear plane, along Z-axis
         # if ('rayvec' in kwargs): self.rayvec = kwargs['rayvec']
         # Always just assume ray vector is normal to components
         
         # source and receiver location info
-        if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']     
-        if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
-        if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
+        # if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']
+        # if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
+        # if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
 
         # labels
-        self.units = 's'   
-        if ('units' in kwargs): self.units = kwargs['units']      
+        # self.units = 's'
+        # if ('units' in kwargs): self.units = kwargs['units']
+             
         self.set_labels()
         if ('cmplabels' in kwargs): self.cmplabels = kwargs['cmplabels']
         # A user defined name # maybe useful?
@@ -157,10 +157,12 @@ class Pair(Data):
         """
         # find appropriate rotation matrix
         ang = math.radians(degrees)
+        cang = math.cos(ang)
+        sang = math.sin(ang)
         # define the new cmpvecs
         backoff = self.cmpvecs
-        self.cmpvecs = np.array([[ math.cos(ang),-math.sin(ang)],
-                                 [ math.sin(ang), math.cos(ang)]])
+        self.cmpvecs = np.array([[ cang,-sang],
+                                 [ sang, cang]])
         rot = np.dot(self.cmpvecs.T, backoff)
         # rotate data
         xy = np.dot(rot, self.data())
@@ -193,37 +195,37 @@ class Pair(Data):
         else:
             raise Exception('unexpected number of arguments')
             
-    def set_pol(self,*args):
-        if len(args) == 0:
-            self.pol = self.get_pol()
-        elif len(args) == 1:
-            self.pol = float(args[0])
-        else:
-            raise Exception('Unexpected number of arguments')
-        return
+    # def set_pol(self,*args):
+    #     if len(args) == 0:
+    #         self.pol = self.get_pol()
+    #     elif len(args) == 1:
+    #         self.pol = float(args[0])
+    #     else:
+    #         raise Exception('Unexpected number of arguments')
+    #     return
     
     # Utility 
     
   
     def data(self):
-        return np.vstack((self.x,self.y))
+        return np.vstack((self.x, self.y))
 
-    def get_pol(self):
-        """Return principal component orientation"""
-        # rotate to zero
-        rot = self.cmpvecs.T
-        data = self.chop().data()
-        xy = np.dot(rot,data)
-        _,eigvecs = core.eigcov(xy)
-        x,y = eigvecs[:,0]
-        pol = np.rad2deg(np.arctan2(y,x))
-        return pol
+    # def get_pol(self):
+    #     """Return principal component orientation"""
+    #     # rotate to zero
+    #     rot = self.cmpvecs.T
+    #     data = self.chop().data()
+    #     xy = np.dot(rot,data)
+    #     _,eigvecs = core.eigcov(xy)
+    #     x,y = eigvecs[:,0]
+    #     pol = np.rad2deg(np.arctan2(y,x))
+    #     return pol
         
-    def eigen(self,window=None):
+    def eigen(self, window=None):
         self.eigvals, self.eigvecs = core.eigcov(self.data())
         
     def power(self):
-        return self.x**2,self.y**2
+        return self.x**2, self.y**2
         
     # def snrRH(self):
     #     data = self.copy()
@@ -231,22 +233,22 @@ class Pair(Data):
     #     return core.snrRH(data.chop().data())
 
     def cmpangs(self):
-        cmp1 = self.cmpvecs[:,0]
-        cmp2 = self.cmpvecs[:,1]
-        def getang(c) : return np.rad2deg(np.arctan2(c[1],c[0]))
-        return getang(cmp1),getang(cmp2)          
+        cmp1 = self.cmpvecs[:, 0]
+        cmp2 = self.cmpvecs[:, 1]
+        def getang(c) : return np.rad2deg(np.arctan2(c[1], c[0]))
+        return getang(cmp1), getang(cmp2)          
     
     def chop(self):
         """
         Chop data to window
         """
         chop = self.copy()
-        chop.x, chop.y = core.chop(chop.x,chop.y,window=chop.window)
+        chop.x, chop.y = core.chop(chop.x, chop.y, window=chop.window)
         chop.window.offset = 0
         return chop
 
     
-    def splitting_intensity(self,**kwargs):
+    def splitting_intensity(self, **kwargs):
         """
         Calculate the splitting intensity as defined by Chevrot (2000).
         """
@@ -261,7 +263,7 @@ class Pair(Data):
         
     # Plotting
                 
-    def plot(self,**kwargs):
+    def plot(self, **kwargs):
         """
         Plot trace data and particle motion
         """
@@ -271,7 +273,7 @@ class Pair(Data):
         
         # trace
         ax0 = plt.subplot(gs[0])
-        self._ptr( ax0, **kwargs)
+        self._ptr(ax0, **kwargs)
         
         # particle  motion
         ax1 = plt.subplot(gs[1])
@@ -279,20 +281,20 @@ class Pair(Data):
         
         # optional pick window
         if 'pick' in kwargs and kwargs['pick'] == True:
-            windowpicker = WindowPicker(self,fig,ax0)
+            windowpicker = WindowPicker(self, fig, ax0)
             windowpicker.connect()
                                  
         # show
         plt.tight_layout()
         plt.show()
         
-    def ppm(self,**kwargs):
+    def ppm(self, **kwargs):
         """Plot particle motion"""
         fig, ax = plt.subplots()
         self._ppm(ax, **kwargs)
         plt.show()
         
-    def ptr(self,**kwargs):
+    def ptr(self, **kwargs):
         """Plot trace data"""
         fig, ax = plt.subplots()
         self._ptr(ax, **kwargs)
@@ -312,7 +314,7 @@ class Pair(Data):
     
         # set limits
         lim = np.abs(self.data()).max() * 1.1
-        if 'ylim' not in kwargs: kwargs['ylim'] = [-lim,lim]
+        if 'ylim' not in kwargs: kwargs['ylim'] = [-lim, lim]
         ax.set_ylim(kwargs['ylim'])
         if 'xlim' in kwargs: ax.set_xlim(kwargs['xlim'])
     
@@ -322,18 +324,18 @@ class Pair(Data):
 
         # plot window markers
         if self.window.width < self._nsamps():
-            w1 = ax.axvline(self.wbeg(),linewidth=1,color='k')
-            w2 = ax.axvline(self.wend(),linewidth=1,color='k')    
+            w1 = ax.axvline(self.wbeg(), linewidth=1, color='k')
+            w2 = ax.axvline(self.wend(), linewidth=1, color='k')    
         
         # plot additional markers
         if 'marker' in kwargs:
             print('here')
             if type(kwargs['marker']) is not list: kwargs['marker'] = [ kwargs['marker'] ]
-            [ ax.axvline(float(mark),linewidth=1,color='b') for mark in kwargs['marker'] ]
+            [ ax.axvline(float(mark), linewidth=1, color='b') for mark in kwargs['marker'] ]
             
         return
 
-    def _ppm(self,ax,**kwargs):
+    def _ppm(self, ax, **kwargs):
         """Plot particle motion on *ax* matplotlib axis object.
         """
         
@@ -346,10 +348,10 @@ class Pair(Data):
         # ax.plot(self.chop().y,self.chop().x)
         
         # multi-colored
-        norm = plt.Normalize(t.min(),t.max())
+        norm = plt.Normalize(t.min(), t.max())
         points = np.array([y, x]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments,cmap='plasma',norm=norm,alpha=0.7)
+        lc = LineCollection(segments, cmap='plasma', norm=norm, alpha=0.7)
         lc.set_array(t)
         lc.set_linewidth(2)
         line = ax.add_collection(lc)
@@ -357,7 +359,7 @@ class Pair(Data):
     
         # set limit
         lim = np.abs(self.data()).max() * 1.1
-        if 'lims' not in kwargs: kwargs['lims'] = [-lim,lim] 
+        if 'lims' not in kwargs: kwargs['lims'] = [-lim, lim] 
         ax.set_aspect('equal')
         ax.set_xlim(kwargs['lims'])
         ax.set_ylim(kwargs['lims'])
@@ -371,6 +373,9 @@ class Pair(Data):
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
         return
+        
+        
+        
             
         
     # Special
