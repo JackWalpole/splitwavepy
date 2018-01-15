@@ -121,37 +121,37 @@ class Pair(Data):
 
     # METHODS
       
-    def split(self,fast,lag):
+    def split(self, fast, lag):
         """
         Applies splitting operator.
         
         .. warning:: shortens trace length by *lag*.
         """
         # convert time shift to nsamples -- must be even
-        samps = core.time2samps(lag,self.delta,mode='even')
+        samps = core.time2samps(lag, self.delta, mode='even')
         # find appropriate rotation angle
-        origangs=self.cmpangs()
+        origangs = self.cmpangs()
         self.rotateto(0)
         # apply splitting
-        self.x, self.y = core.split(self.x,self.y,fast,samps)
+        self.x, self.y = core.split(self.x, self.y, fast, samps)
         self.rotateto(origangs[0])
            
-    def unsplit(self,fast,lag):
+    def unsplit(self, fast, lag):
         """
         Reverses splitting operator.
         
         .. warning:: shortens trace length by *lag*.
         """
         # convert time shift to nsamples -- must be even
-        samps = core.time2samps(lag,self.delta,mode='even')
+        samps = core.time2samps(lag, self.delta, mode='even')
         # find appropriate rotation angle
-        origangs=self.cmpangs()
+        origangs = self.cmpangs()
         self.rotateto(0)
         # apply splitting
-        self.x, self.y = core.unsplit(self.x,self.y,fast,samps)
+        self.x, self.y = core.unsplit(self.x, self.y, fast, samps)
         self.rotateto(origangs[0])
        
-    def rotateto(self,degrees):
+    def rotateto(self, degrees):
         """
         Rotate traces so that cmp1 lines up with *degrees*
         """
@@ -167,7 +167,13 @@ class Pair(Data):
         self.x, self.y = xy[0], xy[1]
         # reset label
         self.set_labels()
-
+        
+        
+    def lag(self, lag):
+        """Apply a lag to traces."""
+        # convert time shift to nsamples -- must be even
+        samps = core.time2samps(lag, self.delta, mode='even')
+        self.x, self.y = core.lag(self.x, self.y, samps)
 
     def set_labels(self,*args):
         if len(args) == 0:
@@ -371,7 +377,7 @@ class Pair(Data):
         ax.axes.xaxis.set_ticklabels([])
         ax.axes.yaxis.set_ticklabels([])
         return
-            
+
         
     # Special
     
