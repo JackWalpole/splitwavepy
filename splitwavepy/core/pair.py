@@ -374,7 +374,168 @@ class Pair(Data):
         ax.axes.yaxis.set_ticklabels([])
         return
         
+    def grid_eigen(self, **kwargs):
+        """Grid search for splitting parameters using the transverse energy minimisation
+           eigenvalue method (Silver and Chan, 1991)"""        
+        # MAKE MEASUREMENT
+        stuff = np.asarray(self.gridsearch(core.eigvalcov, **kwargs))
+        lam1, lam2 = stuff[:,:,1].T, stuff[:,:,0].T        
+        return lam1, lam2
         
+    def grid_trans(self, **kwargs):
+        """Grid search for splitting parameters using the transverse energy minimisation
+           user-specified polarisation method (Silver and Chan, 1998)"""
+        
+        if 'pol' not in kwargs:
+            raise Exception('pol must be specified')  
+                  
+        # MAKE MEASUREMENT
+        stuff = np.asarray(self.gridsearch(core.transenergy, **kwargs))
+        enrgy1, enrgy2 = stuff[:,:,1].T, stuff[:,:,0].T        
+        return enrgy1, enrgy2
+        
+    def grid_xcorr(self, **kwargs):
+        """Grid search for splitting parameters using the cross correlation method (Ando, 1980)"""
+        # MAKE MEASUREMENT
+        stuff = np.asarray(self.gridsearch(core.transenergy, **kwargs))
+        xc = stuff[:,:,0].T 
+        return xc
+        
+    def eigenM(self, **kwargs):
+        
+        # setup dictionary to hold measurement
+        self.eigenM = {}
+        
+        # get degs, lags and slags
+        self.eigenM['degs'], self.eigenM['lags'], _ = self._get_degs_lags_slags(self, **kwargs)
+        # source and receiver corrections
+               
+        
+        # make measurement
+        self.eigenM['lam1'], self.eigenM['lam2'] = self.grid_eigen(self, **kwargs)
+        
+        # get useful info
+        maxidx = core.max_idx(lam1/lam2)
+        fast = DEGS[maxloc]
+        lag  = LAGS[maxloc]
+        
+
+        
+        core.ftest(self.lam2, self.ndf(), alpha=0.05)
+        
+        # Populate dictionary object
+        self.eigenM = {'lags': lags, 'degs': degs,
+                       'rcvcorr': kwargs['rcvcorr'], 'srccorr': kwargs['srccorr'],
+                       'lam1': lam1, 'lam2': lam2, 'maxidx': maxidx,
+                       'fast':
+                       
+     }
+
+    def data_corr(self, fast, lag, **kwargs):
+        # copy data     
+        data_corr = self.copy()
+        # rcv side correction     
+        if kwargs['rcvcorr'] is not None:
+            data_corr.unsplit(*kwargs['rcvcorr'])    
+        # target layer correction
+        data_corr.unsplit(fast, lag)  
+        # src side correction
+        if kwargs['srccorr'] is not None:
+            data_corr.unsplit(*kwargs['srccorr'])
+        return data_corr
+                
+    # Common methods    
+    
+    def _gridsearch(self, func, **kwargs):
+        
+        """
+        Grid search for splitting parameters applied to data using the function defined in func
+        rcvcorr = receiver correction parameters in tuple (fast,lag) 
+        srccorr = source correction parameters in tuple (fast,lag) 
+        """
+        
+        # get degs, lags and slags
+        degs, _, slags = self._get_degs_lags_slags(self, **kwargs)
+        
+        # receiver correction
+        rcvcorr = None
+        if ('rcvcorr' in kwargs):
+            if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
+            if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
+            # convert time shift to nsamples -- must be even
+            deg, lag = kwargs['rcvcorr']
+            samps = core.time2samps(lag, self.delta, 'even')
+            rcvcorr = (deg, samps)
+
+        # source correction
+        srccorr = None
+        if ('srccorr' in kwargs):
+            if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
+            if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
+            # convert time shift to nsamples -- must be even
+            deg, lag = kwargs['srccorr']
+            samps = core.time2samps(lag, self.delta, 'even')
+            srccorr = (deg, samps)
+        
+        # avoid using "dots" in loops for performance
+        rotate = core.rotate
+        lag = core.lag
+        chop = core.chop
+        unsplit = core.unsplit
+        
+        # ensure trace1 at zero angle
+        copy = self.copy()
+        copy.rotateto(0)
+        x, y = copy.x, copy.y
+        
+        # pre-apply receiver correction
+        if 'rcvcorr' in kwargs:
+            rcvphi, rcvlag = rcvcorr
+            x, y = unsplit(x, y, rcvphi, rcvlag)
+         
+        ######################                  
+        # inner loop function
+        ######################
+    
+        # source correction  
+        
+        if 'srccorr' in kwargs:
+            srcphi, srclag = srccorr
+            def srccorr(x, y, ang):
+                x, y = unsplit(x, y, srcphi-ang, srclag)
+                return x, y
+        else:
+            def srccorr(x, y, ang):
+                return x, y
+                
+        # rotate to polaristation (needed for tranverse min)
+        if 'pol' in kwargs:
+            pol = kwargs['pol']
+            def rotpol(x, y, ang):
+                # rotate to pol
+                x, y = rotate(x, y, pol-ang)
+                return x, y
+        else:
+            def rotpol(x, y, ang):
+                return x, y
+        
+        # actual inner loop function   
+        def process(x, y, ang, shift):
+            # remove shift
+            x, y = lag(x, y, -shift)
+            x, y = srccorr(x, y, ang)
+            x, y = chop(x, y, window=self.window)
+            x, y = rotpol(x, y, ang)
+            return func(x, y)
+                  
+        # Do the grid search
+        prerot = [ (rotate(x, y, ang), ang) for ang in degs ]
+        
+        out = [ [ process(data[0], data[1], ang, shift) for shift in slags ]
+                for (data, ang) in prerot  ]
+                               
+        return out        
+      
         
             
         

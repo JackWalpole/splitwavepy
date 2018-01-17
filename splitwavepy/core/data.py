@@ -145,7 +145,58 @@ class Data:
     
     def _centretime(self):
         return int(self.x.size/2) * self.delta
+        
+    def _parse_lags(self, **kwargs):
+        """return numpy array of lags to explore"""
+        # LAGS
+        minlag = 0
+        maxlag = self.wwidth() / 4
+        nlags  = 40
+        if 'lags' not in kwargs:
+            lags = np.linspace( minlag, maxlag, nlags)
+        else:
+            if isinstance(kwargs['lags'],np.ndarray):
+                lags = kwargs['lags']
+            elif isinstance(kwargs['lags'],tuple):
+                if len(kwargs['lags']) == 1:
+                    lags = np.linspace( minlag, kwargs['lags'][0], nlags)
+                elif len(kwargs['lags']) == 2:
+                    lags = np.linspace( minlag,*kwargs['lags'])
+                elif len(kwargs['lags']) == 3:
+                    lags = np.linspace( *kwargs['lags'])
+                else:
+                    raise Exception('Can\'t parse lags keyword')
+            else:
+                raise TypeError('lags keyword must be a tuple or numpy array') 
+        return lags
+        
+    def _parse_degs(self, **kwargs):
+        """return numpy array of degs to explore"""
+        # DEGS
+        mindeg = -90
+        maxdeg = 90
+        ndegs = 90
+        if 'degs' not in kwargs:
+            degs = np.linspace( mindeg, maxdeg, ndegs, endpoint=False)
+        else:
+            if isinstance(kwargs['degs'], np.ndarray):
+                degs = kwargs['degs']
+            elif isinstance(kwargs['degs'], int):
+                degs = np.linspace( mindeg, maxdeg, kwargs['degs'], endpoint=False)
+            else:
+                raise TypeError('degs must be an integer or numpy array')
+        return degs
                 
+    def _get_degs_lags_and_slags(self, **kwargs):
+        # convert lags to samps and back again
+        lags = self._parse_lags(**kwargs)
+        slags = np.unique( core.time2samps(lags, self.delta, mode='even')).astype(int)
+        lags = core.samps2time(slags, self.delta)
+        # parse degs
+        degs = self._parse_degs(**kwargs)
+        return degs, lags, slags
+    
+    
     # I/O stuff  
                        
     def copy(self):
