@@ -4,8 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core, geom, io
-from .data import Data, WindowPicker
-from .window import Window
+from .data import Data, Window, WindowPicker
 
 import numpy as np
 import math
@@ -62,78 +61,37 @@ class Pair(Data):
     """
     def __init__(self,*args,**kwargs):
         
-        # Derive from Data
-        Data.__init__(self, *args, **kwargs)
-                                              
         # if no args make synthetic
-        if len(args) == 0: 
-            self.x, self.y = core.synth(**kwargs)               
-        # otherwise read in data                
+        if len(args) == 0:
+            x, y = core.synth(**kwargs)
+        # otherwise read in data
         elif len(args) == 2:
             if not (isinstance(args[0],np.ndarray) & isinstance(args[1],np.ndarray)):
-                raise TypeError('expecting numpy arrays')         
-            self.x, self.y = args[0], args[1]
-        else: 
+                raise TypeError('expecting numpy arrays')
+            x, y = args[0], args[1]
+        else:
             raise Exception('Unexpected number of arguments')
-                    
-        # some sanity checks
-        if self.x.ndim != 1: raise Exception('data must be one dimensional')
-        if self.x.size%2 == 0: raise Exception('data must have odd number of samples')
-        if (self.x.size != self.y.size): raise Exception('x and y must be the same length')
-                   
-        # Pair must have a window
-        self.set_window(**kwargs)
-         
-        # add geometry info 
-        self.geom = 'geo'
-        if ('geom' in kwargs): self.geom = kwargs['geom']
-           
-        self.cmpvecs = np.eye(2)  
-        if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']
         
-        # if pol specified set
-        # if ('pol' in kwargs):
-        #     self.set_pol(kwargs['pol'])
-        # else:
-        #     self.set_pol()
-        
-        # self.rayvec = [0,0,1] # normal to shear plane, along Z-axis
-        # if ('rayvec' in kwargs): self.rayvec = kwargs['rayvec']
-        # Always just assume ray vector is normal to components
-        
-        # source and receiver location info
-        # if ('srcloc' in kwargs): self.srcloc = kwargs['srcloc']
-        # if ('rcvloc' in kwargs): self.rcvloc = kwargs['rcvloc']
-        # if ('rayloc' in kwargs): self.raylic = kwargs['rayloc']
+        # Initialise Data
+        self.Data = Data.__init__(self, x, y, *args, **kwargs)
 
-        # labels
-        # self.units = 's'
-        # if ('units' in kwargs): self.units = kwargs['units']
-             
-        self.set_labels()
-        if ('cmplabels' in kwargs): self.cmplabels = kwargs['cmplabels']
-        # A user defined name # maybe useful?
-        self.name = 'untitled'
-        if ('name' in kwargs): self.name = kwargs['name']    
-        # Backup the command used to produce this object
-        self.args = args
-        self.kwargs = kwargs
+
 
     # METHODS
       
-    def split(self,fast,lag):
+    def split(self, fast, lag):
         """
         Applies splitting operator.
         
         .. warning:: shortens trace length by *lag*.
         """
         # convert time shift to nsamples -- must be even
-        samps = core.time2samps(lag,self.delta,mode='even')
+        samps = core.time2samps(lag, self.delta, mode='even')
         # find appropriate rotation angle
-        origangs=self.cmpangs()
+        origangs = self.cmpangs()
         self.rotateto(0)
         # apply splitting
-        self.x, self.y = core.split(self.x,self.y,fast,samps)
+        self.x, self.y = core.split(self.x, self.y, fast, samps)
         self.rotateto(origangs[0])
            
     def unsplit(self,fast,lag):
@@ -171,29 +129,7 @@ class Pair(Data):
         self.set_labels()
 
 
-    def set_labels(self,*args):
-        if len(args) == 0:
-            if np.allclose(self.cmpvecs,np.eye(2),atol=1e-02):
-                if self.geom == 'geo': self.cmplabels = ['North','East']
-                elif self.geom == 'ray': self.cmplabels = ['Vertical','Horizontal']
-                elif self.geom == 'cart': self.cmplabels = ['X','Y']
-                else: self.cmplabels = ['Comp1','Comp2']
-                return
-            # if reached here we have a non-standard orientation
-            a1,a2 = self.cmpangs()
-            lbl1 = str(round(a1))+r' ($^\circ$)'
-            lbl2 = str(round(a2))+r' ($^\circ$)'
-            self.cmplabels = [lbl1,lbl2]
-            return
-        elif len(args) == 1:
-            if not isinstance(args[0],list): raise TypeError('expecting a list')
-            # if not len(args[0]) == 2: raise Exception('list must be length 2')
-            if not (isinstance(args[0][0],str) and isinstance(args[0][1],str)):
-                raise TypeError('cmplabels must be a list of strings')
-            self.cmplabels = args[0]
-            return
-        else:
-            raise Exception('unexpected number of arguments')
+
             
     # def set_pol(self,*args):
     #     if len(args) == 0:
@@ -262,7 +198,7 @@ class Pair(Data):
 
         
     # Plotting
-                
+              
     def plot(self, **kwargs):
         """
         Plot trace data and particle motion
@@ -374,62 +310,60 @@ class Pair(Data):
         ax.axes.yaxis.set_ticklabels([])
         return
         
-    def grid_eigen(self, **kwargs):
-        """Grid search for splitting parameters using the transverse energy minimisation
-           eigenvalue method (Silver and Chan, 1991)"""        
-        # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearch(core.eigvalcov, **kwargs))
-        lam1, lam2 = stuff[:,:,1].T, stuff[:,:,0].T        
-        return lam1, lam2
-        
-    def grid_trans(self, **kwargs):
-        """Grid search for splitting parameters using the transverse energy minimisation
-           user-specified polarisation method (Silver and Chan, 1998)"""
-        
-        if 'pol' not in kwargs:
-            raise Exception('pol must be specified')  
-                  
-        # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearch(core.transenergy, **kwargs))
-        enrgy1, enrgy2 = stuff[:,:,1].T, stuff[:,:,0].T        
-        return enrgy1, enrgy2
-        
-    def grid_xcorr(self, **kwargs):
-        """Grid search for splitting parameters using the cross correlation method (Ando, 1980)"""
-        # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearch(core.transenergy, **kwargs))
-        xc = stuff[:,:,0].T 
-        return xc
-        
-    def eigenM(self, **kwargs):
-        
-        # setup dictionary to hold measurement
-        self.eigenM = {}
-        
-        # get degs, lags and slags
-        self.eigenM['degs'], self.eigenM['lags'], _ = self._get_degs_lags_slags(self, **kwargs)
-        # source and receiver corrections
-               
-        
-        # make measurement
-        self.eigenM['lam1'], self.eigenM['lam2'] = self.grid_eigen(self, **kwargs)
-        
-        # get useful info
-        maxidx = core.max_idx(lam1/lam2)
-        fast = DEGS[maxloc]
-        lag  = LAGS[maxloc]
-        
-
-        
-        core.ftest(self.lam2, self.ndf(), alpha=0.05)
-        
-        # Populate dictionary object
-        self.eigenM = {'lags': lags, 'degs': degs,
-                       'rcvcorr': kwargs['rcvcorr'], 'srccorr': kwargs['srccorr'],
-                       'lam1': lam1, 'lam2': lam2, 'maxidx': maxidx,
-                       'fast':
-                       
-     }
+    # def grid_eigen(self, **kwargs):
+    #     """Grid search for splitting parameters using the transverse energy minimisation
+    #        eigenvalue method (Silver and Chan, 1991)"""
+    #     # MAKE MEASUREMENT
+    #     stuff = np.asarray(self._gridsearch(core.eigvalcov, **kwargs))
+    #     lam1, lam2 = stuff[:,:,1].T, stuff[:,:,0].T
+    #     return lam1, lam2
+    #
+    # def grid_trans(self, **kwargs):
+    #     """Grid search for splitting parameters using the transverse energy minimisation
+    #        user-specified polarisation method (Silver and Chan, 1998)"""
+    #
+    #     if 'pol' not in kwargs:
+    #         raise Exception('pol must be specified')
+    #
+    #     # MAKE MEASUREMENT
+    #     stuff = np.asarray(self._gridsearch(core.transenergy, **kwargs))
+    #     enrgy1, enrgy2 = stuff[:,:,1].T, stuff[:,:,0].T
+    #     return enrgy1, enrgy2
+    #
+    # def grid_xcorr(self, **kwargs):
+    #     """Grid search for splitting parameters using the cross correlation method (Ando, 1980)"""
+    #     # MAKE MEASUREMENT
+    #     stuff = np.asarray(self._gridsearch(core.transenergy, **kwargs))
+    #     xc = stuff[:,:,0].T
+    #     return xc
+    #
+    # def eigenM(self, **kwargs):
+    #
+    #     # setup dictionary to hold measurement
+    #     self.eigenM = {}
+    #
+    #     # get degs, lags and slags
+    #     self.eigenM['degs'], self.eigenM['lags'], _ = self._get_degs_lags_slags(self, **kwargs)
+    #     # source and receiver corrections
+    #
+    #
+    #     # make measurement
+    #     self.eigenM['lam1'], self.eigenM['lam2'] = self.grid_eigen(self, **kwargs)
+    #
+    #     # get useful info
+    #     maxidx = core.max_idx(lam1/lam2)
+    #     fast = DEGS[maxloc]
+    #     tlag  = LAGS[maxloc]
+    #
+    #     # estimate error
+    #     core.ftest(self.lam2, self.ndf(), alpha=0.05)
+    #
+    #     # Populate dictionary object
+    #     self.eigenM = {'lags': lags, 'degs': degs,
+    #                    'rcvcorr': kwargs['rcvcorr'], 'srccorr': kwargs['srccorr'],
+    #                    'lam1': lam1, 'lam2': lam2, 'maxidx': maxidx,
+    #                    'fast': fast, 'tlag': tlag, 'dfast': dfast, 'dtlag': dtlag
+    #                    }
 
     def data_corr(self, fast, lag, **kwargs):
         # copy data     
@@ -446,95 +380,95 @@ class Pair(Data):
                 
     # Common methods    
     
-    def _gridsearch(self, func, **kwargs):
-        
-        """
-        Grid search for splitting parameters applied to data using the function defined in func
-        rcvcorr = receiver correction parameters in tuple (fast,lag) 
-        srccorr = source correction parameters in tuple (fast,lag) 
-        """
-        
-        # get degs, lags and slags
-        degs, _, slags = self._get_degs_lags_slags(self, **kwargs)
-        
-        # receiver correction
-        rcvcorr = None
-        if ('rcvcorr' in kwargs):
-            if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
-            if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
-            # convert time shift to nsamples -- must be even
-            deg, lag = kwargs['rcvcorr']
-            samps = core.time2samps(lag, self.delta, 'even')
-            rcvcorr = (deg, samps)
-
-        # source correction
-        srccorr = None
-        if ('srccorr' in kwargs):
-            if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
-            if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
-            # convert time shift to nsamples -- must be even
-            deg, lag = kwargs['srccorr']
-            samps = core.time2samps(lag, self.delta, 'even')
-            srccorr = (deg, samps)
-        
-        # avoid using "dots" in loops for performance
-        rotate = core.rotate
-        lag = core.lag
-        chop = core.chop
-        unsplit = core.unsplit
-        
-        # ensure trace1 at zero angle
-        copy = self.copy()
-        copy.rotateto(0)
-        x, y = copy.x, copy.y
-        
-        # pre-apply receiver correction
-        if 'rcvcorr' in kwargs:
-            rcvphi, rcvlag = rcvcorr
-            x, y = unsplit(x, y, rcvphi, rcvlag)
-         
-        ######################                  
-        # inner loop function
-        ######################
-    
-        # source correction  
-        
-        if 'srccorr' in kwargs:
-            srcphi, srclag = srccorr
-            def srccorr(x, y, ang):
-                x, y = unsplit(x, y, srcphi-ang, srclag)
-                return x, y
-        else:
-            def srccorr(x, y, ang):
-                return x, y
-                
-        # rotate to polaristation (needed for tranverse min)
-        if 'pol' in kwargs:
-            pol = kwargs['pol']
-            def rotpol(x, y, ang):
-                # rotate to pol
-                x, y = rotate(x, y, pol-ang)
-                return x, y
-        else:
-            def rotpol(x, y, ang):
-                return x, y
-        
-        # actual inner loop function   
-        def process(x, y, ang, shift):
-            # remove shift
-            x, y = lag(x, y, -shift)
-            x, y = srccorr(x, y, ang)
-            x, y = chop(x, y, window=self.window)
-            x, y = rotpol(x, y, ang)
-            return func(x, y)
-                  
-        # Do the grid search
-        prerot = [ (rotate(x, y, ang), ang) for ang in degs ]
-        
-        out = [ [ process(data[0], data[1], ang, shift) for shift in slags ]
-                for (data, ang) in prerot  ]
-                               
-        return out        
+    # def _gridsearch(self, func, **kwargs):
+    #
+    #     """
+    #     Grid search for splitting parameters applied to data using the function defined in func
+    #     rcvcorr = receiver correction parameters in tuple (fast,lag)
+    #     srccorr = source correction parameters in tuple (fast,lag)
+    #     """
+    #
+    #     # get degs, lags and slags
+    #     degs, _, slags = self._get_degs_lags_slags(self, **kwargs)
+    #
+    #     # receiver correction
+    #     rcvcorr = None
+    #     if ('rcvcorr' in kwargs):
+    #         if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
+    #         if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
+    #         # convert time shift to nsamples -- must be even
+    #         deg, lag = kwargs['rcvcorr']
+    #         samps = core.time2samps(lag, self.delta, 'even')
+    #         rcvcorr = (deg, samps)
+    #
+    #     # source correction
+    #     srccorr = None
+    #     if ('srccorr' in kwargs):
+    #         if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
+    #         if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
+    #         # convert time shift to nsamples -- must be even
+    #         deg, lag = kwargs['srccorr']
+    #         samps = core.time2samps(lag, self.delta, 'even')
+    #         srccorr = (deg, samps)
+    #
+    #     # avoid using "dots" in loops for performance
+    #     rotate = core.rotate
+    #     lag = core.lag
+    #     chop = core.chop
+    #     unsplit = core.unsplit
+    #
+    #     # ensure trace1 at zero angle
+    #     copy = self.copy()
+    #     copy.rotateto(0)
+    #     x, y = copy.x, copy.y
+    #
+    #     # pre-apply receiver correction
+    #     if 'rcvcorr' in kwargs:
+    #         rcvphi, rcvlag = rcvcorr
+    #         x, y = unsplit(x, y, rcvphi, rcvlag)
+    #
+    #     ######################
+    #     # inner loop function
+    #     ######################
+    #
+    #     # source correction
+    #
+    #     if 'srccorr' in kwargs:
+    #         srcphi, srclag = srccorr
+    #         def srccorr(x, y, ang):
+    #             x, y = unsplit(x, y, srcphi-ang, srclag)
+    #             return x, y
+    #     else:
+    #         def srccorr(x, y, ang):
+    #             return x, y
+    #
+    #     # rotate to polaristation (needed for tranverse min)
+    #     if 'pol' in kwargs:
+    #         pol = kwargs['pol']
+    #         def rotpol(x, y, ang):
+    #             # rotate to pol
+    #             x, y = rotate(x, y, pol-ang)
+    #             return x, y
+    #     else:
+    #         def rotpol(x, y, ang):
+    #             return x, y
+    #
+    #     # actual inner loop function
+    #     def process(x, y, ang, shift):
+    #         # remove shift
+    #         x, y = lag(x, y, -shift)
+    #         x, y = srccorr(x, y, ang)
+    #         x, y = chop(x, y, window=self.window)
+    #         x, y = rotpol(x, y, ang)
+    #         return func(x, y)
+    #
+    #     # Do the grid search
+    #     prerot = [ (rotate(x, y, ang), ang) for ang in degs ]
+    #
+    #     out = [ [ process(data[0], data[1], ang, shift) for shift in slags ]
+    #             for (data, ang) in prerot  ]
+    #
+    #     return out
       
         
             

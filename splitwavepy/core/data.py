@@ -7,15 +7,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from ..core import core, core3d, io
+from ..core import core
+
+#, core3d, io
 # from ..core.pair import Pair
-from ..core.window import Window
+# from ..core.window import Window
 # from . import eigval, rotcorr, transmin, sintens
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
-import os.path
+# import matplotlib.pyplot as plt
+# import matplotlib.gridspec as gridspec
+# import os.path
 
 
 class Data:
@@ -24,17 +26,40 @@ class Data:
     Base data class        
     """
     
-    def __init__(self,*args,**kwargs):
+    def __init__(self, x, y, *args, **kwargs):
+
+        # the traces
+        self.x = x
+        self.y = y
 
         # ensure delta is set as a keyword argment, e.g. delta=0.1
         if 'delta' not in kwargs: raise Exception('delta must be set')
-        self.delta = kwargs['delta']
+        self.delta = kwargs['delta'] 
+        
+        # some sanity checks
+        if self.x.ndim != 1: raise Exception('data must be one dimensional')
+        if self.x.size%2 == 0: raise Exception('data must have odd number of samples')
+        if (self.x.size != self.y.size): raise Exception('x and y must be the same length')    
+        
+        # add geometry info 
+        self.geom = 'geo'
+        if ('geom' in kwargs): self.geom = kwargs['geom']
+               
+        self.cmpvecs = np.eye(2)  
+        if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']  
         
         # labels
         self.units = 's'
-        if ('units' in kwargs): self.units = kwargs['units']               
+        if ('units' in kwargs): self.units = kwargs['units']
+        self.set_labels()
+        
+        # default window
+        self.window = Window(core.odd(self._nsamps() / 3))
+                      
         
     # COMMON PROPERTIES
+    
+    
     
     @property
     def delta(self):
@@ -54,36 +79,76 @@ class Data:
         self.__window = window
    
     @property
+    def cmplabels(self):
+        return self.__cmplabels
+        
+    @cmplabels.setter
+    def cmplabels(self, cmplabels):
+        self.__cmplabels = cmplabels
+   
+    @property
     def units(self):
         return self.__units
     
     @units.setter
     def units(self, units):
         self.__units = units
+        
+    @property
+    def geom(self):
+        return self.__geom
+        
+    @geom.setter
+    def geom(self, geom):
+        possible_geoms = ['geo','ray','cart']
+        if geom not in possible_geoms:
+            raise ValueError('geom must be one of ' + str(possible_geoms))
+        self.__geom = geom
+        
+    # COMMON METHODS
                 
-    # Common methods
-                
-    def set_window(self,*args,**kwargs):
+    def set_window(self, *args, **kwargs):
         """
         Set the window
         """                
         # if Window provided
         if 'window' in kwargs:  
-            if isinstance(kwargs['window'],Window):
+            if isinstance(kwargs['window'], Window):
                 self.window = kwargs['window']
+                return
             else:
-                raise TypeError('expecting a window')        
-        # if no arguments provided
-        elif len(args) == 0:
-            width = core.odd(self._nsamps() / 3)
-            self.window = Window(width)
-        # if start/end given
-        elif len(args) == 2:
+                raise TypeError('expecting a window')  
+        # start/end given
+        if len(args) == 2:
             start, end = args  
-            self.window = self.construct_window(start,end,**kwargs) 
+            self.window = self.construct_window(start, end, **kwargs)
+            return
         else:
             raise Exception ('unexpected number of arguments')
             
+    def set_labels(self, *args):
+        if len(args) == 0:
+            if np.allclose(self.cmpvecs, np.eye(2), atol=1e-02):
+                if self.geom == 'geo': self.cmplabels = ['North', 'East']
+                elif self.geom == 'ray': self.cmplabels = ['SV', 'SH']
+                elif self.geom == 'cart': self.cmplabels = ['X', 'Y']
+                else: self.cmplabels = ['Comp1', 'Comp2']
+                return
+            # if reached here we have a non-standard orientation
+            a1,a2 = self.cmpangs()
+            lbl1 = str(round(a1))+r' ($^\circ$)'
+            lbl2 = str(round(a2))+r' ($^\circ$)'
+            self.cmplabels = [lbl1,lbl2]
+            return
+        elif len(args) == 1:
+            if not isinstance(args[0],list): raise TypeError('expecting a list')
+            # if not len(args[0]) == 2: raise Exception('list must be length 2')
+            if not (isinstance(args[0][0],str) and isinstance(args[0][1],str)):
+                raise TypeError('cmplabels must be a list of strings')
+            self.cmplabels = args[0]
+            return
+        else:
+            raise Exception('unexpected number of arguments')     
         
     # Utility 
     
@@ -94,7 +159,7 @@ class Data:
         """
         Chop time to window
         """        
-        t = core.chop(self.t(),window=self.window)
+        t = core.chop(self.t(), window=self.window)
         return t
         
     # window
@@ -125,15 +190,15 @@ class Data:
         """
         return self.window.centre(self._nsamps()) * self.delta
         
-    def construct_window(self,start,end,**kwargs): 
+    def construct_window(self, start, end, **kwargs): 
         if start > end: raise ValueError('start is larger than end')
         time_centre = (start + end)/2
         time_width = end - start
-        tcs = core.time2samps(time_centre,self.delta)
+        tcs = core.time2samps(time_centre, self.delta)
         offset = tcs - self._centresamp()
         # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
-        width = core.time2samps(time_width,self.delta,'even') + 1     
-        return Window(width,offset,**kwargs) 
+        width = core.time2samps(time_width, self.delta, 'even') + 1     
+        return Window(width, offset, **kwargs) 
         
     # Hidden
     
@@ -145,58 +210,7 @@ class Data:
     
     def _centretime(self):
         return int(self.x.size/2) * self.delta
-        
-    def _parse_lags(self, **kwargs):
-        """return numpy array of lags to explore"""
-        # LAGS
-        minlag = 0
-        maxlag = self.wwidth() / 4
-        nlags  = 40
-        if 'lags' not in kwargs:
-            lags = np.linspace( minlag, maxlag, nlags)
-        else:
-            if isinstance(kwargs['lags'],np.ndarray):
-                lags = kwargs['lags']
-            elif isinstance(kwargs['lags'],tuple):
-                if len(kwargs['lags']) == 1:
-                    lags = np.linspace( minlag, kwargs['lags'][0], nlags)
-                elif len(kwargs['lags']) == 2:
-                    lags = np.linspace( minlag,*kwargs['lags'])
-                elif len(kwargs['lags']) == 3:
-                    lags = np.linspace( *kwargs['lags'])
-                else:
-                    raise Exception('Can\'t parse lags keyword')
-            else:
-                raise TypeError('lags keyword must be a tuple or numpy array') 
-        return lags
-        
-    def _parse_degs(self, **kwargs):
-        """return numpy array of degs to explore"""
-        # DEGS
-        mindeg = -90
-        maxdeg = 90
-        ndegs = 90
-        if 'degs' not in kwargs:
-            degs = np.linspace( mindeg, maxdeg, ndegs, endpoint=False)
-        else:
-            if isinstance(kwargs['degs'], np.ndarray):
-                degs = kwargs['degs']
-            elif isinstance(kwargs['degs'], int):
-                degs = np.linspace( mindeg, maxdeg, kwargs['degs'], endpoint=False)
-            else:
-                raise TypeError('degs must be an integer or numpy array')
-        return degs
-                
-    def _get_degs_lags_and_slags(self, **kwargs):
-        # convert lags to samps and back again
-        lags = self._parse_lags(**kwargs)
-        slags = np.unique( core.time2samps(lags, self.delta, mode='even')).astype(int)
-        lags = core.samps2time(slags, self.delta)
-        # parse degs
-        degs = self._parse_degs(**kwargs)
-        return degs, lags, slags
-    
-    
+           
     # I/O stuff  
                        
     def copy(self):
@@ -213,6 +227,105 @@ class Data:
         for key in self.__dict__.keys():
             if not np.all( self.__dict__[key] == other.__dict__[key]): return False
         # if reached here then the same
+        return True
+        
+class Window:
+    """
+    Instantiate a Window defined relative to centre of a window of flexible size.
+    
+    args
+
+    - width    | nsamps length of window,
+    - offset   | nsamps offset from centre of window,    
+    
+    kwargs
+    
+    - tukey   | fraction of window to cosine taper (from 0 to 1).
+    """
+    
+    def __init__(self,width,offset=0,tukey=None):
+        # ensure width is odd 
+        if width%2 != 1:
+            raise Exception('width must be an odd integer')
+        self.width = width
+        self.offset = offset
+        self.tukey = tukey
+    
+    def start(self,samps):
+        """
+        Return start sample of window.
+        """
+        hw = int(self.width/2)
+        if samps%2 != 1:
+            raise Exception('samps must be odd to have definite centre')
+        else:
+            centre = np.int(samps/2)
+            return centre + self.offset - hw
+
+    def end(self,samps):
+        """
+        Return end sample of window.
+        """
+        hw = int(self.width/2)
+        if samps%2 != 1:
+            raise Exception('samps must be odd to have definite centre')
+        else:
+            centre = int(samps/2)
+            return centre + self.offset + hw
+    
+    def centre(self,samps):
+        """
+        Return centre sample of window.
+        """
+        if samps%2 != 1:
+            raise Exception('samps must be odd to have definite centre')
+        else:
+            centre = int(samps/2)
+            return centre + self.offset       
+
+    def asarray(self,samps):
+                
+        # sense check -- is window in range?
+        if self.end(samps) > samps:
+            raise Exception('Window exceeds max range')        
+        if self.start(samps) < 0:
+            raise Exception('Window exceeds min range')
+        
+        # sexy cosine taper
+        if self.tukey is None:
+            alpha = 0.
+        else:
+            alpha = self.tukey
+        tukey = signal.tukey(self.width,alpha=alpha)        
+        array = np.zeros(samps)
+        array[self.start(samps):self.end(samps)+1] = tukey
+        return array
+                
+    def shift(self,shift):
+        """
+        +ve moves N samples to the right
+        """
+        self.offset = self.offset + int(shift)
+        
+    def resize(self,resize):
+        """
+        +ve adds N samples to the window width
+        """        
+        # ensure resize is even
+        self.width = self.width + core.even(resize)
+        
+    def retukey(self,tukey):
+        self.tukey = tukey
+        
+    # def plot(self,samps):
+    #     plt.plot(self.asarray(samps))
+    #     plt.show()
+        
+    # Comparison
+    
+    def __eq__(self, other) :
+        if self.__class__ != other.__class__: return False
+        if set(self.__dict__) != set(other.__dict__): return False
         return True
         
 class WindowPicker:
