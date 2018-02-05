@@ -274,10 +274,10 @@ class Pair(Data):
         """Plot particle motion on *ax* matplotlib axis object.
         """
         
-        data = self.chop()
+        data = self.copy()
         data.rotateto(0)
-        x, y = data.x, data.y
-        t = data.t()
+        x, y = data.chopdata()
+        t = data.chopt()
                 
         # plot data
         # ax.plot(self.chop().y,self.chop().x)

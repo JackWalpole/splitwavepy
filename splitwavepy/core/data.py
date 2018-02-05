@@ -158,8 +158,10 @@ class Data:
     def chopt(self):
         """
         Chop time to window
-        """        
-        t = core.chop(self.t(), window=self.window)
+        """
+        t0 = self._w0()
+        t1 = self._w1()        
+        t = self.t()[t0:t1]
         return t
         
     def data(self):
@@ -169,7 +171,8 @@ class Data:
         """Chop traces to window"""
         t0 = self._w0()
         t1 = self._w1()
-        return np.vstack((self.x[t0:t1], self.y[t0:t1]))
+        return self.x[t0:t1], self.y[t0:t1]
+        # return np.vstack((self.x[t0:t1], self.y[t0:t1]))
         
     # window
     
@@ -187,14 +190,14 @@ class Data:
         """
         Window start time.
         """
-        sbeg = self.window.start(self._nsamps())
+        sbeg = self._w0()
         return sbeg * self.delta
     
     def wend(self):
         """
         Window end time.
         """
-        send = self.window.end(self._nsamps())
+        send = self._w1()
         return send * self.delta
         
     def wwidth(self):
