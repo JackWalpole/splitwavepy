@@ -187,11 +187,14 @@ class Pair(Data):
         """
         Calculate the splitting intensity as defined by Chevrot (2000).
         """
+        
+        if 'pol' not in kwargs:
+            raise Exception('pol must be specified')
+            
         copy = self.copy()
-        copy.rotateto(copy.pol)
+        copy.rotateto(kwargs['pol'])
         copy.x = np.gradient(copy.x)
-        copy.chop()
-        rdiff, trans = copy.x, copy.y
+        rdiff, trans = copy.chopdata()
         s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
         return s
 
