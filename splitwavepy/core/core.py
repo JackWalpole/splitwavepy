@@ -83,41 +83,41 @@ def unsplit(x,y,degrees,samps):
     """Apply inverse splitting and rotate back"""
     return split(x,y,degrees,-samps)
 
-def chop(*args,**kwargs):
-    """Chop trace, or traces, using window"""
-    
-    if ('window' in kwargs):
-        window = kwargs['window']
-    
-    if not isinstance(window,Window):
-        raise Exception('window must be a Window')
-    
-    length = args[0].size
-          
-    if window.width > length:
-        raise Exception('window width is greater than trace length')
-    
-    centre = int(length/2) + window.offset
-    hw = int(window.width/2)    
-    t0 = centre - hw
-    t1 = centre + hw
-    
-    if t0 < 0:
-        raise Exception('chop starts before trace data')
-    elif t1 > length:
-        raise Exception('chop ends after trace data')
-        
-    if window.tukey is not None:
-        tukey = signal.tukey(window.width,alpha=window.tukey)
-    else:
-        tukey = 1.
-    
-    if len(args)==1:    
-        return args[0][t0:t1+1] * tukey
-    elif len(args)==2:
-        return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey
-    elif len(args)==3:
-        return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
+# def chop(*args,**kwargs):
+#     """Chop trace, or traces, using window"""
+#
+#     if ('window' in kwargs):
+#         window = kwargs['window']
+#
+#     if not isinstance(window,Window):
+#         raise Exception('window must be a Window')
+#
+#     length = args[0].size
+#
+#     if window.width > length:
+#         raise Exception('window width is greater than trace length')
+#
+#     centre = int(length/2) + window.offset
+#     hw = int(window.width/2)
+#     t0 = centre - hw
+#     t1 = centre + hw
+#
+#     if t0 < 0:
+#         raise Exception('chop starts before trace data')
+#     elif t1 > length:
+#         raise Exception('chop ends after trace data')
+#
+#     if window.tukey is not None:
+#         tukey = signal.tukey(window.width,alpha=window.tukey)
+#     else:
+#         tukey = 1.
+#
+#     if len(args)==1:
+#         return args[0][t0:t1+1] * tukey
+#     elif len(args)==2:
+#         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey
+#     elif len(args)==3:
+#         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
 
 ## Measurement 
    

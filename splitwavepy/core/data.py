@@ -7,7 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from ..core import core
+from ..core import core, io
 
 #, core3d, io
 # from ..core.pair import Pair
@@ -70,13 +70,13 @@ class Data:
         if delta <= 0: raise ValueError('delta must be positive')
         self.__delta = float(delta)
         
-    @property
-    def window(self):
-        return self.__window
-        
-    @window.setter
-    def window(self, window):    
-        self.__window = window
+    # @property
+    # def window(self):
+    #     return self.__window
+    #
+    # @window.setter
+    # def window(self, window):
+    #     self.__window = window
    
     @property
     def cmplabels(self):
@@ -100,7 +100,7 @@ class Data:
         
     @geom.setter
     def geom(self, geom):
-        possible_geoms = ['geo','ray','cart']
+        possible_geoms = ['geo', 'ray', 'cart']
         if geom not in possible_geoms:
             raise ValueError('geom must be one of ' + str(possible_geoms))
         self.__geom = geom
@@ -162,7 +162,26 @@ class Data:
         t = core.chop(self.t(), window=self.window)
         return t
         
+    def data(self):
+        return np.vstack((self.x, self.y))
+        
+    def chopdata(self):
+        """Chop traces to window"""
+        t0 = self._w0()
+        t1 = self._w1()
+        return np.vstack((self.x[t0:t1], self.y[t0:t1]))
+        
     # window
+    
+    def _w0(self):
+        """idx of first sample in window"""
+        hw = int(self.window.width/2)
+        return self._centresamp() + self.window.offset - hw
+    
+    def _w1(self):
+        """idx of last sample in window"""
+        hw = int(self.window.width/2)
+        return self._centresamp() + self.window.offset + hw + 1
     
     def wbeg(self):
         """
@@ -243,7 +262,7 @@ class Window:
     - tukey   | fraction of window to cosine taper (from 0 to 1).
     """
     
-    def __init__(self,width,offset=0,tukey=None):
+    def __init__(self, width, offset=0, tukey=None):
         # ensure width is odd 
         if width%2 != 1:
             raise Exception('width must be an odd integer')
@@ -251,75 +270,71 @@ class Window:
         self.offset = offset
         self.tukey = tukey
     
-    def start(self,samps):
-        """
-        Return start sample of window.
-        """
-        hw = int(self.width/2)
-        if samps%2 != 1:
-            raise Exception('samps must be odd to have definite centre')
-        else:
-            centre = np.int(samps/2)
-            return centre + self.offset - hw
-
-    def end(self,samps):
-        """
-        Return end sample of window.
-        """
-        hw = int(self.width/2)
-        if samps%2 != 1:
-            raise Exception('samps must be odd to have definite centre')
-        else:
-            centre = int(samps/2)
-            return centre + self.offset + hw
-    
-    def centre(self,samps):
-        """
-        Return centre sample of window.
-        """
-        if samps%2 != 1:
-            raise Exception('samps must be odd to have definite centre')
-        else:
-            centre = int(samps/2)
-            return centre + self.offset       
-
-    def asarray(self,samps):
+    # def start(self, samps):
+    #     """
+    #     Return start sample of window.
+    #     """
+    #     hw = int(self.width/2)
+    #     if samps%2 != 1:
+    #         raise Exception('samps must be odd to have definite centre')
+    #     else:
+    #         centre = np.int(samps/2)
+    #         return centre + self.offset - hw
+    #
+    # def end(self, samps):
+    #     """
+    #     Return end sample of window.
+    #     """
+    #     hw = int(self.width/2)
+    #     if samps%2 != 1:
+    #         raise Exception('samps must be odd to have definite centre')
+    #     else:
+    #         centre = int(samps/2)
+    #         return centre + self.offset + hw
+    #
+    # def centre(self, samps):
+    #     """
+    #     Return centre sample of window.
+    #     """
+    #     if samps%2 != 1:
+    #         raise Exception('samps must be odd to have definite centre')
+    #     else:
+    #         centre = int(samps/2)
+    #         return centre + self.offset
+    #
+    # def asarray(self, samps):
+    #
+    #     # sense check -- is window in range?
+    #     if self.end(samps) > samps:
+    #         raise Exception('Window exceeds max range')
+    #     if self.start(samps) < 0:
+    #         raise Exception('Window exceeds min range')
+    #
+    #     # sexy cosine taper
+    #     if self.tukey is None:
+    #         alpha = 0.
+    #     else:
+    #         alpha = self.tukey
+    #     tukey = signal.tukey(self.width, alpha=alpha)
+    #     array = np.zeros(samps)
+    #     array[self.start(samps):self.end(samps)+1] = tukey
+    #     return array
                 
-        # sense check -- is window in range?
-        if self.end(samps) > samps:
-            raise Exception('Window exceeds max range')        
-        if self.start(samps) < 0:
-            raise Exception('Window exceeds min range')
-        
-        # sexy cosine taper
-        if self.tukey is None:
-            alpha = 0.
-        else:
-            alpha = self.tukey
-        tukey = signal.tukey(self.width,alpha=alpha)        
-        array = np.zeros(samps)
-        array[self.start(samps):self.end(samps)+1] = tukey
-        return array
-                
-    def shift(self,shift):
-        """
-        +ve moves N samples to the right
-        """
-        self.offset = self.offset + int(shift)
-        
-    def resize(self,resize):
-        """
-        +ve adds N samples to the window width
-        """        
-        # ensure resize is even
-        self.width = self.width + core.even(resize)
-        
-    def retukey(self,tukey):
-        self.tukey = tukey
-        
-    # def plot(self,samps):
-    #     plt.plot(self.asarray(samps))
-    #     plt.show()
+    # def shift(self, shift):
+    #     """
+    #     +ve moves N samples to the right
+    #     """
+    #     self.offset = self.offset + int(shift)
+    #
+    # def resize(self, resize):
+    #     """
+    #     +ve adds N samples to the window width
+    #     """
+    #     # ensure resize is even
+    #     self.width = self.width + core.even(resize)
+    #
+    # def retukey(self, tukey):
+    #     self.tukey = tukey
         
     # Comparison
     
@@ -333,7 +348,7 @@ class WindowPicker:
     Pick a Window
     """
 
-    def __init__(self,data,fig,ax):
+    def __init__(self, data, fig, ax):
            
         self.canvas = fig.canvas
         self.ax = ax
@@ -341,10 +356,10 @@ class WindowPicker:
         # window limit lines
         self.x1 = data.wbeg()
         self.x2 = data.wend()
-        self.wbegline = self.ax.axvline(self.x1,linewidth=1,color='r',visible=True)
-        self.wendline = self.ax.axvline(self.x2,linewidth=1,color='r',visible=True)
-        self.cursorline = self.ax.axvline(data._centretime(),linewidth=1,color='0.5',visible=False)
-        _,self.ydat = self.wbegline.get_data()
+        self.wbegline = self.ax.axvline(self.x1, linewidth=1, color='r', visible=True)
+        self.wendline = self.ax.axvline(self.x2, linewidth=1, color='r', visible=True)
+        self.cursorline = self.ax.axvline(data._centretime(), linewidth=1, color='0.5', visible=False)
+        _, self.ydat = self.wbegline.get_data()
             
     def connect(self):  
         self.cidclick = self.canvas.mpl_connect('button_press_event', self.click)
@@ -354,38 +369,38 @@ class WindowPicker:
         self.cidleave = self.canvas.mpl_connect('axes_leave_event', self.leave)
         self.cidkey = self.canvas.mpl_connect('key_press_event', self.keypress) 
        
-    def click(self,event):
+    def click(self, event):
         if event.inaxes is not self.ax: return
         x = event.xdata
         if event.button == 1:
             self.x1 = x
-            self.wbegline.set_data([x,x],self.ydat)
+            self.wbegline.set_data([x, x], self.ydat)
             self.canvas.draw() 
         if event.button == 3:
             self.x2 = x
-            self.wendline.set_data([x,x], self.ydat)
+            self.wendline.set_data([x, x], self.ydat)
             self.canvas.draw()
     
-    def keypress(self,event):
+    def keypress(self, event):
         if event.key == " ":
             self.disconnect()
 
-    def enter(self,event):
+    def enter(self, event):
         if event.inaxes is not self.ax: return
         x = event.xdata
-        self.cursorline.set_data([x,x],self.ydat)
+        self.cursorline.set_data([x, x], self.ydat)
         self.cursorline.set_visible(True)
         self.canvas.draw()
 
-    def leave(self,event):
+    def leave(self, event):
         if event.inaxes is not self.ax: return
         self.cursorline.set_visible(False)
         self.canvas.draw()
 
-    def motion(self,event):
+    def motion(self, event):
         if event.inaxes is not self.ax: return
         x = event.xdata
-        self.cursorline.set_data([x,x],self.ydat)
+        self.cursorline.set_data([x, x], self.ydat)
         self.canvas.draw()
         
     def disconnect(self):

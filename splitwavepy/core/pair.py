@@ -94,22 +94,22 @@ class Pair(Data):
         self.x, self.y = core.split(self.x, self.y, fast, samps)
         self.rotateto(origangs[0])
            
-    def unsplit(self,fast,lag):
+    def unsplit(self, fast, lag):
         """
         Reverses splitting operator.
         
         .. warning:: shortens trace length by *lag*.
         """
         # convert time shift to nsamples -- must be even
-        samps = core.time2samps(lag,self.delta,mode='even')
+        samps = core.time2samps(lag, self.delta, mode='even')
         # find appropriate rotation angle
         origangs=self.cmpangs()
         self.rotateto(0)
         # apply splitting
-        self.x, self.y = core.unsplit(self.x,self.y,fast,samps)
+        self.x, self.y = core.unsplit(self.x, self.y, fast, samps)
         self.rotateto(origangs[0])
        
-    def rotateto(self,degrees):
+    def rotateto(self, degrees):
         """
         Rotate traces so that cmp1 lines up with *degrees*
         """
@@ -143,8 +143,7 @@ class Pair(Data):
     # Utility 
     
   
-    def data(self):
-        return np.vstack((self.x, self.y))
+
 
     # def get_pol(self):
     #     """Return principal component orientation"""
@@ -174,14 +173,14 @@ class Pair(Data):
         def getang(c) : return np.rad2deg(np.arctan2(c[1], c[0]))
         return getang(cmp1), getang(cmp2)          
     
-    def chop(self):
-        """
-        Chop data to window
-        """
-        chop = self.copy()
-        chop.x, chop.y = core.chop(chop.x, chop.y, window=chop.window)
-        chop.window.offset = 0
-        return chop
+    # def chop(self):
+    #     """
+    #     Chop data to window
+    #     """
+    #     chop = self.copy()
+    #     chop.x, chop.y = core.chop(chop.x, chop.y, window=chop.window)
+    #     chop.window.offset = 0
+    #     return chop
 
     
     def splitting_intensity(self, **kwargs):

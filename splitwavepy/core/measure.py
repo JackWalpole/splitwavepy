@@ -29,10 +29,6 @@ class Measure:
     
     def __init__(self, Data, *args, **kwargs):
         
-        # convert times to nsamples
-        # self.delta = self.data.delta
-        # self.units = self.data.units
-
         # LAGS
         minlag = 0
         maxlag = Data.wwidth() / 4
