@@ -11,7 +11,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .window import Window
+# from .window import Window
 
 import numpy as np
 from scipy import signal, stats
@@ -82,6 +82,10 @@ def split(x,y,degrees,samps):
 def unsplit(x,y,degrees,samps):
     """Apply inverse splitting and rotate back"""
     return split(x,y,degrees,-samps)
+    
+def chop(x,s0,s1):
+    """Chop a 1-d numpy array from s0 to s1"""
+    return x[s0:s1]
 
 # def chop(*args,**kwargs):
 #     """Chop trace, or traces, using window"""

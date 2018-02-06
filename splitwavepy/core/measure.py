@@ -21,54 +21,61 @@ import numpy as np
 # import os.path
 
 
-class Measure:
+class Measure(Data):
     
     """
     Base measurement class        
     """
     
-    def __init__(self, Data, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         
-        # LAGS
-        minlag = 0
-        maxlag = Data.wwidth() / 4
-        nlags  = 40
-        if 'lags' not in kwargs:
-            lags = np.linspace( minlag, maxlag, nlags)
-        else:
-            if isinstance(kwargs['lags'],np.ndarray):
-                lags = kwargs['lags']
-            elif isinstance(kwargs['lags'],tuple):
-                if len(kwargs['lags']) == 1:
-                    lags = np.linspace( minlag, kwargs['lags'][0], nlags)
-                elif len(kwargs['lags']) == 2:
-                    lags = np.linspace( minlag,*kwargs['lags'])
-                elif len(kwargs['lags']) == 3:
-                    lags = np.linspace( *kwargs['lags'])
-                else:
-                    raise Exception('Can\'t parse lags keyword')
-            else:
-                raise TypeError('lags keyword must be a tuple or numpy array')
-        # convert lags to samples (must be even)
-        self.__slags = np.unique( core.time2samps( lags, self.delta, mode='even')).astype(int)
-
-        # DEGS
-        mindeg = -90
-        maxdeg = 90
-        degs = 90
-        if 'degs' not in kwargs:
-            degs = np.linspace( mindeg, maxdeg, degs, endpoint=False)
-        else:
-            if isinstance(kwargs['degs'],np.ndarray):
-                degs = kwargs['degs']
-            elif isinstance(kwargs['degs'],int):
-                degs = np.linspace( mindeg, maxdeg, kwargs['degs'], endpoint=False)
-            else:
-                raise TypeError('degs must be an integer or numpy array')
-        self.__degs = degs
+        degs, lags, slags = self._get_degs_lags_and_slags(**kwargs)
         
+        self.degs = degs
+        self.lags = lags
+        
+        #
+        # # LAGS
+        # minlag = 0
+        # maxlag = Data.wwidth() / 4
+        # nlags  = 40
+        # if 'lags' not in kwargs:
+        #     lags = np.linspace( minlag, maxlag, nlags)
+        # else:
+        #     if isinstance(kwargs['lags'],np.ndarray):
+        #         lags = kwargs['lags']
+        #     elif isinstance(kwargs['lags'],tuple):
+        #         if len(kwargs['lags']) == 1:
+        #             lags = np.linspace( minlag, kwargs['lags'][0], nlags)
+        #         elif len(kwargs['lags']) == 2:
+        #             lags = np.linspace( minlag,*kwargs['lags'])
+        #         elif len(kwargs['lags']) == 3:
+        #             lags = np.linspace( *kwargs['lags'])
+        #         else:
+        #             raise Exception('Can\'t parse lags keyword')
+        #     else:
+        #         raise TypeError('lags keyword must be a tuple or numpy array')
+        # # convert lags to samples (must be even)
+        # self.__slags = np.unique( core.time2samps( lags, self.delta, mode='even')).astype(int)
+        #
+        # # DEGS
+        # mindeg = -90
+        # maxdeg = 90
+        # degs = 90
+        # if 'degs' not in kwargs:
+        #     degs = np.linspace( mindeg, maxdeg, degs, endpoint=False)
+        # else:
+        #     if isinstance(kwargs['degs'],np.ndarray):
+        #         degs = kwargs['degs']
+        #     elif isinstance(kwargs['degs'],int):
+        #         degs = np.linspace( mindeg, maxdeg, kwargs['degs'], endpoint=False)
+        #     else:
+        #         raise TypeError('degs must be an integer or numpy array')
+        # self.__degs = degs
+        #
         # self.lags, self.degs = np.meshgrid(self.__slags * self.delta, self.__degs)
-        self.degs, self.lags = np.meshgrid(self.__degs, self.__slags * self.delta)
+        
+        # self.degs, self.lags = np.meshgrid(self.__degs, self.__slags * self.delta)
 
         # receiver correction
         self.rcvcorr = None
@@ -79,7 +86,7 @@ class Measure:
             deg, lag = kwargs['rcvcorr']
             samps = core.time2samps(lag, self.delta, 'even')
             self.__rcvcorr = (deg, samps)
-            self.rcvcorr = kwargs['rcvcorr']
+            self.rcvcorr = (deg, samps * self.delta)
 
         # source correction
         self.srccorr = None
@@ -90,7 +97,7 @@ class Measure:
             deg, lag = kwargs['srccorr']
             samps = core.time2samps(lag, self.delta, 'even')
             self.__srccorr = (deg, samps)
-            self.srccorr = kwargs['srccorr']
+            self.srccorr = (deg, samps * self.delta)
                 
     # Common methods
     

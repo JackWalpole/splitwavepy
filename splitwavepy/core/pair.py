@@ -3,9 +3,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from . import core, geom, io
+from . import core, geom
 from .data import Data, Window, WindowPicker
+from .measure import Measure
 
+import pickle
 import numpy as np
 import math
 from scipy import signal
@@ -14,7 +16,7 @@ from matplotlib import gridspec
 from matplotlib.collections import LineCollection
 
 
-class Pair(Data):
+class Pair():
     """
     The Pair: work with 2-component data.
         
@@ -59,78 +61,76 @@ class Pair(Data):
         # window picker
             - plot(pick=True)
     """
-    def __init__(self,*args,**kwargs):
+    def __init__(self, *args, **kwargs):
         
         # if no args make synthetic
         if len(args) == 0:
             x, y = core.synth(**kwargs)
         # otherwise read in data
         elif len(args) == 2:
-            if not (isinstance(args[0],np.ndarray) & isinstance(args[1],np.ndarray)):
+            if not (isinstance(args[0], np.ndarray) & isinstance(args[1], np.ndarray)):
                 raise TypeError('expecting numpy arrays')
             x, y = args[0], args[1]
         else:
             raise Exception('Unexpected number of arguments')
         
         # Initialise Data
-        self.Data = Data.__init__(self, x, y, *args, **kwargs)
-
-
+        self.data = Data(x, y, *args, **kwargs)
 
     # METHODS
       
-    def split(self, fast, lag):
+
+
+
+    # Measurement
+    
+    class EigenM(Measure):
         """
-        Applies splitting operator.
+        Silver and Chan (1991) eigenvalue method measurement.
+    
+        args:
+        None = create synthetic
+        Pair = Measure splitting on Pair object
+        x, y = Measure splitting on traces x, and y.
+    
+        kwargs:
+    
+        name -- string = 'Untitled'
+    
+        lags -- tuple = (maxlag,)  
+             -- tuple = (maxlag,Nlags) 
+             -- tuple = (minlag,maxlag,Nlags)
+             -- numpy ndarray
+    
+        degs -- int = degs
+             -- numpy ndarray
         
-        .. warning:: shortens trace length by *lag*.
+        rcvcorr = (fast,tlag) | tuple | Receiver Correction
+        srccorr = (fast,tlag) | tuple | Source Correction
         """
-        # convert time shift to nsamples -- must be even
-        samps = core.time2samps(lag, self.delta, mode='even')
-        # find appropriate rotation angle
-        origangs = self.cmpangs()
-        self.rotateto(0)
-        # apply splitting
-        self.x, self.y = core.split(self.x, self.y, fast, samps)
-        self.rotateto(origangs[0])
-           
-    def unsplit(self, fast, lag):
-        """
-        Reverses splitting operator.
-        
-        .. warning:: shortens trace length by *lag*.
-        """
-        # convert time shift to nsamples -- must be even
-        samps = core.time2samps(lag, self.delta, mode='even')
-        # find appropriate rotation angle
-        origangs=self.cmpangs()
-        self.rotateto(0)
-        # apply splitting
-        self.x, self.y = core.unsplit(self.x, self.y, fast, samps)
-        self.rotateto(origangs[0])
-       
-    def rotateto(self, degrees):
-        """
-        Rotate traces so that cmp1 lines up with *degrees*
-        """
-        # find appropriate rotation matrix
-        ang = math.radians(degrees)
-        cang = math.cos(ang)
-        sang = math.sin(ang)
-        # define the new cmpvecs
-        backoff = self.cmpvecs
-        self.cmpvecs = np.array([[ cang,-sang],
-                                 [ sang, cang]])
-        rot = np.dot(self.cmpvecs.T, backoff)
-        # rotate data
-        xy = np.dot(rot, self.data())
-        self.x, self.y = xy[0], xy[1]
-        # reset label
-        self.set_labels()
-
-
-
             
+        def __init__(self, *args, **kwargs):
+            """
+            Populates an EigenM instance.
+            """        
+            #
+            # # process input
+            # if len(args) == 1 and isinstance(args[0],Pair):
+            #     self.data = args[0]
+            # else:
+            #     self.data = Pair(*args,**kwargs)
+            #
+            # Derive from Measure
+            Measure.__init__(self, *args, **kwargs)
+
+            # MAKE MEASUREMENT
+            stuff = np.asarray(self.gridsearch(core.eigvalcov, **kwargs))
+            self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
+            maxloc = core.max_idx(self.lam1/self.lam2)
+        
+        
+        
+    #
     # def set_pol(self,*args):
     #     if len(args) == 0:
     #         self.pol = self.get_pol()
@@ -156,22 +156,7 @@ class Pair(Data):
     #     pol = np.rad2deg(np.arctan2(y,x))
     #     return pol
         
-    def eigen(self, window=None):
-        self.eigvals, self.eigvecs = core.eigcov(self.data())
-        
-    def power(self):
-        return self.x**2, self.y**2
-        
-    # def snrRH(self):
-    #     data = self.copy()
-    #     data.rotateto(data.pol())
-    #     return core.snrRH(data.chop().data())
-
-    def cmpangs(self):
-        cmp1 = self.cmpvecs[:, 0]
-        cmp2 = self.cmpvecs[:, 1]
-        def getang(c) : return np.rad2deg(np.arctan2(c[1], c[0]))
-        return getang(cmp1), getang(cmp2)          
+  
     
     # def chop(self):
     #     """
@@ -199,118 +184,7 @@ class Pair(Data):
         return s
 
         
-    # Plotting
-              
-    def plot(self, **kwargs):
-        """
-        Plot trace data and particle motion
-        """
 
-        fig = plt.figure(figsize=(12, 3))     
-        gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
-        
-        # trace
-        ax0 = plt.subplot(gs[0])
-        self._ptr(ax0, **kwargs)
-        
-        # particle  motion
-        ax1 = plt.subplot(gs[1])
-        self._ppm( ax1, **kwargs)   
-        
-        # optional pick window
-        if 'pick' in kwargs and kwargs['pick'] == True:
-            windowpicker = WindowPicker(self, fig, ax0)
-            windowpicker.connect()
-                                 
-        # show
-        plt.tight_layout()
-        plt.show()
-        
-    def ppm(self, **kwargs):
-        """Plot particle motion"""
-        fig, ax = plt.subplots()
-        self._ppm(ax, **kwargs)
-        plt.show()
-        
-    def ptr(self, **kwargs):
-        """Plot trace data"""
-        fig, ax = plt.subplots()
-        self._ptr(ax, **kwargs)
-        plt.show()
-
-    def _ptr( self, ax, **kwargs):
-        """Plot trace data on *ax* matplotlib axis object.
-        """    
-        # plot data
-        t = self.t()
-        
-        # set labels
-        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
-        ax.plot( t, self.x, label=kwargs['cmplabels'][0])
-        ax.plot( t, self.y, label=kwargs['cmplabels'][1])
-        ax.legend(framealpha=0.5)
-    
-        # set limits
-        lim = np.abs(self.data()).max() * 1.1
-        if 'ylim' not in kwargs: kwargs['ylim'] = [-lim, lim]
-        ax.set_ylim(kwargs['ylim'])
-        if 'xlim' in kwargs: ax.set_xlim(kwargs['xlim'])
-    
-        # set axis label
-        if 'units' not in kwargs: kwargs['units'] = 's'            
-        ax.set_xlabel('Time (' + kwargs['units'] +')')
-
-        # plot window markers
-        if self.window.width < self._nsamps():
-            w1 = ax.axvline(self.wbeg(), linewidth=1, color='k')
-            w2 = ax.axvline(self.wend(), linewidth=1, color='k')    
-        
-        # plot additional markers
-        if 'marker' in kwargs:
-            print('here')
-            if type(kwargs['marker']) is not list: kwargs['marker'] = [ kwargs['marker'] ]
-            [ ax.axvline(float(mark), linewidth=1, color='b') for mark in kwargs['marker'] ]
-            
-        return
-
-    def _ppm(self, ax, **kwargs):
-        """Plot particle motion on *ax* matplotlib axis object.
-        """
-        
-        data = self.copy()
-        data.rotateto(0)
-        x, y = data.chopdata()
-        t = data.chopt()
-                
-        # plot data
-        # ax.plot(self.chop().y,self.chop().x)
-        
-        # multi-colored
-        norm = plt.Normalize(t.min(), t.max())
-        points = np.array([y, x]).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments, cmap='plasma', norm=norm, alpha=0.7)
-        lc.set_array(t)
-        lc.set_linewidth(2)
-        line = ax.add_collection(lc)
-        # plt.colorbar(line)
-    
-        # set limit
-        lim = np.abs(self.data()).max() * 1.1
-        if 'lims' not in kwargs: kwargs['lims'] = [-lim, lim] 
-        ax.set_aspect('equal')
-        ax.set_xlim(kwargs['lims'])
-        ax.set_ylim(kwargs['lims'])
-    
-        # set labels
-        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = data.cmplabels
-        ax.set_xlabel(kwargs['cmplabels'][1])
-        ax.set_ylabel(kwargs['cmplabels'][0])
-        
-        # turn off tick annotation
-        ax.axes.xaxis.set_ticklabels([])
-        ax.axes.yaxis.set_ticklabels([])
-        return
         
     # def grid_eigen(self, **kwargs):
     #     """Grid search for splitting parameters using the transverse energy minimisation
@@ -472,7 +346,12 @@ class Pair(Data):
     #
     #     return out
       
-        
+    def save(self,filename):
+        """
+        Save me to a file
+        """       
+        with open(filename, 'wb') as f:
+            pickle.dump(self,f)        
             
         
     # Special
