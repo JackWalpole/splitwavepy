@@ -83,9 +83,9 @@ def unsplit(x,y,degrees,samps):
     """Apply inverse splitting and rotate back"""
     return split(x,y,degrees,-samps)
     
-def chop(x,s0,s1):
-    """Chop a 1-d numpy array from s0 to s1"""
-    return x[s0:s1]
+def chop(x,y,s0,s1):
+    """Chop two 1-d numpy arrays from s0 to s1"""
+    return x[s0:s1], y[s0:s1]
 
 # def chop(*args,**kwargs):
 #     """Chop trace, or traces, using window"""

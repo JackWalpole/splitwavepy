@@ -16,7 +16,7 @@ from matplotlib import gridspec
 from matplotlib.collections import LineCollection
 
 
-class Pair():
+class Pair:
     """
     The Pair: work with 2-component data.
         
@@ -83,36 +83,45 @@ class Pair():
 
 
     # Measurement
-    
-    class EigenM(Measure):
-        """
-        Silver and Chan (1991) eigenvalue method measurement.
-    
-        args:
-        None = create synthetic
-        Pair = Measure splitting on Pair object
-        x, y = Measure splitting on traces x, and y.
-    
-        kwargs:
-    
-        name -- string = 'Untitled'
-    
-        lags -- tuple = (maxlag,)  
-             -- tuple = (maxlag,Nlags) 
-             -- tuple = (minlag,maxlag,Nlags)
-             -- numpy ndarray
-    
-        degs -- int = degs
-             -- numpy ndarray
+    def EigenM(self, **kwargs):
         
-        rcvcorr = (fast,tlag) | tuple | Receiver Correction
-        srccorr = (fast,tlag) | tuple | Source Correction
-        """
-            
-        def __init__(self, *args, **kwargs):
-            """
-            Populates an EigenM instance.
-            """        
+        
+        M = Measure(self.data, **kwargs)
+
+        # MAKE MEASUREMENT
+        stuff = np.asarray(M.gridsearch(core.eigvalcov, **kwargs))
+        self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
+        maxloc = core.max_idx(self.lam1/self.lam2)
+        
+    # class EigenM(Measure):
+    #     """
+    #     Silver and Chan (1991) eigenvalue method measurement.
+    #
+    #     args:
+    #     None = create synthetic
+    #     Pair = Measure splitting on Pair object
+    #     x, y = Measure splitting on traces x, and y.
+    #
+    #     kwargs:
+    #
+    #     name -- string = 'Untitled'
+    #
+    #     lags -- tuple = (maxlag,)
+    #          -- tuple = (maxlag,Nlags)
+    #          -- tuple = (minlag,maxlag,Nlags)
+    #          -- numpy ndarray
+    #
+    #     degs -- int = degs
+    #          -- numpy ndarray
+    #
+    #     rcvcorr = (fast,tlag) | tuple | Receiver Correction
+    #     srccorr = (fast,tlag) | tuple | Source Correction
+    #     """
+    #
+    #     def __init__(self, *args, **kwargs):
+    #         """
+    #         Populates an EigenM instance.
+    #         """
             #
             # # process input
             # if len(args) == 1 and isinstance(args[0],Pair):
@@ -121,12 +130,7 @@ class Pair():
             #     self.data = Pair(*args,**kwargs)
             #
             # Derive from Measure
-            Measure.__init__(self, *args, **kwargs)
 
-            # MAKE MEASUREMENT
-            stuff = np.asarray(self.gridsearch(core.eigvalcov, **kwargs))
-            self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
-            maxloc = core.max_idx(self.lam1/self.lam2)
         
         
         

@@ -21,61 +21,18 @@ import numpy as np
 # import os.path
 
 
-class Measure(Data):
+class Measure:
     
     """
     Base measurement class        
     """
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data, **kwargs):
         
-        degs, lags, slags = self._get_degs_lags_and_slags(**kwargs)
+        self.data = data
         
-        self.degs = degs
-        self.lags = lags
-        
-        #
-        # # LAGS
-        # minlag = 0
-        # maxlag = Data.wwidth() / 4
-        # nlags  = 40
-        # if 'lags' not in kwargs:
-        #     lags = np.linspace( minlag, maxlag, nlags)
-        # else:
-        #     if isinstance(kwargs['lags'],np.ndarray):
-        #         lags = kwargs['lags']
-        #     elif isinstance(kwargs['lags'],tuple):
-        #         if len(kwargs['lags']) == 1:
-        #             lags = np.linspace( minlag, kwargs['lags'][0], nlags)
-        #         elif len(kwargs['lags']) == 2:
-        #             lags = np.linspace( minlag,*kwargs['lags'])
-        #         elif len(kwargs['lags']) == 3:
-        #             lags = np.linspace( *kwargs['lags'])
-        #         else:
-        #             raise Exception('Can\'t parse lags keyword')
-        #     else:
-        #         raise TypeError('lags keyword must be a tuple or numpy array')
-        # # convert lags to samples (must be even)
-        # self.__slags = np.unique( core.time2samps( lags, self.delta, mode='even')).astype(int)
-        #
-        # # DEGS
-        # mindeg = -90
-        # maxdeg = 90
-        # degs = 90
-        # if 'degs' not in kwargs:
-        #     degs = np.linspace( mindeg, maxdeg, degs, endpoint=False)
-        # else:
-        #     if isinstance(kwargs['degs'],np.ndarray):
-        #         degs = kwargs['degs']
-        #     elif isinstance(kwargs['degs'],int):
-        #         degs = np.linspace( mindeg, maxdeg, kwargs['degs'], endpoint=False)
-        #     else:
-        #         raise TypeError('degs must be an integer or numpy array')
-        # self.__degs = degs
-        #
-        # self.lags, self.degs = np.meshgrid(self.__slags * self.delta, self.__degs)
-        
-        # self.degs, self.lags = np.meshgrid(self.__degs, self.__slags * self.delta)
+        self.degs, self.lags, self.slags = self._get_degs_lags_and_slags(**kwargs)
+
 
         # receiver correction
         self.rcvcorr = None
@@ -101,8 +58,7 @@ class Measure(Data):
                 
     # Common methods
     
-    def gridsearch(self, func, **kwargs):
-        
+    def gridsearch(self, func, **kwargs):       
         """
         Grid search for splitting parameters applied to data using the function defined in func
         rcvcorr = receiver correction parameters in tuple (fast,lag) 
@@ -120,6 +76,12 @@ class Measure(Data):
         copy.rotateto(0)
         x, y = copy.x, copy.y
         
+        # window
+        s0, s1 = self.data._w0(), self.data._w1()
+        def win(shift): 
+            ds = int(abs(shift) / 2)
+            return s0 - ds, s1 + ds
+        
         # pre-apply receiver correction
         if 'rcvcorr' in kwargs:
             rcvphi, rcvlag = self.__rcvcorr
@@ -129,8 +91,7 @@ class Measure(Data):
         # inner loop function
         ######################
     
-        # source correction  
-        
+        # source correction          
         if 'srccorr' in kwargs:
             srcphi, srclag = self.__srccorr
             def srccorr(x, y, ang):
@@ -156,92 +117,91 @@ class Measure(Data):
             # remove shift
             x, y = lag(x, y, -shift)
             x, y = srccorr(x, y, ang)
-            x, y = chop(x, y, window=self.data.window)
+            x, y = chop(x, y, *win(shift))
             x, y = rotpol(x, y, ang)
             return func(x, y)
-
                     
         # Do the grid search
-        prerot = [ (rotate(x, y, ang), ang) for ang in self.__degs ]
+        prerot = [ (rotate(x, y, ang), ang) for ang in self.degs ]
         
-        out = [ [ getout(data[0], data[1], ang, shift) for shift in self.__slags ]
+        out = [ [ getout(data[0], data[1], ang, shift) for shift in self.slags ]
                 for (data,ang) in prerot  ]
                                
         return out
         
-    def gridsearch3d(self, func, **kwargs):
-        
-        """
-        Grid search for splitting parameters applied to data using the function defined in func
-        rcvcorr = receiver correction parameters in tuple (fast,lag) 
-        srccorr = source correction parameters in tuple (fast,lag) 
-        """
-        
-        # avoid using "dots" in loops for performance
-        rotate = core3d.rotate
-        lag = core3d.lag
-        chop = core3d.chop
-        unsplit = core3d.unsplit
-        
-        # ensure trace1 at zero angle
-        copy = self.data.copy()
-        copy.rotate2ray()
-        x, y, z = copy.x, copy.y, copy.z
-        
-        # pre-apply receiver correction
-        if 'rcvcorr' in kwargs:
-            rcvphi, rcvlag = self.__rcvcorr
-            x, y, z = unsplit(x, y, z, rcvphi, rcvlag)
-                            
-        ######################                  
-        # inner loop function
-        ######################
-    
-        # source correction  
-        
-        if 'srccorr' in kwargs:
-            srcphi, srclag = self.__srccorr
-            def srccorr(x, y, z, ang):
-                x, y, z = unsplit(x, y, z, srcphi-ang, srclag)
-                return x, y, z
-        else:
-            def srccorr(x, y, z, ang):
-                return x, y, z
-                
-        # rotate to polaristation (needed for tranverse min)
-        if 'mode' in kwargs and kwargs['mode'] == 'rotpol':
-            pol = self.data.pol
-            def rotpol(x, y, z, ang):
-                # rotate to pol
-                x, y, z = rotate(x, y, z, pol-ang)
-                return x, y, z
-        else:
-            def rotpol(x, y, z, ang):
-                return x, y, z
-        
-        # actual inner loop function   
-        def getout(x, y, z, ang, shift):
-            # remove shift
-            x, y, z = lag(x, y, z, -shift)
-            x, y, z = srccorr(x, y, z, ang)
-            x, y, z = chop(x, y, z, window=self.data.window)
-            x, y, z = rotpol(x, y, z, ang)
-            return func(x, y, z)
-                    
-        # Do the grid search
-        prerot = [ (rotate(x, y, z, ang), ang) for ang in self.__degs ]
-        
-        out = [ [ getout(data[0], data[1], data[2], ang, shift) for shift in self.__slags ]
-                for (data,ang) in prerot  ]
-                               
-        return out
+    # def gridsearch3d(self, func, **kwargs):
+    #
+    #     """
+    #     Grid search for splitting parameters applied to data using the function defined in func
+    #     rcvcorr = receiver correction parameters in tuple (fast,lag)
+    #     srccorr = source correction parameters in tuple (fast,lag)
+    #     """
+    #
+    #     # avoid using "dots" in loops for performance
+    #     rotate = core3d.rotate
+    #     lag = core3d.lag
+    #     chop = core3d.chop
+    #     unsplit = core3d.unsplit
+    #
+    #     # ensure trace1 at zero angle
+    #     copy = self.data.copy()
+    #     copy.rotate2ray()
+    #     x, y, z = copy.x, copy.y, copy.z
+    #
+    #     # pre-apply receiver correction
+    #     if 'rcvcorr' in kwargs:
+    #         rcvphi, rcvlag = self.__rcvcorr
+    #         x, y, z = unsplit(x, y, z, rcvphi, rcvlag)
+    #
+    #     ######################
+    #     # inner loop function
+    #     ######################
+    #
+    #     # source correction
+    #
+    #     if 'srccorr' in kwargs:
+    #         srcphi, srclag = self.__srccorr
+    #         def srccorr(x, y, z, ang):
+    #             x, y, z = unsplit(x, y, z, srcphi-ang, srclag)
+    #             return x, y, z
+    #     else:
+    #         def srccorr(x, y, z, ang):
+    #             return x, y, z
+    #
+    #     # rotate to polaristation (needed for tranverse min)
+    #     if 'mode' in kwargs and kwargs['mode'] == 'rotpol':
+    #         pol = self.data.pol
+    #         def rotpol(x, y, z, ang):
+    #             # rotate to pol
+    #             x, y, z = rotate(x, y, z, pol-ang)
+    #             return x, y, z
+    #     else:
+    #         def rotpol(x, y, z, ang):
+    #             return x, y, z
+    #
+    #     # actual inner loop function
+    #     def getout(x, y, z, ang, shift):
+    #         # remove shift
+    #         x, y, z = lag(x, y, z, -shift)
+    #         x, y, z = srccorr(x, y, z, ang)
+    #         x, y, z = chop(x, y, z, window=self.data.window)
+    #         x, y, z = rotpol(x, y, z, ang)
+    #         return func(x, y, z)
+    #
+    #     # Do the grid search
+    #     prerot = [ (rotate(x, y, z, ang), ang) for ang in self.__degs ]
+    #
+    #     out = [ [ getout(data[0], data[1], data[2], ang, shift) for shift in self.__slags ]
+    #             for (data,ang) in prerot  ]
+    #
+    #     return out
             
 
     def _parse_lags(self, **kwargs):
         """return numpy array of lags to explore"""
         # LAGS
         minlag = 0
-        maxlag = self.wwidth() / 4
+        maxlag = self.data.wwidth() / 4
         nlags  = 40
         if 'lags' not in kwargs:
             lags = np.linspace( minlag, maxlag, nlags)
@@ -281,8 +241,8 @@ class Measure(Data):
     def _get_degs_lags_and_slags(self, **kwargs):
         # convert lags to samps and back again
         lags = self._parse_lags(**kwargs)
-        slags = np.unique( core.time2samps(lags, self.delta, mode='even')).astype(int)
-        lags = core.samps2time(slags, self.delta)
+        slags = np.unique( core.time2samps(lags, self.data.delta, mode='even')).astype(int)
+        lags = core.samps2time(slags, self.data.delta)
         # parse degs
         degs = self._parse_degs(**kwargs)
         return degs, lags, slags
@@ -469,14 +429,14 @@ class Measure(Data):
         
     # I/O stuff  
 
-    def save(self,filename):
-        """
-        Save Measurement for future referral
-        """
-        io.save(self,filename)
-                       
-    def copy(self):
-        return io.copy(self)  
+    # def save(self,filename):
+    #     """
+    #     Save Measurement for future referral
+    #     """
+    #     io.save(self,filename)
+    #
+    # def copy(self):
+    #     return io.copy(self)
             
     
     # Plotting
