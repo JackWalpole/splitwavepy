@@ -33,7 +33,6 @@ class Measure:
         
         self.degs, self.lags, self.slags = self._get_degs_lags_and_slags(**kwargs)
 
-
         # receiver correction
         self.rcvcorr = None
         if ('rcvcorr' in kwargs):
@@ -79,8 +78,8 @@ class Measure:
         # window
         s0, s1 = self.data._w0(), self.data._w1()
         def win(shift): 
-            ds = int(abs(shift) / 2)
-            return s0 - ds, s1 + ds
+            ds = int(abs(shift)/2)
+            return s0-ds, s1-ds
         
         # pre-apply receiver correction
         if 'rcvcorr' in kwargs:
