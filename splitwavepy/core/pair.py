@@ -5,7 +5,8 @@ from __future__ import print_function
 
 from . import core, geom
 from .data import Data, Window, WindowPicker
-from .measure import Measure
+# from .measure import Measure
+from .eigenM import EigenM
 
 import pickle
 import numpy as np
@@ -85,13 +86,13 @@ class Pair:
     # Measurement
     def EigenM(self, **kwargs):
         
-        
-        M = Measure(self.data, **kwargs)
-
-        # MAKE MEASUREMENT
-        stuff = np.asarray(M.gridsearch(core.eigvalcov, **kwargs))
-        self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
-        maxloc = core.max_idx(self.lam1/self.lam2)
+        self.EigenM = EigenM(self.data, **kwargs)
+        # M = Measure(self.data, **kwargs)
+        #
+        # # MAKE MEASUREMENT
+        # stuff = np.asarray(M.gridsearch(core.eigvalcov, **kwargs))
+        # self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
+        # maxloc = core.max_idx(self.lam1/self.lam2)
         
     # class EigenM(Measure):
     #     """

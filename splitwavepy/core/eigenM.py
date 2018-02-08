@@ -9,8 +9,8 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core, io
-from ..core.pair import Pair
-from ..core.window import Window
+# from ..core.pair import Pair
+# from ..core.window import Window
 from .measure import Measure
 
 import numpy as np
@@ -50,19 +50,19 @@ class EigenM(Measure):
     noise = 0.001  | float       
     """
     
-    def __init__(self,*args,**kwargs):
+    def __init__(self, data, **kwargs):
         """
         Populates an EigenM instance.
         """        
-
-        # process input
-        if len(args) == 1 and isinstance(args[0],Pair):
-            self.data = args[0]
-        else:
-            self.data = Pair(*args,**kwargs)
+        #
+        # # process input
+        # if len(args) == 1 and isinstance(args[0],Pair):
+        #     self.data = args[0]
+        # else:
+        #     self.data = Pair(*args,**kwargs)
         
         # Derive from Measure
-        Measure.__init__(self, *args, **kwargs)
+        Measure.__init__(self, data, **kwargs)
 
         # MAKE MEASUREMENT
         stuff = np.asarray(self.gridsearch(core.eigvalcov,**kwargs))
