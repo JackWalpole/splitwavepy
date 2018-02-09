@@ -108,60 +108,15 @@ class EigenM(Measure):
     
     # Plotting
     
-    def plot(self,**kwargs):
-          
-        # setup figure and subplots
-        fig = plt.figure(figsize=(12,6)) 
-        gs = gridspec.GridSpec(2, 3,
-                           width_ratios=[1,1,2]
-                           )    
-        ax0 = plt.subplot(gs[0,0])
-        ax1 = plt.subplot(gs[0,1])
-        ax2 = plt.subplot(gs[1,0])
-        ax3 = plt.subplot(gs[1,1])
-        ax4 = plt.subplot(gs[:,2])
-        
-        # data to plot
-        d1 = self.data.chop()
-        d1f = self.srcpoldata().chop()
-        d2 = self.data_corr().chop()
-        d2s = self.srcpoldata_corr().chop()
-        
-        # flip polarity of slow wave in panel one if opposite to fast
-        # d1f.y = d1f.y * np.sign(np.tan(self.srcpol()-self.fast))
-        
-        # get axis scaling
-        lim = np.abs(d2s.data()).max() * 1.1
-        ylim = [-lim,lim]
-
-        # original
-        d1f._ptr(ax0,ylim=ylim,**kwargs)
-        d1._ppm(ax1,lims=ylim,**kwargs)
-        # corrected
-        d2s._ptr(ax2,ylim=ylim,**kwargs)
-        d2._ppm(ax3,lims=ylim,**kwargs)
-
+    def plot(self, **kwargs):
         # error surface
         if 'vals' not in kwargs:
-            # kwargs['vals'] = (self.lam1 - self.lam2) / self.lam2
-            # kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
-            kwargs['vals'] = self.lam1 / self.lam2
-            kwargs['title'] = r'$\lambda_1 / \lambda_2$'
+           kwargs['vals'] = self.lam1 / self.lam2
+           kwargs['title'] = r'$\lambda_1 / \lambda_2$'
         
-        # add marker and info box by default
-        if 'marker' not in kwargs: kwargs['marker'] = True
-        if 'info' not in kwargs: kwargs['info'] = True
-        if 'conf95' not in kwargs: kwargs['conf95'] = True
-        self._psurf(ax4,**kwargs)
-        
-        # title
-        if self.name != 'Untitled':
-            plt.suptitle(self.name)
-        
-        # neaten
-        plt.tight_layout()
-        plt.show()
-        
+        self._plot(**kwargs)
+    
+    
 
         
     # def plot_profiles(self,**kwargs):

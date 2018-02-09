@@ -17,7 +17,7 @@ from .data import Data
 
 import numpy as np
 import matplotlib.pyplot as plt
-# import matplotlib.gridspec as gridspec
+import matplotlib.gridspec as gridspec
 # import os.path
 
 
@@ -444,6 +444,61 @@ class Measure:
             
     
     # Plotting
+    
+    def _plot(self,**kwargs):
+        
+        if 'vals' not in kwargs:
+            raise Exception('vals must be specified')
+          
+        # setup figure and subplots
+        fig = plt.figure(figsize=(12,6)) 
+        gs = gridspec.GridSpec(3, 3,
+                           width_ratios=[2,1,3]
+                           )
+        ax0 = plt.subplot(gs[0,0:2])                     
+        ax1 = plt.subplot(gs[1,0])
+        ax2 = plt.subplot(gs[1,1])
+        ax3 = plt.subplot(gs[2,0])
+        ax4 = plt.subplot(gs[2,1])
+        ax5 = plt.subplot(gs[:,2])
+        
+        # data to plot
+        d1 = self.data.chop()
+        d1f = self.srcpoldata().chop()
+        d2 = self.data_corr().chop()
+        d2s = self.srcpoldata_corr().chop()
+        
+        # flip polarity of slow wave in panel one if opposite to fast
+        # d1f.y = d1f.y * np.sign(np.tan(self.srcpol()-self.fast))
+        
+        # get axis scaling
+        lim = np.abs(d2s.data()).max() * 1.1
+        ylim = [-lim,lim]
+        
+        # long window data
+        self.data._ptr(ax0,ylim=ylim,**kwargs)
+
+        # original
+        d1f._ptr(ax1,ylim=ylim,**kwargs)
+        d1._ppm(ax2,lims=ylim,**kwargs)
+        # corrected
+        d2s._ptr(ax3,ylim=ylim,**kwargs)
+        d2._ppm(ax4,lims=ylim,**kwargs)
+        
+        # add marker and info box by default
+        if 'marker' not in kwargs: kwargs['marker'] = True
+        if 'info' not in kwargs: kwargs['info'] = True
+        if 'conf95' not in kwargs: kwargs['conf95'] = True
+        self._psurf(ax5,**kwargs)
+        
+        # title
+        if self.name != 'Untitled':
+            plt.suptitle(self.name)
+        
+        # neaten
+        plt.tight_layout()
+        plt.show()
+    
         
     def _psurf(self, ax, **kwargs):
         """
