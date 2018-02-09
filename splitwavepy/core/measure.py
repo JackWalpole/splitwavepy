@@ -364,7 +364,7 @@ class Measure:
         x, y = self.srcpoldata_corr().chopdata()
         return core.ndf(y)
     
-    def get_errors(self,surftype=None):
+    def get_errors(self, surftype=None):
         """
         Return dfast and dtlag.
 
@@ -407,13 +407,17 @@ class Measure:
         
     # "squashed" profiles
     
-    def fastprofile(self):
-        surf = (self.lam1-self.lam2)/self.lam2
+    def fastprofile(self, **kwargs):
+        if 'vals' not in kwargs:
+            raise Exception('vals must be specified')
+        surf = kwargs['vals']
         surf = surf / surf.sum()
         return np.sum(surf, axis=0)
         
-    def lagprofile(self):
-        surf = (self.lam1-self.lam2)/self.lam2
+    def lagprofile(self, **kwargs):
+        if 'vals' not in kwargs:
+            raise Exception('vals must be specified')
+        surf = kwargs['vals']
         surf = surf / surf.sum()
         return np.sum(surf, axis=1)
     
@@ -456,7 +460,7 @@ class Measure:
             kwargs['cmap'] = 'magma'
     
         if 'vals' not in kwargs:
-            kwargs['vals'] = (self.lam1-self.lam2) / self.lam2
+            raise Exception('vals must be specified')
             
         # error surface
         deggrid, laggrid = self._grid_degs_lags()

@@ -7,6 +7,7 @@ from . import core, geom
 from .data import Data, Window, WindowPicker
 # from .measure import Measure
 from .eigenM import EigenM
+from .xcorrM import XcorrM
 
 import pickle
 import numpy as np
@@ -84,11 +85,11 @@ class Pair:
 
 
     # Measurement
-    def measureEigen(self, **kwargs):        
+    def measureEigenM(self, **kwargs):        
         self.EigenM = EigenM(self.data, **kwargs)
         
-    def measureXcorr(self, **kwargs):
-        self.XcorrM = XCorrM(self.data, **kwargs)
+    def measureXcorrM(self, **kwargs):
+        self.XcorrM = XcorrM(self.data, **kwargs)
         
     def measureTransM(self, **kwargs):
         self.TransM = TransM(self.data, **kwargs)
