@@ -8,6 +8,7 @@ from .data import Data, Window, WindowPicker
 # from .measure import Measure
 from .eigenM import EigenM
 from .xcorrM import XcorrM
+from .transM import TransM
 
 import pickle
 import numpy as np

@@ -102,10 +102,9 @@ class Measure:
                 
         # rotate to polaristation (needed for tranverse min)
         if 'mode' in kwargs and kwargs['mode'] == 'rotpol':
-            pol = self.data.pol
             def rotpol(x, y, ang):
                 # rotate to pol
-                x, y = rotate(x, y, pol-ang)
+                x, y = rotate(x, y, kwargs['pol']-ang)
                 return x, y
         else:
             def rotpol(x, y, ang):
