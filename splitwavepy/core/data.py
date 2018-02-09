@@ -223,6 +223,23 @@ class Data:
         return self.x[t0:t1], self.y[t0:t1]
         # return np.vstack((self.x[t0:t1], self.y[t0:t1]))
         
+    def chop(self):
+        chop = self.copy()
+        chop.x, chop.y = chop.chopdata()
+        chop.window.offset = 0
+        return chop
+        
+    def estimate_pol(self):
+        """Return principal component orientation"""
+        # rotate to zero
+        rot = self.cmpvecs.T
+        data = np.vstack((self.chopdata()))
+        xy = np.dot(rot,data)
+        _,eigvecs = core.eigcov(xy)
+        x,y = eigvecs[:,0]
+        pol = np.rad2deg(np.arctan2(y,x))
+        return pol
+        
     # window
     
     def _w0(self):

@@ -180,13 +180,13 @@ def crossconvmf(obsx, obsy, prex, prey):
     x, y = crossconv(obsx, obsy, prex, prey)
     return misfit(x, y)  
 
-def splittingintensity(rad,trans):
-    """
-    Calculate splitting intensity.
-    """    
-    rdiff = np.gradient(rad)
-    s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
-    return s
+# def splittingintensity(rad, trans):
+#     """
+#     Calculate splitting intensity.
+#     """
+#     rdiff = np.gradient(rad)
+#     s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
+#     return s
 
 # Errors
 

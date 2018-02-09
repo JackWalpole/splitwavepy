@@ -16,7 +16,7 @@ from .measure import Measure
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import os.path
+# import os.path
 
 class EigenM(Measure):
     
@@ -69,14 +69,16 @@ class EigenM(Measure):
         self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
         maxloc = core.max_idx(self.lam1/self.lam2)
         
+        deggrid, laggrid = self._grid_degs_lags()
+        
         #
         # # get some measurement attributes
         # # Using signal to noise ratio in 2-D inspired by 3-D treatment of:
         # # Jackson, Mason, and Greenhalgh, Geophysics (1991)
         # self.snrsurf = (self.lam1-self.lam2) / (2*self.lam2)
         # maxloc = core.max_idx(self.snrsurf)
-        self.fast = self.degs[maxloc]
-        self.lag  = self.lags[maxloc]
+        self.fast = deggrid[maxloc]
+        self.lag  = laggrid[maxloc]
         # self.snr = self.snrsurf[maxloc]
         # # get errors
         self.errsurf = self.lam2
@@ -93,18 +95,18 @@ class EigenM(Measure):
         
     # auto null classification  
     
-    def ni(self):
-        """
-        development.
-        measure of self-similarity in measurements at 90 degree shift in fast direction
-        """
-        fastprof = self.fastprofile()
-        halfway = int(self.degs.shape[1]/2)
-        diff = fastprof - np.roll(fastprof,halfway)
-        mult = fastprof * np.roll(fastprof,halfway)
-        sumdiffsq = np.sum(diff**2)
-        summult = np.sum(mult)
-        return summult/sumdiffsq           
+    # def ni(self):
+    #     """
+    #     development.
+    #     measure of self-similarity in measurements at 90 degree shift in fast direction
+    #     """
+    #     fastprof = self.fastprofile()
+    #     halfway = int(self.degs.shape[1]/2)
+    #     diff = fastprof - np.roll(fastprof,halfway)
+    #     mult = fastprof * np.roll(fastprof,halfway)
+    #     sumdiffsq = np.sum(diff**2)
+    #     summult = np.sum(mult)
+    #     return summult/sumdiffsq     
     
     # Plotting
     

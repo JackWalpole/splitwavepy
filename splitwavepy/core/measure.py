@@ -16,7 +16,7 @@ from .data import Data
 # from . import eigval, rotcorr, transmin, sintens
 
 import numpy as np
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 # import matplotlib.gridspec as gridspec
 # import os.path
 
@@ -194,7 +194,9 @@ class Measure:
     #             for (data,ang) in prerot  ]
     #
     #     return out
-            
+    
+    def _grid_degs_lags(self):
+        return np.meshgrid(self.degs, self.lags)
 
     def _parse_lags(self, **kwargs):
         """return numpy array of lags to explore"""
@@ -308,14 +310,14 @@ class Measure:
     
     def srcpol(self):
         # recover source polarisation
-        return self.data_corr().get_pol()
+        return self.data_corr().estimate_pol()
         
     def snr(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
         d = self.srcpoldata_corr().chop()
-        return core.snrRH(d.x,d.y)
+        return core.snrRH(d.x, d.y)
                 
-    # possibly useful rotations
+    # data views
     
     def data_corr(self):        
         # copy data     
@@ -359,8 +361,8 @@ class Measure:
     
     def ndf(self):
         """Number of degrees of freedom."""
-        d = self.srcpoldata_corr().chop()
-        return core.ndf(d.y)
+        x, y = self.srcpoldata_corr().chopdata()
+        return core.ndf(y)
     
     def get_errors(self,surftype=None):
         """
@@ -372,8 +374,8 @@ class Measure:
         """
 
         # search interval steps
-        lag_step = self.lags[1,0] - self.lags[0,0]
-        fast_step = self.degs[0,1] - self.degs[0,0]
+        lag_step = self.lags[1] - self.lags[0]
+        fast_step = self.degs[1] - self.degs[0]
 
         # Find nodes where we fall within the 95% confidence region
         if surftype == 'max':
@@ -440,7 +442,7 @@ class Measure:
     
     # Plotting
         
-    def _psurf(self,ax,**kwargs):
+    def _psurf(self, ax, **kwargs):
         """
         Plot an error surface.
     
@@ -457,21 +459,22 @@ class Measure:
             kwargs['vals'] = (self.lam1-self.lam2) / self.lam2
             
         # error surface
-        cax = ax.contourf(self.lags,self.degs,kwargs['vals'],26,cmap=kwargs['cmap'])
+        deggrid, laggrid = self._grid_degs_lags()
+        cax = ax.contourf(laggrid, deggrid, kwargs['vals'], 26, cmap=kwargs['cmap'])
         cbar = plt.colorbar(cax)
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
-        ax.set_xlabel('Delay Time (' + self.units + ')')
+        ax.set_xlabel('Delay Time (' + self.data.units + ')')
         
         # confidence region
         if 'conf95' in kwargs and kwargs['conf95'] == True:
-            ax.contour(self.lags,self.degs,self.errsurf,levels=[self.conf_95()])
+            ax.contour(laggrid, deggrid, self.errsurf, levels=[self.conf_95()])
             
         # marker
         if 'marker' in kwargs and kwargs['marker'] == True:
-            ax.errorbar(self.lag,self.fast,xerr=self.dlag,yerr=self.dfast)
+            ax.errorbar(self.lag, self.fast, xerr=self.dlag, yerr=self.dfast)
 
-        ax.set_xlim([self.lags[0,0], self.lags[-1,0]])
-        ax.set_ylim([self.degs[0,0], self.degs[0,-1]])
+        ax.set_xlim([laggrid[0,0], laggrid[-1,0]])
+        ax.set_ylim([deggrid[0,0], deggrid[0,-1]])
     
         # optional title
         if 'title' in kwargs:
@@ -480,7 +483,7 @@ class Measure:
         # add info in text box
         if 'info' in kwargs and kwargs['info'] == True:
             textstr = '$\phi=%.1f\pm%.1f$\n$\delta t=%.2f\pm%.2f$'%\
-                        (self.fast,self.dfast,self.lag,self.dlag)
+                        (self.fast, self.dfast, self.lag, self.dlag)
             # place a text box in upper left in axes coords
             props = dict(boxstyle='round', facecolor='white', alpha=0.5)
             ax.text(0.6, 0.95, textstr, transform=ax.transAxes, fontsize=12,
@@ -494,16 +497,16 @@ class Measure:
         ax0 = plt.subplot(121)
         ax1 = plt.subplot(122)
 
-        ax0.plot(self.degs[0,:],self.fastprofile())
+        ax0.plot(self.degs[0,:], self.fastprofile())
         ax0.axvline(self.fast)
-        ax0.axvline(self.fast-2*self.dfast,alpha=0.5)
-        ax0.axvline(self.fast+2*self.dfast,alpha=0.5)
+        ax0.axvline(self.fast-2*self.dfast, alpha=0.5)
+        ax0.axvline(self.fast+2*self.dfast, alpha=0.5)
         ax0.set_title('fast direction')
 
-        ax1.plot(self.lags[:,0],self.lagprofile())
+        ax1.plot(self.lags[:,0], self.lagprofile())
         ax1.axvline(self.lag)
-        ax1.axvline(self.lag-2*self.dlag,alpha=0.5)
-        ax1.axvline(self.lag+2*self.dlag,alpha=0.5)
+        ax1.axvline(self.lag-2*self.dlag, alpha=0.5)
+        ax1.axvline(self.lag+2*self.dlag, alpha=0.5)
         ax1.set_title('lag direction')
 
         plt.show()

@@ -84,95 +84,16 @@ class Pair:
 
 
     # Measurement
-    def EigenM(self, **kwargs):
-        
+    def measureEigen(self, **kwargs):        
         self.EigenM = EigenM(self.data, **kwargs)
-        # M = Measure(self.data, **kwargs)
-        #
-        # # MAKE MEASUREMENT
-        # stuff = np.asarray(M.gridsearch(core.eigvalcov, **kwargs))
-        # self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
-        # maxloc = core.max_idx(self.lam1/self.lam2)
         
-    # class EigenM(Measure):
-    #     """
-    #     Silver and Chan (1991) eigenvalue method measurement.
-    #
-    #     args:
-    #     None = create synthetic
-    #     Pair = Measure splitting on Pair object
-    #     x, y = Measure splitting on traces x, and y.
-    #
-    #     kwargs:
-    #
-    #     name -- string = 'Untitled'
-    #
-    #     lags -- tuple = (maxlag,)
-    #          -- tuple = (maxlag,Nlags)
-    #          -- tuple = (minlag,maxlag,Nlags)
-    #          -- numpy ndarray
-    #
-    #     degs -- int = degs
-    #          -- numpy ndarray
-    #
-    #     rcvcorr = (fast,tlag) | tuple | Receiver Correction
-    #     srccorr = (fast,tlag) | tuple | Source Correction
-    #     """
-    #
-    #     def __init__(self, *args, **kwargs):
-    #         """
-    #         Populates an EigenM instance.
-    #         """
-            #
-            # # process input
-            # if len(args) == 1 and isinstance(args[0],Pair):
-            #     self.data = args[0]
-            # else:
-            #     self.data = Pair(*args,**kwargs)
-            #
-            # Derive from Measure
-
+    def measureXcorr(self, **kwargs):
+        self.XcorrM = XCorrM(self.data, **kwargs)
         
+    def measureTransM(self, **kwargs):
+        self.TransM = TransM(self.data, **kwargs)
         
-        
-    #
-    # def set_pol(self,*args):
-    #     if len(args) == 0:
-    #         self.pol = self.get_pol()
-    #     elif len(args) == 1:
-    #         self.pol = float(args[0])
-    #     else:
-    #         raise Exception('Unexpected number of arguments')
-    #     return
-    
-    # Utility 
-    
-  
-
-
-    # def get_pol(self):
-    #     """Return principal component orientation"""
-    #     # rotate to zero
-    #     rot = self.cmpvecs.T
-    #     data = self.chop().data()
-    #     xy = np.dot(rot,data)
-    #     _,eigvecs = core.eigcov(xy)
-    #     x,y = eigvecs[:,0]
-    #     pol = np.rad2deg(np.arctan2(y,x))
-    #     return pol
-        
-  
-    
-    # def chop(self):
-    #     """
-    #     Chop data to window
-    #     """
-    #     chop = self.copy()
-    #     chop.x, chop.y = core.chop(chop.x, chop.y, window=chop.window)
-    #     chop.window.offset = 0
-    #     return chop
-
-    
+    # Other 
     def splitting_intensity(self, **kwargs):
         """
         Calculate the splitting intensity as defined by Chevrot (2000).
@@ -181,7 +102,7 @@ class Pair:
         if 'pol' not in kwargs:
             raise Exception('pol must be specified')
             
-        copy = self.copy()
+        copy = self.data.copy()
         copy.rotateto(kwargs['pol'])
         copy.x = np.gradient(copy.x)
         rdiff, trans = copy.chopdata()
@@ -246,110 +167,19 @@ class Pair:
     #                    'fast': fast, 'tlag': tlag, 'dfast': dfast, 'dtlag': dtlag
     #                    }
 
-    def data_corr(self, fast, lag, **kwargs):
-        # copy data     
-        data_corr = self.copy()
-        # rcv side correction     
-        if kwargs['rcvcorr'] is not None:
-            data_corr.unsplit(*kwargs['rcvcorr'])    
-        # target layer correction
-        data_corr.unsplit(fast, lag)  
-        # src side correction
-        if kwargs['srccorr'] is not None:
-            data_corr.unsplit(*kwargs['srccorr'])
-        return data_corr
-                
-    # Common methods    
-    
-    # def _gridsearch(self, func, **kwargs):
-    #
-    #     """
-    #     Grid search for splitting parameters applied to data using the function defined in func
-    #     rcvcorr = receiver correction parameters in tuple (fast,lag)
-    #     srccorr = source correction parameters in tuple (fast,lag)
-    #     """
-    #
-    #     # get degs, lags and slags
-    #     degs, _, slags = self._get_degs_lags_slags(self, **kwargs)
-    #
-    #     # receiver correction
-    #     rcvcorr = None
-    #     if ('rcvcorr' in kwargs):
-    #         if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
-    #         if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
-    #         # convert time shift to nsamples -- must be even
-    #         deg, lag = kwargs['rcvcorr']
-    #         samps = core.time2samps(lag, self.delta, 'even')
-    #         rcvcorr = (deg, samps)
-    #
-    #     # source correction
-    #     srccorr = None
-    #     if ('srccorr' in kwargs):
-    #         if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
-    #         if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
-    #         # convert time shift to nsamples -- must be even
-    #         deg, lag = kwargs['srccorr']
-    #         samps = core.time2samps(lag, self.delta, 'even')
-    #         srccorr = (deg, samps)
-    #
-    #     # avoid using "dots" in loops for performance
-    #     rotate = core.rotate
-    #     lag = core.lag
-    #     chop = core.chop
-    #     unsplit = core.unsplit
-    #
-    #     # ensure trace1 at zero angle
-    #     copy = self.copy()
-    #     copy.rotateto(0)
-    #     x, y = copy.x, copy.y
-    #
-    #     # pre-apply receiver correction
-    #     if 'rcvcorr' in kwargs:
-    #         rcvphi, rcvlag = rcvcorr
-    #         x, y = unsplit(x, y, rcvphi, rcvlag)
-    #
-    #     ######################
-    #     # inner loop function
-    #     ######################
-    #
-    #     # source correction
-    #
-    #     if 'srccorr' in kwargs:
-    #         srcphi, srclag = srccorr
-    #         def srccorr(x, y, ang):
-    #             x, y = unsplit(x, y, srcphi-ang, srclag)
-    #             return x, y
-    #     else:
-    #         def srccorr(x, y, ang):
-    #             return x, y
-    #
-    #     # rotate to polaristation (needed for tranverse min)
-    #     if 'pol' in kwargs:
-    #         pol = kwargs['pol']
-    #         def rotpol(x, y, ang):
-    #             # rotate to pol
-    #             x, y = rotate(x, y, pol-ang)
-    #             return x, y
-    #     else:
-    #         def rotpol(x, y, ang):
-    #             return x, y
-    #
-    #     # actual inner loop function
-    #     def process(x, y, ang, shift):
-    #         # remove shift
-    #         x, y = lag(x, y, -shift)
-    #         x, y = srccorr(x, y, ang)
-    #         x, y = chop(x, y, window=self.window)
-    #         x, y = rotpol(x, y, ang)
-    #         return func(x, y)
-    #
-    #     # Do the grid search
-    #     prerot = [ (rotate(x, y, ang), ang) for ang in degs ]
-    #
-    #     out = [ [ process(data[0], data[1], ang, shift) for shift in slags ]
-    #             for (data, ang) in prerot  ]
-    #
-    #     return out
+    # def data_corr(self, fast, lag, **kwargs):
+    #     # copy data
+    #     data_corr = self.copy()
+    #     # rcv side correction
+    #     if kwargs['rcvcorr'] is not None:
+    #         data_corr.unsplit(*kwargs['rcvcorr'])
+    #     # target layer correction
+    #     data_corr.unsplit(fast, lag)
+    #     # src side correction
+    #     if kwargs['srccorr'] is not None:
+    #         data_corr.unsplit(*kwargs['srccorr'])
+    #     return data_corr
+
       
     def save(self,filename):
         """
