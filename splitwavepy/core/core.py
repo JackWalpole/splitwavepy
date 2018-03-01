@@ -11,7 +11,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .window import Window
+# from .window import Window
 
 import numpy as np
 from scipy import signal, stats
@@ -82,42 +82,46 @@ def split(x,y,degrees,samps):
 def unsplit(x,y,degrees,samps):
     """Apply inverse splitting and rotate back"""
     return split(x,y,degrees,-samps)
+    
+def chop(x,y,s0,s1):
+    """Chop two 1-d numpy arrays from s0 to s1"""
+    return x[s0:s1], y[s0:s1]
 
-def chop(*args,**kwargs):
-    """Chop trace, or traces, using window"""
-    
-    if ('window' in kwargs):
-        window = kwargs['window']
-    
-    if not isinstance(window,Window):
-        raise Exception('window must be a Window')
-    
-    length = args[0].size
-          
-    if window.width > length:
-        raise Exception('window width is greater than trace length')
-    
-    centre = int(length/2) + window.offset
-    hw = int(window.width/2)    
-    t0 = centre - hw
-    t1 = centre + hw
-    
-    if t0 < 0:
-        raise Exception('chop starts before trace data')
-    elif t1 > length:
-        raise Exception('chop ends after trace data')
-        
-    if window.tukey is not None:
-        tukey = signal.tukey(window.width,alpha=window.tukey)
-    else:
-        tukey = 1.
-    
-    if len(args)==1:    
-        return args[0][t0:t1+1] * tukey
-    elif len(args)==2:
-        return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey
-    elif len(args)==3:
-        return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
+# def chop(*args,**kwargs):
+#     """Chop trace, or traces, using window"""
+#
+#     if ('window' in kwargs):
+#         window = kwargs['window']
+#
+#     if not isinstance(window,Window):
+#         raise Exception('window must be a Window')
+#
+#     length = args[0].size
+#
+#     if window.width > length:
+#         raise Exception('window width is greater than trace length')
+#
+#     centre = int(length/2) + window.offset
+#     hw = int(window.width/2)
+#     t0 = centre - hw
+#     t1 = centre + hw
+#
+#     if t0 < 0:
+#         raise Exception('chop starts before trace data')
+#     elif t1 > length:
+#         raise Exception('chop ends after trace data')
+#
+#     if window.tukey is not None:
+#         tukey = signal.tukey(window.width,alpha=window.tukey)
+#     else:
+#         tukey = 1.
+#
+#     if len(args)==1:
+#         return args[0][t0:t1+1] * tukey
+#     elif len(args)==2:
+#         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey
+#     elif len(args)==3:
+#         return args[0][t0:t1+1] * tukey, args[1][t0:t1+1] * tukey, args[2][t0:t1+1] * tukey
 
 ## Measurement 
    
@@ -176,13 +180,13 @@ def crossconvmf(obsx, obsy, prex, prey):
     x, y = crossconv(obsx, obsy, prex, prey)
     return misfit(x, y)  
 
-def splittingintensity(rad,trans):
-    """
-    Calculate splitting intensity.
-    """    
-    rdiff = np.gradient(rad)
-    s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
-    return s
+# def splittingintensity(rad, trans):
+#     """
+#     Calculate splitting intensity.
+#     """
+#     rdiff = np.gradient(rad)
+#     s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
+#     return s
 
 # Errors
 
