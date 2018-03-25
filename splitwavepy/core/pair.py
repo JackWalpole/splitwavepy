@@ -95,6 +95,10 @@ class Pair:
     def measureTransM(self, **kwargs):
         self.TransM = TransM(self.data, **kwargs)
         
+    # Bootstrap Measurement
+    def bootstrapEigenM(self, **kwargs):
+        """Bootstrap EigenM"""
+        
     # Other 
     def splitting_intensity(self, **kwargs):
         """
