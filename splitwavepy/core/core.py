@@ -125,10 +125,11 @@ def chop(x,y,s0,s1):
 
 ## Measurement 
    
-def eigcov(data):
+def eigcov(x, y):
     """
     Return eigen values and vectors of covariance matrix
     """
+    data = np.vstack((x, y))
     eigenValues, eigenVectors = np.linalg.eig(np.cov(data))
     idx = eigenValues.argsort()[::-1]   
     eigenValues = eigenValues[idx]
@@ -142,7 +143,7 @@ def eigcov(data):
 #     """
 #     return np.sort(np.linalg.eigvalsh(np.cov(data)))
     
-def eigvalcov(x,y):
+def eigvalcov(x, y):
     """
     return sorted eigenvalues of covariance matrix
     lambda2 first, lambda1 second
@@ -150,7 +151,7 @@ def eigvalcov(x,y):
     data = np.vstack((x,y))
     return np.sort(np.linalg.eigvalsh(np.cov(data)))
   
-def transenergy(x,y):
+def transenergy(x, y):
     """
     return energy
     lambda1 first, lambda2 second
@@ -297,7 +298,7 @@ def synth(**kwargs):
 
     return x,y
     
-def noise(size,amp,smooth):
+def noise(size, amp, smooth):
     """Gaussian noise convolved with a (normalised) gaussian wavelet.
        samps = size,
        sigma  = amp,
@@ -315,13 +316,13 @@ def resample_noise(y):
     Following Sandvol and Hearn.
     """  
     # white noise
-    x = np.random.normal(0,1,y.size)
+    x = np.random.normal(0, 1, y.size)
     # convolve with y
-    x = np.convolve(x,y,'same')
+    x = np.convolve(x, y, 'same')
     # additional randomisation
-    x = np.roll(x,np.random.randint(y.size))
+    x = np.roll(x, np.random.randint(y.size))
     # whipeout near nyquist
-    x = np.convolve(np.array([1,1,1]),x,'same')
+    x = np.convolve(np.array([1,1,1]), x, 'same')
     # normalise energy
     x = x * np.sqrt((np.sum(y**2) / np.sum(x**2)))
     # return
@@ -331,10 +332,10 @@ def min_idx(vals):
     """
     return indices of min value in vals grid
     """
-    return np.unravel_index(np.argmin(vals),vals.shape)
+    return np.unravel_index(np.argmin(vals), vals.shape)
 
 def max_idx(vals):
     """
     return indice of max value in vals grid
     """
-    return np.unravel_index(np.argmax(vals),vals.shape)
+    return np.unravel_index(np.argmax(vals), vals.shape)

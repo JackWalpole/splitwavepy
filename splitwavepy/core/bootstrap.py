@@ -25,17 +25,17 @@ class Bootstrap:
     nits      number of bootstrap samples to produce
     """
     
-    def __init__(self,pair,n=50,**kwargs):
-        if not isinstance(pair,Pair):
+    def __init__(self, pair, n=50, **kwargs):
+        if not isinstance(pair, Pair):
             raise TypeError('expecting a pair')
         kwargs['n'] = n
         self.data = pair
-        self.listM = bs_loop(pair,**kwargs)
+        self.listM = _bs_loop(pair, **kwargs)
         # self.stk_l1_l2 = np.stack([ m.lam1 / m.lam2 for m in self.listM ])
         # self.stk_fastprofile = np.stack([m.fastprofile() for m in self.listM ])
         # self.stk_lagprofile = np.stack([m.lagprofile() for m in self.listM ])
 
-def bs_loop(pair,**kwargs):
+def _bs_loop(pair,**kwargs):
     """
     Return list of bootstrap measurements
     """        
@@ -67,7 +67,7 @@ def bs_loop(pair,**kwargs):
                     in zip(m.degs[idx],m.lags[idx]) ] ]
     return bslist
 
-def bs_pair(pair,fast,lag,**kwargs):
+def _bs_pair(pair, fast, lag, **kwargs):
     """
     Return data with new noise sequence
     """    
@@ -75,11 +75,11 @@ def bs_pair(pair,fast,lag,**kwargs):
     bs = pair.copy()   
     origang = bs.cmpangs()[0]
     # replace noise sequence
-    bs.unsplit(fast,lag)
-    bs.rotateto(bs.pol)
+    bs.unsplit(fast, lag)
+    bs.rotateto(bs.estimate_pol())
     bs.y = core.resample_noise(bs.y)
     bs.rotateto(origang)
-    bs.split(fast,lag)
+    bs.split(fast, lag)
     return bs
 
 

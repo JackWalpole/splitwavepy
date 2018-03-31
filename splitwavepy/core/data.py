@@ -131,7 +131,7 @@ class Data:
         # convert time shift to nsamples -- must be even
         samps = core.time2samps(lag, self.delta, mode='even')
         # find appropriate rotation angle
-        origangs=self.cmpangs()
+        origangs = self.cmpangs()
         self.rotateto(0)
         # apply splitting
         self.x, self.y = core.unsplit(self.x, self.y, fast, samps)
@@ -155,6 +155,27 @@ class Data:
         self.x, self.y = xy[0], xy[1]
         # reset label
         self.set_labels()
+        
+    def rotatetovecs(self, vecs):
+        """
+        Rotate traces so that cmp1 lines up with column1 of matrix of vectors
+        """
+        # define the new cmpvecs
+        backoff = self.cmpvecs
+        self.cmpvecs = vecs
+        rot = np.dot(self.cmpvecs.T, backoff)
+        # rotate data
+        xy = np.dot(rot, self.data())
+        self.x, self.y = xy[0], xy[1]
+        # reset label
+        self.set_labels()
+        
+    def pca(self):
+        """
+        Principal Component Analysis
+        """
+        eigvals, eigvecs = core.eigcov(self.x, self.y)
+        return eigvecs
                 
     def set_window(self, *args, **kwargs):
         """
