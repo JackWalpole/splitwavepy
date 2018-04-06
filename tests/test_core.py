@@ -16,30 +16,35 @@ class CoreTestCases(unittest.TestCase):
     
     def test_lag(self):
         """lag should shift arrays relative to one another"""
+        lag = sw.core.core.lag
         x = np.array([0,1,2])
         y = np.array([3,4,5])
-        npt.assert_array_equal(sw.core.lag(x,y,2), np.array([[2],[3]]))
-        npt.assert_array_equal(sw.core.lag(x,y,-2), np.array([[0],[5]]))
+        npt.assert_array_equal(lag(x,y,2), np.array([[2],[3]]))
+        npt.assert_array_equal(lag(x,y,-2), np.array([[0],[5]]))
         
     def test_rotate(self):
         """rotation of traces (co-ordinate frame)"""
+        rotate=sw.core.core.rotate
         x = np.array([0,1,1])
         y = np.array([1,0,1])
-        npt.assert_array_almost_equal(sw.core.rotate(x,y,90),np.array([[1,0,1],[0,-1,-1]]))
+        npt.assert_array_almost_equal(rotate(x,y,90),np.array([[1,0,1],[0,-1,-1]]))
         
     def test_round_to_int(self):
         """get nearest integer"""
+        near = sw.core.core.near
+        even = sw.core.core.even
+        odd = sw.core.core.odd
         npt.assert_array_equal(np.array([0, 0, -6, 12]), 
-            sw.core.near(np.array([-.1, .34, -5.78, 11.88])))
+            near(np.array([-.1, .34, -5.78, 11.88])))
         npt.assert_array_equal(np.array([0, 0, 10, -12]),
-            sw.core.even(np.array([-0.9, 0.5, 9.2, -11.1])))
+            even(np.array([-0.9, 0.5, 9.2, -11.1])))
         npt.assert_array_equal(np.array([1, -1, 9, -11]),
-            sw.core.odd(np.array([1.1, -1.1, 8.1, -10.3])))
+            odd(np.array([1.1, -1.1, 8.1, -10.3])))
                 
     def test_time2samps(self):
-        """convert time to samples"""
-        assert sw.core.time2samps(1.3, 0.1) == 13
-        assert sw.core.samps2time(13, 0.1) == 1.3
+        """convert time to samples"""       
+        assert sw.core.core.time2samps(1.3, 0.1) == 13
+        assert sw.core.core.samps2time(13, 0.1) == 1.3
                 
     # def test_eigcov(self):
     #

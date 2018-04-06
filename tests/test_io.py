@@ -17,8 +17,11 @@ class CoreTestCases(unittest.TestCase):
     
     def test_pickle_EigenM_io(self):
         
+        #make synthetic
+        synth = sw.Data(delta=0.1,split=(30,1.4),noise=0.03)
+        
         # generate an eigenM object
-        a = sw.EigenM(delta=0.1)
+        a = synth.EigenM()
         
         # save to file
         filename = 'temp.eigm'
@@ -38,11 +41,14 @@ class CoreTestCases(unittest.TestCase):
             
     def test_pickle_TransM_io(self):
         
-        # generate an eigenM object
-        a = sw.TransM(delta=0.1,pol=0)
+        #make synthetic
+        synth = sw.Data(delta=0.1,split=(30,1.4),noise=0.03)
+        
+        # generate an TransM object
+        a = synth.TransM(pol=0)
         
         # save to file
-        filename = 'temp.trsm'
+        filename = 'temp.trnm'
         a.save(filename)
         
         # load
@@ -57,13 +63,16 @@ class CoreTestCases(unittest.TestCase):
         except OSError:
             print("Error: cleanup failed for some reason")
 
-    def test_pickle_CrossM_io(self):
+    def test_pickle_XcorrM_io(self):
         
-        # generate an eigenM object
-        a = sw.CrossM(delta=0.1)
+        #make synthetic
+        synth = sw.Data(delta=0.1,split=(30,1.4),noise=0.03)
+        
+        # generate an XcorrM object
+        a = synth.XcorrM()
         
         # save to file
-        filename = 'temp.crsm'
+        filename = 'temp.xcrm'
         a.save(filename)
         
         # load

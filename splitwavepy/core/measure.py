@@ -7,7 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from . import core
+from . import core, io
 # from .data import Data
 from .bootstrap import Bootstrap
 
@@ -472,16 +472,16 @@ class Measure:
     #     toprin
         
         
-    # I/O stuff  
+    # I/O stuff
 
-    # def save(self,filename):
-    #     """
-    #     Save Measurement for future referral
-    #     """
-    #     io.save(self,filename)
-    #
-    # def copy(self):
-    #     return io.copy(self)
+    def save(self,filename):
+        """
+        Save Measurement for future referral
+        """
+        io.save(self,filename)
+
+    def copy(self):
+        return io.copy(self)
             
     
     # Plotting
