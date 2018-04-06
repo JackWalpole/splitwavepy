@@ -59,28 +59,21 @@ class TransM(Measure):
         
     """
     
-    def __init__(self,*args,**kwargs):
+    def __init__(self, data, **kwargs):
         """
         Populates a TransM instance.
         """
         
         # process input
-        if 'pol' not in kwargs: raise Exception('Polarisation must be specified using the pol keyword argument, e.g., pol=30.')
-        # self.pol = kwargs['pol']
-        
-        #
-        # # process input
-        # if len(args) == 1 and isinstance(args[0],Pair):
-        #     self.data = args[0]
-        # else:
-        #     self.data = Pair(*args,**kwargs)
-        
+        if 'pol' not in kwargs: 
+            raise Exception('Polarisation must be specified using the pol keyword argument, e.g., pol=30.')
+
         # Derive from Measure
-        Measure.__init__(self, *args, **kwargs)
+        Measure.__init__(self, data, core.transenergy, **kwargs)
 
         # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearch(core.transenergy, mode='rotpol', **kwargs))
-        self.energy1, self.energy2 = stuff[:,:,0].T, stuff[:,:,1].T
+        gridout = np.asarray(self.gridsearch(mode='rotpol', **kwargs))
+        self.energy1, self.energy2 = gridout[:,:,0].T, gridout[:,:,1].T
         maxloc = core.max_idx(self.energy1/self.energy2)
         
         #

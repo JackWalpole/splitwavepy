@@ -60,11 +60,11 @@ class EigenM(Measure):
         #     self.data = Pair(*args,**kwargs)
         
         # Derive from Measure
-        Measure.__init__(self, data, **kwargs)
+        Measure.__init__(self, data, core.eigvalcov, **kwargs)
 
         # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearch(core.eigvalcov,**kwargs))
-        self.lam1, self.lam2 = stuff[:,:,1].T, stuff[:,:,0].T
+        gridout = np.asarray(self.gridsearch(**kwargs))
+        self.lam1, self.lam2 = gridout[:,:,1].T, gridout[:,:,0].T
         maxloc = core.max_idx(self.lam1/self.lam2)
         
         deggrid, laggrid = self._grid_degs_lags()

@@ -5,7 +5,7 @@ from __future__ import print_function
 
 from . import core, geom
 from .data import Data, Window, WindowPicker
-from .bootstrap import Bootstrap
+# from .bootstrap import Bootstrap
 # from .measure import Measure
 from .eigenM import EigenM
 from .xcorrM import XcorrM
@@ -86,20 +86,17 @@ class Pair:
 
 
 
-    # Measurement
-    def measureEigenM(self, **kwargs):        
-        return EigenM(self.data, **kwargs)
+    # # Measurement
+    # def measureEigenM(self, **kwargs):
+    #     return EigenM(self.data, **kwargs)
+    #
+    # def measureXcorrM(self, **kwargs):
+    #     return XcorrM(self.data, **kwargs)
+    #
+    # def measureTransM(self, **kwargs):
+    #     return TransM(self.data, **kwargs)
         
-    def measureXcorrM(self, **kwargs):
-        return XcorrM(self.data, **kwargs)
-        
-    def measureTransM(self, **kwargs):
-        return TransM(self.data, **kwargs)
-        
-    # Bootstrap Measurement
-    def bootstrapEigenM(self, **kwargs):
-        """Bootstrap EigenM"""
-        self.BSeigenM = Bootstrap(self.data, method='eigen', **kwargs)
+
         
     # Other 
     def splitting_intensity(self, **kwargs):

@@ -8,7 +8,8 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core
-from .data import Data
+# from .data import Data
+from .bootstrap import Bootstrap
 
 # from ..core import core, core3d, io
 # from ..core.pair import Pair
@@ -27,9 +28,10 @@ class Measure:
     Base measurement class        
     """
     
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, func, **kwargs):
         
         self.data = data
+        self.func = func
         
         self.degs, self.lags, self.slags = self._get_degs_lags_and_slags(**kwargs)
 
@@ -57,9 +59,9 @@ class Measure:
                 
     # Common methods
     
-    def gridsearch(self, func, **kwargs):       
+    def gridsearch(self, **kwargs):       
         """
-        Grid search for splitting parameters applied to data using the function defined in func
+        Grid search for splitting parameters applied to self.data using the function defined in func
         rcvcorr = receiver correction parameters in tuple (fast,lag) 
         srccorr = source correction parameters in tuple (fast,lag) 
         """
@@ -117,13 +119,13 @@ class Measure:
             x, y = srccorr(x, y, ang)
             x, y = chop(x, y, *win(shift))
             x, y = rotpol(x, y, ang)
-            return func(x, y)
+            return self.func(x, y)
                     
         # Do the grid search
         prerot = [ (rotate(x, y, ang), ang) for ang in self.degs ]
         
-        out = [ [ getout(data[0], data[1], ang, shift) for shift in self.slags ]
-                for (data,ang) in prerot  ]
+        out = [ [ getout(xy[0], xy[1], ang, shift) for shift in self.slags ]
+                for (xy, ang) in prerot  ]
                                
         return out
         
@@ -330,6 +332,20 @@ class Measure:
         if self.srccorr is not None:
             data_corr.unsplit(*self.srccorr)
         return data_corr
+        
+    # def data_uncorr(self):
+    #     """Reapply splitting on corrected data"""
+    #     # copy data
+    #     data_corr = self.data.copy()
+    #     # src side correction
+    #     if self.srccorr is not None:
+    #         data_corr.split(*self.srccorr)
+    #     # target layer correction
+    #     data_corr.split(self.fast,self.lag)
+    #     # rcv side correction
+    #     if self.rcvcorr is not None:
+    #         data_corr.split(*self.rcvcorr)
+    #     return data_corr
 
     def srcpoldata(self):
         srcpoldata = self.data.copy()
@@ -403,6 +419,30 @@ class Measure:
         # return
         return fdfast, fdlag 
         
+    # bootstrap utilities
+    
+    def _bootstrap_sample(self, **kwargs):
+        """
+        Return data with new noise sequence
+        """    
+        # copy original, corrected, data
+        bs = self.data_corr()   
+        origang = bs.cmpangs()[0]
+        # replace noise sequence
+        bs.rotateto(self.srcpol())
+        bs.y = core.resample_noise(bs.y)
+        bs.rotateto(origang)
+        # reapply splitting
+        # src side correction
+        if self.srccorr is not None: bs.split(*self.srccorr)
+        # target layer correction
+        bs.split(self.fast,self.lag)
+        # rcv side correction
+        if self.rcvcorr is not None: bs.split(*self.rcvcorr)
+        return bs
+    
+    def bootstrap(self, **kwargs):
+        return Bootstrap(self)
         
     # "squashed" profiles
     
@@ -419,7 +459,8 @@ class Measure:
         surf = kwargs['vals']
         surf = surf / surf.sum()
         return np.sum(surf, axis=1)
-    
+        
+
 
     
     # Output

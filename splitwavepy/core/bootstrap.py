@@ -8,7 +8,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from . import Measure
 from ..core import core
 # from .eigenM import EigenM
 
@@ -25,62 +24,84 @@ class Bootstrap:
     nits      number of bootstrap samples to produce
     """
     
-    def __init__(self, pair, n=50, **kwargs):
-        if not isinstance(pair, Pair):
-            raise TypeError('expecting a pair')
-        kwargs['n'] = n
-        self.data = pair
-        self.listM = _bs_loop(pair, **kwargs)
+    def __init__(self, measure, **kwargs):
+        if 'n' not in kwargs: kwargs['n'] = 50
+        self.measure = measure
+        self.listM = self._bootstrap_loop(**kwargs)
         # self.stk_l1_l2 = np.stack([ m.lam1 / m.lam2 for m in self.listM ])
         # self.stk_fastprofile = np.stack([m.fastprofile() for m in self.listM ])
         # self.stk_lagprofile = np.stack([m.lagprofile() for m in self.listM ])
+        
+        
+    # bootstrap utilities
+    
+    
+    # def _bootstrap_loop(self, **kwargs):
+    #     """
+    #     Return list of bootstrap measurements
+    #     """
+    #     if 'n' not in kwargs: raise Exception('number of bootstrap iterations *n* required, e.g., n=50')
+    #     # generate bootstrap sample measurements
+    #     bslist = [ self.measure.gridsearch(bs) for bs in \
+    #                 [ self.measure._bootstrap_sample() for x in range(kwargs['n']) ] ]
+    #     return bslist
+        
+    def _bootstrap_loop(self, **kwargs):
+        """
+        Return list of bootstrap measurements
+        """
+        if 'n' not in kwargs: raise Exception('number of bootstrap iterations *n* required, e.g., n=50')
+        # generate bootstrap sample measurements    
+        bslist = [ self.measure.gridsearch(bs) for bs in \
+                    [ self.measure._bootstrap_sample() for x in range(kwargs['n']) ] ]
+        return bslist
 
-def _bs_loop(pair,**kwargs):
-    """
-    Return list of bootstrap measurements
-    """        
-    # initial measurement:
-    m = EigenM(pair,**kwargs)
-    mlags = m.lags[:,0]
-    mdegs = m.degs[0,:]
-    # get probability surface to pick from
-    # boost surf by **3 to enhance probability of picks at peaks (value chosen by testing on synthetics)
-    surf = (m.lam1/m.lam2)**3
-    dlag = mlags[1] - mlags[0]
-
-    # apply polar density correction
-    # not sure about this
-    # density = rho(m.lags,dlag)
-    # surf = surf / density
-
-    # normalise (probs must add to 1)
-    surf = surf / surf.sum()
-
-    # pick fast and tlag from surf
-    probs = surf.ravel()
-    picks = np.random.choice(probs.size,size=kwargs['n'],replace=True,p=probs)
-    idx = np.unravel_index(picks,surf.shape)
-
-    # generate bootstrap sample measurements    
-    bslist = [ EigenM(bs,lags=mlags,degs=mdegs) for bs in \
-                [ bs_pair(pair,fast,lag) for fast,lag \
-                    in zip(m.degs[idx],m.lags[idx]) ] ]
-    return bslist
-
-def _bs_pair(pair, fast, lag, **kwargs):
-    """
-    Return data with new noise sequence
-    """    
-    # copy original data
-    bs = pair.copy()   
-    origang = bs.cmpangs()[0]
-    # replace noise sequence
-    bs.unsplit(fast, lag)
-    bs.rotateto(bs.estimate_pol())
-    bs.y = core.resample_noise(bs.y)
-    bs.rotateto(origang)
-    bs.split(fast, lag)
-    return bs
+# def _bs_loop(pair,**kwargs):
+#     """
+#     Return list of bootstrap measurements
+#     """
+#     # initial measurement:
+#     m = EigenM(pair,**kwargs)
+#     mlags = m.lags[:,0]
+#     mdegs = m.degs[0,:]
+#     # get probability surface to pick from
+#     # boost surf by **3 to enhance probability of picks at peaks (value chosen by testing on synthetics)
+#     surf = (m.lam1/m.lam2)**3
+#     dlag = mlags[1] - mlags[0]
+#
+#     # apply polar density correction
+#     # not sure about this
+#     # density = rho(m.lags,dlag)
+#     # surf = surf / density
+#
+#     # normalise (probs must add to 1)
+#     surf = surf / surf.sum()
+#
+#     # pick fast and tlag from surf
+#     probs = surf.ravel()
+#     picks = np.random.choice(probs.size,size=kwargs['n'],replace=True,p=probs)
+#     idx = np.unravel_index(picks,surf.shape)
+#
+#     # generate bootstrap sample measurements
+#     bslist = [ EigenM(bs,lags=mlags,degs=mdegs) for bs in \
+#                 [ bs_pair(pair,fast,lag) for fast,lag \
+#                     in zip(m.degs[idx],m.lags[idx]) ] ]
+#     return bslist
+#
+# def _bs_pair(pair, fast, lag, **kwargs):
+#     """
+#     Return data with new noise sequence
+#     """
+#     # copy original data
+#     bs = pair.copy()
+#     origang = bs.cmpangs()[0]
+#     # replace noise sequence
+#     bs.unsplit(fast, lag)
+#     bs.rotateto(bs.estimate_pol())
+#     bs.y = core.resample_noise(bs.y)
+#     bs.rotateto(origang)
+#     bs.split(fast, lag)
+#     return bs
 
 
 # def rho(n,step):

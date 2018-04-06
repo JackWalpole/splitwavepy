@@ -8,6 +8,9 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core, io
+from .eigenM import EigenM
+from .xcorrM import XcorrM
+from .transM import TransM
 
 #, core3d, io
 # from ..core.pair import Pair
@@ -26,15 +29,22 @@ class Data:
     Base data class        
     """
     
-    def __init__(self, x, y, *args, **kwargs):
-
-        # the traces
-        self.x = x
-        self.y = y
+    def __init__(self, *args, **kwargs):
 
         # ensure delta is set as a keyword argment, e.g. delta=0.1
         if 'delta' not in kwargs: raise Exception('delta must be set')
         self.delta = kwargs['delta'] 
+        
+        # if no args make synthetic
+        if len(args) == 0:
+            self.x, self.y = core.synth(**kwargs)
+        # otherwise read in data
+        elif len(args) == 2:
+            if not (isinstance(args[0], np.ndarray) & isinstance(args[1], np.ndarray)):
+                raise TypeError('expecting numpy arrays')
+            self.x, self.y = args[0], args[1]
+        else:
+            raise Exception('Unexpected number of arguments')
         
         # some sanity checks
         if self.x.ndim != 1: raise Exception('data must be one dimensional')
@@ -170,12 +180,6 @@ class Data:
         # reset label
         self.set_labels()
         
-    def pca(self):
-        """
-        Principal Component Analysis
-        """
-        eigvals, eigvecs = core.eigcov(self.x, self.y)
-        return eigvecs
                 
     def set_window(self, *args, **kwargs):
         """
@@ -250,15 +254,22 @@ class Data:
         chop.window.offset = 0
         return chop
         
+    def pca(self):
+        """
+        Principal Component Analysis
+        """
+        eigvals, eigvecs = core.eigcov(self.x, self.y)
+        return eigvecs
+        
     def estimate_pol(self):
         """Return principal component orientation"""
         # rotate to zero
         rot = self.cmpvecs.T
         data = np.vstack((self.chopdata()))
-        xy = np.dot(rot,data)
-        _,eigvecs = core.eigcov(xy)
-        x,y = eigvecs[:,0]
-        pol = np.rad2deg(np.arctan2(y,x))
+        xy = np.dot(rot, data)
+        _, eigvecs = core.eigcov(xy[0], xy[1])
+        x,y = eigvecs[:, 0]
+        pol = np.rad2deg(np.arctan2(y, x))
         return pol
         
     # window
@@ -326,7 +337,29 @@ class Data:
         def getang(c) : return np.rad2deg(np.arctan2(c[1], c[0]))
         return getang(cmp1), getang(cmp2)
         
-    # Hidden
+    # Measurement
+    
+    def EigenM(self, **kwargs):        
+        return EigenM(self, **kwargs)
+        
+    def XcorrM(self, **kwargs):
+        return XcorrM(self, **kwargs)
+        
+    def TransM(self, **kwargs):
+        return TransM(self, **kwargs)
+        
+    def splitting_intensity(self, **kwargs):
+        """
+        Calculate the splitting intensity as defined by Chevrot (2000).
+        """        
+        if 'pol' not in kwargs:
+            raise Exception('pol must be specified')            
+        copy = self.data.copy()
+        copy.rotateto(kwargs['pol'])
+        copy.x = np.gradient(copy.x)
+        rdiff, trans = copy.chopdata()
+        s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
+        return s
     
     
     # Plotting

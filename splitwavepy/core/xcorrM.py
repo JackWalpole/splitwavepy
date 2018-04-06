@@ -50,21 +50,14 @@ class XcorrM(Measure):
         
     """
     
-    def __init__(self,*args,**kwargs):
-        
-        #
-        # # process input
-        # if len(args) == 1 and isinstance(args[0],Pair):
-        #     self.data = args[0]
-        # else:
-        #     self.data = Pair(*args,**kwargs)
+    def __init__(self, data, **kwargs):
         
         # Derive from Measure
-        Measure.__init__(self, *args, **kwargs)
+        Measure.__init__(self, data, core.crosscorr, **kwargs)
 
         # MAKE MEASUREMENT
-        stuff = np.asarray(self.gridsearch(core.crosscorr,**kwargs))
-        self.xc = np.abs(stuff[:,:,0].T)
+        gridout = np.asarray(self.gridsearch(**kwargs))
+        self.xc = np.abs(gridout[:,:,0].T)
         maxloc = core.max_idx(self.xc)
 
         #
