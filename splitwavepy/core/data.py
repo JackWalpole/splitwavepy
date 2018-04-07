@@ -254,12 +254,12 @@ class Data:
         chop.window.offset = 0
         return chop
         
-    def pca(self):
-        """
-        Principal Component Analysis
-        """
-        eigvals, eigvecs = core.eigcov(self.x, self.y)
-        return eigvecs
+    # def pca(self):
+    #     """
+    #     Principal Component Analysis
+    #     """
+    #     eigvals, eigvecs = core.eigcov(self.x, self.y)
+    #     return eigvecs
         
     def estimate_pol(self):
         """Return principal component orientation"""
@@ -320,12 +320,17 @@ class Data:
         width = core.time2samps(time_width, self.delta, 'even') + 1     
         return Window(width, offset, **kwargs) 
         
-    def eigen(self, window=None):
+    def eigen(self, **kwargs):
         self.eigvals, self.eigvecs = core.eigcov(self.data())
         
     def power(self):
         return self.x**2, self.y**2
         
+    def eigvalcov(self):
+        """return lam1, lam2 after chopping to window"""
+        return core.eigvalcov(*self.chopdata())
+    
+    
     # def snrRH(self):
     #     data = self.copy()
     #     data.rotateto(data.pol())

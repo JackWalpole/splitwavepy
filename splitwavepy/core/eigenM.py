@@ -65,7 +65,7 @@ class EigenM(Measure):
         # MAKE MEASUREMENT
         gridout = np.asarray(self.gridsearch(**kwargs))
         self.lam1, self.lam2 = gridout[:,:,1].T, gridout[:,:,0].T
-        maxloc = core.max_idx(self.lam1/self.lam2)
+        self.maxloc = core.max_idx(self.lam1/self.lam2)
         
         deggrid, laggrid = self._grid_degs_lags()
         
@@ -75,8 +75,8 @@ class EigenM(Measure):
         # # Jackson, Mason, and Greenhalgh, Geophysics (1991)
         # self.snrsurf = (self.lam1-self.lam2) / (2*self.lam2)
         # maxloc = core.max_idx(self.snrsurf)
-        self.fast = deggrid[maxloc]
-        self.lag  = laggrid[maxloc]
+        self.fast = deggrid[self.maxloc]
+        self.lag  = laggrid[self.maxloc]
         # self.snr = self.snrsurf[maxloc]
         # # get errors
         self.errsurf = self.lam2
@@ -113,6 +113,11 @@ class EigenM(Measure):
         bslist = [ EigenM(bs, **self.kwargs) for bs in \
                     [ self._bootstrap_sample() for ii in range(kwargs['n']) ] ]
         return bslist
+        
+    def conf_95_bootstrap(self, **kwargs):
+        """Value of lam2 at 95% confidence contour."""
+        if 'n' not in kwargs: kwargs['n'] = 1000
+        
     
     # Plotting
     
@@ -124,7 +129,10 @@ class EigenM(Measure):
         
         self._plot(**kwargs)
     
-    
+    def report(self, **kwargs):
+        """Prints fast, lag, dfast, dlag to screen/stdout."""
+        
+        print(self.fast, self.lag, self.dfast, self.dlag)
 
         
     # def plot_profiles(self,**kwargs):
