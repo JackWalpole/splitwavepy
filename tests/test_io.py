@@ -66,7 +66,7 @@ class CoreTestCases(unittest.TestCase):
     def test_pickle_XcorrM_io(self):
         
         #make synthetic
-        synth = sw.Data(delta=0.1,split=(30,1.4),noise=0.03)
+        synth = sw.Data(delta=0.1, split=(30,1.4), noise=0.03)
         
         # generate an XcorrM object
         a = synth.XcorrM()

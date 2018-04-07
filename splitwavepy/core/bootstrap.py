@@ -26,7 +26,7 @@ class Bootstrap:
     
     def __init__(self, measure, **kwargs):
         if 'n' not in kwargs: kwargs['n'] = 50
-        self.measure = measure
+        # self.measure = measure
         self.listM = self._bootstrap_loop(**kwargs)
         # self.stk_l1_l2 = np.stack([ m.lam1 / m.lam2 for m in self.listM ])
         # self.stk_fastprofile = np.stack([m.fastprofile() for m in self.listM ])
@@ -53,7 +53,7 @@ class Bootstrap:
         if 'n' not in kwargs: raise Exception('number of bootstrap iterations *n* required, e.g., n=50')
         # generate bootstrap sample measurements    
         bslist = [ self.measure.gridsearch(bs) for bs in \
-                    [ self.measure._bootstrap_sample() for x in range(kwargs['n']) ] ]
+                    [ self.measure._bootstrap_sample() for ii in range(kwargs['n']) ] ]
         return bslist
 
 # def _bs_loop(pair,**kwargs):

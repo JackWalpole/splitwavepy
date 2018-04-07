@@ -436,13 +436,23 @@ class Measure:
         # src side correction
         if self.srccorr is not None: bs.split(*self.srccorr)
         # target layer correction
-        bs.split(self.fast,self.lag)
+        bs.split(self.fast, self.lag)
         # rcv side correction
         if self.rcvcorr is not None: bs.split(*self.rcvcorr)
         return bs
-    
-    def bootstrap(self, **kwargs):
-        return Bootstrap(self)
+        
+    # def _bootstrap_loop(self, **kwargs):
+    #     """
+    #     Return list of bootstrap measurements
+    #     """
+    #     if 'n' not in kwargs: raise Exception('number of bootstrap iterations *n* required, e.g., n=50')
+    #     # generate bootstrap sample measurements
+    #     bslist = [ self.measure.gridsearch(bs) for bs in \
+    #                 [ self._bootstrap_sample() for x in range(kwargs['n']) ] ]
+    #     return bslist
+    #
+    # def bootstrap(self, **kwargs):
+    #     return Bootstrap(self)
         
     # "squashed" profiles
     

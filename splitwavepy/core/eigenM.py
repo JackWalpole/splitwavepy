@@ -85,7 +85,9 @@ class EigenM(Measure):
         # Name
         self.name = 'Untitled'
         if 'name' in kwargs: self.name = kwargs['name']
-
+        
+        # Backup kwargs
+        self.kwargs = kwargs
 
     def conf_95(self):
         """Value of lam2 at 95% confidence contour."""
@@ -105,6 +107,12 @@ class EigenM(Measure):
     #     sumdiffsq = np.sum(diff**2)
     #     summult = np.sum(mult)
     #     return summult/sumdiffsq     
+    
+    def bootstrap(self, **kwargs):
+        if 'n' not in kwargs: kwargs['n'] = 50
+        bslist = [ EigenM(bs, **self.kwargs) for bs in \
+                    [ self._bootstrap_sample() for ii in range(kwargs['n']) ] ]
+        return bslist
     
     # Plotting
     
