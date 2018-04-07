@@ -123,14 +123,16 @@ class Data:
         
         .. warning:: shortens trace length by *lag*.
         """
+        copy = self.copy()
         # convert time shift to nsamples -- must be even
-        samps = core.time2samps(lag, self.delta, mode='even')
+        samps = core.time2samps(lag, copy.delta, mode='even')
         # find appropriate rotation angle
-        origangs = self.cmpangs()
-        self.rotateto(0)
+        origangs = copy.cmpangs()
+        copy.rotateto(0)
         # apply splitting
-        self.x, self.y = core.split(self.x, self.y, fast, samps)
-        self.rotateto(origangs[0])
+        copy.x, copy.y = core.split(copy.x, copy.y, fast, samps)
+        copy.rotateto(origangs[0])
+        return copy
            
     def unsplit(self, fast, lag):
         """
@@ -138,14 +140,16 @@ class Data:
         
         .. warning:: shortens trace length by *lag*.
         """
+        copy = self.copy()
         # convert time shift to nsamples -- must be even
-        samps = core.time2samps(lag, self.delta, mode='even')
+        samps = core.time2samps(lag, copy.delta, mode='even')
         # find appropriate rotation angle
-        origangs = self.cmpangs()
-        self.rotateto(0)
+        origangs = copy.cmpangs()
+        copy.rotateto(0)
         # apply splitting
-        self.x, self.y = core.unsplit(self.x, self.y, fast, samps)
-        self.rotateto(origangs[0])
+        copy.x, copy.y = core.unsplit(copy.x, copy.y, fast, samps)
+        copy.rotateto(origangs[0])
+        return copy
        
     def rotateto(self, degrees):
         """

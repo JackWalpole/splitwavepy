@@ -15,6 +15,7 @@ from __future__ import print_function
 
 import numpy as np
 from scipy import signal, stats
+from scipy.interpolate import interp1d 
 import math
 
 ##############
@@ -214,7 +215,7 @@ def ndf(y):
     
     return ndf
     
-def ftest(lam2,ndf,alpha=0.05):
+def ftest(lam2, ndf, alpha=0.05):
     """
     returns lambda2 value at 100(1-alpha)% confidence interval
     by default alpha = 0.05 = 95% confidence interval
@@ -230,6 +231,16 @@ def ftest(lam2,ndf,alpha=0.05):
     F = stats.f.ppf(1-alpha,k,ndf)
     lam2alpha = lam2min * ( 1 + (k/(ndf-k)) * F)
     return lam2alpha    
+    
+def val_at_alpha(data, alpha):
+    """ Find value of function at the alpha level """
+    idx = np.argsort(data) 
+    cum = np.cumsum(data[idx])
+    tot = np.max(cum)
+    get_x_at_cum = interp1d(cum, np.arange(cum.size))
+    get_val_at_x = interp1d(np.arange(data.size), data[idx])
+    xval = get_x_at_cum(tot*alpha)
+    return get_val_at_x(xval)
 
 # Null Criterion
 

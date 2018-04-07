@@ -325,12 +325,12 @@ class Measure:
         data_corr = self.data.copy()
         # rcv side correction     
         if self.rcvcorr is not None:
-            data_corr.unsplit(*self.rcvcorr)    
+            data_corr = data_corr.unsplit(*self.rcvcorr)    
         # target layer correction
-        data_corr.unsplit(self.fast,self.lag)  
+        data_corr = data_corr.unsplit(self.fast,self.lag)  
         # src side correction
         if self.srccorr is not None:
-            data_corr.unsplit(*self.srccorr)
+            data_corr = data_corr.unsplit(*self.srccorr)
         return data_corr
         
     # def data_uncorr(self):

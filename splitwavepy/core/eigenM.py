@@ -117,7 +117,10 @@ class EigenM(Measure):
     def conf_95_bootstrap(self, **kwargs):
         """Value of lam2 at 95% confidence contour."""
         if 'n' not in kwargs: kwargs['n'] = 1000
-        
+        bslist = [ bs.unsplit(self.fast, self.lag).eigvalcov() for bs in \
+                    [ self._bootstrap_sample() for ii in range(kwargs['n']) ] ]
+        lam2s = np.asarray(bslist)[:,0]
+        return core.val_at_alpha(lam2s, 0.975)
     
     # Plotting
     
