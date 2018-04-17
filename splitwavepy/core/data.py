@@ -363,7 +363,7 @@ class Data:
         """        
         if 'pol' not in kwargs:
             raise Exception('pol must be specified')            
-        copy = self.data.copy()
+        copy = self.copy()
         copy.rotateto(kwargs['pol'])
         copy.x = np.gradient(copy.x)
         rdiff, trans = copy.chopdata()

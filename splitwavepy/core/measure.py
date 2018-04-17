@@ -434,11 +434,11 @@ class Measure:
         bs.rotateto(origang)
         # reapply splitting
         # src side correction
-        if self.srccorr is not None: bs.split(*self.srccorr)
+        if self.srccorr is not None: bs = bs.split(*self.srccorr)
         # target layer correction
-        bs.split(self.fast, self.lag)
+        bs = bs.split(self.fast, self.lag)
         # rcv side correction
-        if self.rcvcorr is not None: bs.split(*self.rcvcorr)
+        if self.rcvcorr is not None: bs = bs.split(*self.rcvcorr)
         return bs
         
     # def _bootstrap_loop(self, **kwargs):
