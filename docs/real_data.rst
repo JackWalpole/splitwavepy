@@ -94,9 +94,9 @@ By chance the window looks not bad.  If you want to change it see :ref:`window`.
 	:include-source:
 	
 	# Eigenvalue Metho
-	realdata.EigenM(lags=(2,)).plot(title='Eigenvalue Method')
-	realdata.TransM(lags=(2,), pol=baz).plot(title='Transverse Minimisation Method')
-	realdata.XcorrM(lags=(2,)).plot(title='Cross-correlation Method')
+	realdata.EigenM(lags=(2,)).plot(name='Eigenvalue Method')
+	realdata.TransM(lags=(2,), pol=baz).plot(name='Transverse Minimisation Method')
+	realdata.XcorrM(lags=(2,)).plot(name='Cross-correlation Method')
 
 SplitWavePy can also calculate the splitting intensity (Chevrot, 2000) from the data within the window.
 

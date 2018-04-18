@@ -496,13 +496,14 @@ class Measure:
     
     # Plotting
     
-    def _plot(self,**kwargs):
+    def _plot(self, **kwargs):
         
         if 'vals' not in kwargs:
             raise Exception('vals must be specified')
           
         # setup figure and subplots
         fig = plt.figure(figsize=(12,6)) 
+        
         gs = gridspec.GridSpec(3, 3,
                            width_ratios=[2,1,3]
                            )
@@ -543,8 +544,10 @@ class Measure:
         self._psurf(ax5,**kwargs)
         
         # title
-        if self.name != 'Untitled':
-            plt.suptitle(self.name)
+        if 'name' in kwargs:
+            plt.suptitle(kwargs['name'])
+            
+
         
         # neaten
         plt.tight_layout()
