@@ -14,7 +14,7 @@ Assuming you have the code setup it's time to see what it can do.  Fire up an in
 Synthetic data
 ---------------------
 
-By default, if no data are provided, SplitWavePy will make some synthetic data.  Data is stored in a *Pair* object.
+By default, if no data are provided, SplitWavePy will make some synthetic data.  Data is stored in a *Data* object.  These objects support several methods for measuring shear wave splitting.
 I will use synthetic data to demonstrate the basic features of the code.
 
 .. .. autoclass:: splitwavepy.core.pair.Pair
@@ -22,7 +22,7 @@ I will use synthetic data to demonstrate the basic features of the code.
 .. nbplot::
 	:include-source:
 
-	data = sw.Pair( split=( 30, 1.4), noise=0.03, pol=-15.8, delta=0.05)
+	data = sw.Data(split=(30, 1.4), noise=0.03, pol=-15.8, delta=0.05)
 	data.plot()
 
 You can simulate splitting by specifying the fast direction and lag time using the ``split = (fast, lag)`` argument, similarly you can specify the *noise* level, and source *pol* -arisation as shown in the example above.  Order is not important.
@@ -38,19 +38,19 @@ The data are already split, but that doesn't mean they can't be split again!   Y
 .. nbplot::
 	:include-source:
 	
-	data.split( -12, 1.3) # fast, lag 
-	data.plot()
+	splitdata = data.split(-12, 1.3) # fast, lag 
+	splitdata.plot()
 	
 .. note::
-	This method will also split the noise, which is probable undesirable.  A better way to make synthetic with multiple splitting events is to provide the ``split`` keyword with a list of parameters, e.g. ``split = [( 30, 1.4), ( -12, 1.3)]``, these will be applied in the order provided.
+	This method will also split the noise, which is probable undesirable.  A better way to make synthetic with multiple splitting events is to provide the ``split`` keyword with a list of parameters, e.g. ``split = [(30, 1.4), (-12, 1.3)]``, these will be applied in the order provided.
 
 Sometimes we might want to do a *correction* and apply the *inverse* splitting operator.  This is supported using the *unsplit()* method.  If we correct the above data for the latter layer of anisotropy we should return the waveforms to their former state.
 
 .. nbplot::
 	:include-source:
 
-	data.unsplit( -12, 1.3)
-	data.plot()
+	unsplitdata = splitdata.unsplit(-12, 1.3)
+	unsplitdata.plot()
 
 .. note::  
 	Every time a lag operation is applied the traces are shortened.  
@@ -63,26 +63,22 @@ Setting the window
 	
 The window should be designed in such a way as to maximise the energy of a single pulse of shear energy relative to noise and other arrivals.
 
-Set the window using the ``set_window(start,end)`` method.
+Set the window using the ``set_window(start, end)`` method.
 
 .. nbplot::
 	:include-source:
 
-	data.set_window( 15, 32) # start, end 
+	data.set_window(15, 32) # start, end 
 	data.plot()
 
 .. note::
     By default the window will be centred on the middle of the trace with width 1/3 of the trace length, which is likely to be inappropriate, so make sure to set your window sensibly.
 	 
 .. tip::
-	Interactive window picking is supported by ``plot(pick=True)``.  Left click to pick the window start, right click to pick the window end, hit the space bar to save and close.  If you don't want to save your window, simply quit the figure using one of the built in matplotlib methods (e.g. click on the cross in the top left corner or hit the ``q`` key).pwd
+	Interactive window picking is supported by ``plot(pick=True)``.  Left click to pick the window start, right click to pick the window end, hit the space bar to save and close.  If you don't want to save your window, simply quit the figure using one of the built in matplotlib methods (e.g. click on the cross in the top left corner or hit the ``q`` key).  If the interactive plotting is not working you might need to add ``backend : TkAgg`` as a line in your ``~/.matplotlib/matplotlibrc`` file.
 
-.. .. nbplot::
-	:include-source:
 
-.. .. tip::
-.. 	If the interactive plotting is not working you might need to add ``backend : TkAgg`` as a line
-.. 	in your ``~/.matplotlib/matplotlibrc`` file.
+	
 
 	
 .. .. note::
@@ -101,7 +97,7 @@ To use this method on your data.
 .. nbplot::
 	:include-source:
 	
-	measure = sw.EigenM(data)
+	measure = data.EigenM()
 	measure.plot()
 
 .. Changing the surface display
@@ -175,14 +171,14 @@ Let's consider a simple 2-layer case.
 	:include-source:
 	
 	# srcside and rceiver splitting parameters
-	srcsplit = (  30, 1.3)
-	rcvsplit = ( -44, 1.7)
+	srcsplit = (30, 1.3)
+	rcvsplit = (-44, 1.7)
 	
 	# Create synthetic
-	a = sw.Pair( split=([ srcsplit, rcvsplit]), noise=0.03, delta=0.02)
+	a = sw.Data(split=([srcsplit, rcvsplit]), noise=0.03, delta=0.02)
 
 	# standard measurement
-	m = sw.EigenM(a, lags=(3,))
+	m = a.EigenM(lags=(3,))
 	m.plot()
 	
 The *apparent* splitting measured above is some non-linear combination of the 2-layers (non-linear because the order of splitting is important).
@@ -194,7 +190,7 @@ If we know the layer 2 contribution we can back this off and resolve the splitti
 .. nbplot::
 	:include-source:
 	
-	m = sw.EigenM(a, lags=(3,), rcvcorr=(-44,1.7))
+	m = a.EigenM(lags=(3,), rcvcorr=(-44,1.7))
 	m.plot()
 	
 If it's worked we should have measured splitting parameters of :math:`\phi=30` and :math:`\delta t =1.3`.
@@ -208,7 +204,7 @@ Alternatively, if we know the layer 1 contribution we can use
 .. nbplot::
 	:include-source:
 	
-	m = sw.EigenM(a, lags=(3,), srccorr=(30,1.3))	
+	m = a.EigenM(lags=(3,), srccorr=(30,1.3))	
 	m.plot()
 	
 If this has worked we should have measured splitting parameters of :math:`\phi=-44` and :math:`\delta t =1.7`.
@@ -218,7 +214,7 @@ If we apply both the source and receiver correction to the above synthetic examp
 .. nbplot::
 	:include-source:
 	
-	m = sw.EigenM(a, lags=(3,), rcvcorr=(-44,1.7), srccorr=(30,1.3))
+	m = a.EigenM(lags=(3,), rcvcorr=(-44,1.7), srccorr=(30,1.3))
 	m.plot()
 
 We do as can be seen by the concentration of energy at delay time 0.

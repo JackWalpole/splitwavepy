@@ -56,8 +56,8 @@ Again, continuing with the :ref:`realdata`, for which we have used the eigenvalu
 	north = st[1].data
 	east = st[0].data
 	sample_interval = st[0].stats.delta
-	realdata = sw.Pair(north, east, delta=sample_interval)
-	measure = sw.EigenM(realdata, lags=(2,))
+	realdata = sw.Data(north, east, delta=sample_interval)
+	measure = realdata.EigenM(lags=(2,))
 	measure.plot()
 
 
@@ -69,7 +69,7 @@ Again, continuing with the :ref:`realdata`, for which we have used the eigenvalu
 	dist, az, baz = geodetics.base.gps2dist_azimuth(evlat,evlon,stlat,stlon)
 	
 	# make the measurement
-	m = sw.TransM(realdata, pol=baz, lags=(2,))
+	m = realdata.TransM(pol=baz, lags=(2,))
 	m.plot()
 	
 	
@@ -78,7 +78,7 @@ To do the rotation correlation method we use the ``CrossM`` class as follows.
 .. nbplot::
    :include-source: True
 	
-   m = sw.CrossM(realdata, lags=(2,))
+   m = realdata.XcorrM(lags=(2,))
    m.plot()
 	
 

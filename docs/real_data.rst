@@ -51,6 +51,10 @@ When measuring splitting we need to have a specific shear wave arrival to target
 	inventory = client.get_stations(network="IU",station="CCM",starttime=t-60,endtime=t+60)
 	stlat = inventory[0][0].latitude
 	stlon = inventory[0][0].longitude
+	
+	# get backazimuth (radial polarisation at station)
+	from obspy import geodetics
+	dist, az, baz = geodetics.base.gps2dist_azimuth(evlat,evlon,stlat,stlon)
 
 	# find arrival times
 	model = TauPyModel('iasp91')
@@ -67,7 +71,7 @@ Measuring splitting
 
 Now we have prepared data we are ready to measure splitting.
 
-First read the shear plane components (horizontals in this case) into a *Pair* object.
+First read the shear plane components (horizontals in this case) into a *Data* object.
 
 .. nbplot::
 
@@ -77,27 +81,28 @@ First read the shear plane components (horizontals in this case) into a *Pair* o
 	north = st[1].data
 	east = st[0].data
 	sample_interval = st[0].stats.delta
-	realdata = sw.Pair(north, east, delta=sample_interval)
+	realdata = sw.Data(north, east, delta=sample_interval)
 	realdata.plot()
 	
 .. note::
 
 	Order is important.  SplitWavePy expects the North component first.
 	
-By chance the window looks not bad.  If you want to change it see :ref:`window`.  For now let's press on with measuring the splitting.
+By chance the window looks not bad.  If you want to change it see :ref:`window`.  For now let's press on with measuring the splitting.  I set the maximum delay time to search using the lags keyword ``lags=(2,)`` as explained in :ref:`setgrid`.
 
 .. nbplot::
 	:include-source:
 	
-	measure = sw.EigenM(realdata)
-	measure.plot()
+	# Eigenvalue Metho
+	realdata.EigenM(lags=(2,)).plot(title='Eigenvalue Method')
+	realdata.TransM(lags=(2,), pol=baz).plot(title='Transverse Minimisation Method')
+	realdata.XcorrM(lags=(2,)).plot(title='Cross-correlation Method')
 
-It worked, kind of.  The maximum delay time in the grid search is a bit high.  We can change this using the lags keyword ``lags=(2,)`` as explained in :ref:`setgrid`.
+SplitWavePy can also calculate the splitting intensity (Chevrot, 2000) from the data within the window.
 
 .. nbplot::
 	:include-source:
 	
-	measure = sw.EigenM(realdata, lags=(2,))
-	measure.plot()
+	print(realdata.splitting_intensity(pol=baz))
 
-Now see how to apply the :ref:`transmin`.
+

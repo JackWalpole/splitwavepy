@@ -42,9 +42,9 @@ class Measure:
             if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['rcvcorr']
-            samps = core.time2samps(lag, self.delta, 'even')
+            samps = core.time2samps(lag, self.data.delta, 'even')
             self.__rcvcorr = (deg, samps)
-            self.rcvcorr = (deg, samps * self.delta)
+            self.rcvcorr = (deg, samps * self.data.delta)
 
         # source correction
         self.srccorr = None
@@ -53,9 +53,9 @@ class Measure:
             if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['srccorr']
-            samps = core.time2samps(lag, self.delta, 'even')
+            samps = core.time2samps(lag, self.data.delta, 'even')
             self.__srccorr = (deg, samps)
-            self.srccorr = (deg, samps * self.delta)
+            self.srccorr = (deg, samps * self.data.delta)
                 
     # Common methods
     

@@ -17,9 +17,9 @@ https://github.com/JackWalpole/splitwavepy
    get_started
    tutorial
    real_data
-   transmin
-   rotcorr
-   threeD_data
+   .. transmin
+   .. rotcorr
+   .. threeD_data
 
 
 Acknowledge

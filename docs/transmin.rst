@@ -54,8 +54,8 @@ Continuing with the :ref:`realdata`, for which we obtained the following plot us
 	north = st[1].data
 	east = st[0].data
 	sample_interval = st[0].stats.delta
-	realdata = sw.Pair(north, east, delta=sample_interval)
-	measure = sw.EigenM(realdata, lags=(2,))
+	realdata = sw.Data(north, east, delta=sample_interval)
+	measure = realdata.EigenM(lags=(2,))
 	measure.plot()
 	
 To do the transverse minimisation method we use the ``TransM`` class with the polarisation specified.  In the case of the SKS wave the polarisation is equal to the backazimuth direction, this can be calculated using obspy.
@@ -68,7 +68,7 @@ To do the transverse minimisation method we use the ``TransM`` class with the po
 	dist, az, baz = geodetics.base.gps2dist_azimuth(evlat,evlon,stlat,stlon)
 	
 	# make the measurement
-	m = sw.TransM(realdata, pol=baz, lags=(2,))
+	m = realdata.TransM(pol=baz, lags=(2,))
 	m.plot()
 	
 Notice that the transverse minimisation method returns a more focussed result.

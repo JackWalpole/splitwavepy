@@ -20,8 +20,17 @@ Now try the code.
 .. nbplot:: 
 	:include-source:
 
+	# import the package making it accessible with a shortened name "sw"
 	import splitwavepy as sw
-	m = sw.EigenM( split=(50, 1.9), delta=0.05, noise=0.04)
+	
+	# create a splitwavepy Data object
+	# because no data provided will create a synthetic using keyword arguments
+	d = sw.Data(split=(50, 1.9), delta=0.05, noise=0.04)
+	
+	# measure splitting
+	m = d.EigenM()
+	
+	# plot the measurement
 	m.plot()
 
 Save your measurement to disk.
