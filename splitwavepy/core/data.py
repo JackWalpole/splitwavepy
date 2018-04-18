@@ -48,7 +48,10 @@ class Data:
         
         # some sanity checks
         if self.x.ndim != 1: raise Exception('data must be one dimensional')
-        if self.x.size%2 == 0: raise Exception('data must have odd number of samples')
+        if self.x.size%2 == 0: 
+            # drop last sample to ensure traces have odd number of samples
+            self.x = self.x[:-1]
+            self.y = self.y[:-1]
         if (self.x.size != self.y.size): raise Exception('x and y must be the same length')    
         
         # add geometry info 
