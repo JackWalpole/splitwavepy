@@ -394,9 +394,15 @@ class Data:
             windowpicker = WindowPicker(self, fig, ax0)
             windowpicker.connect()
                                  
-        # show
+        # neaten
         plt.tight_layout()
-        plt.show()
+        
+        # save or show
+        if 'file' in kwargs:
+            plt.savefig(kwargs['file'])
+        else:
+            plt.show()
+
         
     def ppm(self, **kwargs):
         """Plot particle motion"""

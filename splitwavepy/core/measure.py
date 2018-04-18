@@ -546,12 +546,15 @@ class Measure:
         # title
         if 'name' in kwargs:
             plt.suptitle(kwargs['name'])
-            
-
-        
+                    
         # neaten
         plt.tight_layout()
-        plt.show()
+        
+        # save or show
+        if 'file' in kwargs:
+            plt.savefig(kwargs['file'])
+        else:
+            plt.show()
     
         
     def _psurf(self, ax, **kwargs):
