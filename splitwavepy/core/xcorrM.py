@@ -19,9 +19,6 @@ class XcorrM(Measure):
     """
     e.g. Ando and Bowman (1987) rotation correlation method.
     
-    Usage:
-    m = CrossM(pair)
-    
     args:
     None = create synthetic
     Pair = Measure splitting on Pair object

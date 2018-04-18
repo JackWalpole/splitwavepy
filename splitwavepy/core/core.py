@@ -224,7 +224,9 @@ def ftest(lam2, ndf, alpha=0.05):
     
     # check ndf is big enough
     if ndf < 3:
-        raise Exception('Number of degrees of freedom is less than 3.  This likely indicates a problem which would lead to a spurios mesaurement.  Check window length.')
+        raise Exception('Number of degrees of freedom is less than 3.  \
+        This likely indicates a problem which would lead to a spurious measurement.  \
+        Check window length.  Check data are demeaned.  Check frequency content.')
     
     lam2min = lam2.min()
     k = 2 # two parameters, phi and dt.
