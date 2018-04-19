@@ -56,6 +56,13 @@ class Measure:
             samps = core.time2samps(lag, self.data.delta, 'even')
             self.__srccorr = (deg, samps)
             self.srccorr = (deg, samps * self.data.delta)
+            
+        # Name
+        self.name = 'Untitled'
+        if 'name' in kwargs: self.name = kwargs['name']
+            
+        # backup keyword args
+        self.kwargs = kwargs
                 
     # Common methods
     
@@ -311,7 +318,10 @@ class Measure:
     
     def srcpol(self):
         # recover source polarisation
-        return self.data_corr().estimate_pol()
+        if 'pol' in self.kwargs:
+            return self.kwargs['pol']
+        else:
+            return self.data_corr().estimate_pol()
         
     def snr(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""

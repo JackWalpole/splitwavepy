@@ -48,7 +48,7 @@ class EigenM(Measure):
     noise = 0.001  | float       
     """
     
-    def __init__(self, data, bootstrap=True, **kwargs):
+    def __init__(self, data, bootstrap=False, **kwargs):
         """
         Populates an EigenM instance.
         """        
@@ -86,12 +86,7 @@ class EigenM(Measure):
             self.conf95level = self.conf_95()
         self.dfast, self.dlag = self.get_errors(surftype='min')
         
-        # Name
-        self.name = 'Untitled'
-        if 'name' in kwargs: self.name = kwargs['name']
-        
-        # Backup kwargs
-        self.kwargs = kwargs
+      
 
     def conf_95(self):
         """Value of lam2 at 95% confidence contour."""

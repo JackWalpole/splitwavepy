@@ -59,7 +59,7 @@ class TransM(Measure):
         
     """
     
-    def __init__(self, data, bootstrap=True, **kwargs):
+    def __init__(self, data, bootstrap=False, **kwargs):
         """
         Populates a TransM instance.
         """
@@ -94,9 +94,7 @@ class TransM(Measure):
             self.conf95level = self.conf_95()
         self.dfast, self.dlag = self.get_errors(surftype='min')
 
-        # Name
-        self.name = 'Untitled'
-        if 'name' in kwargs: self.name = kwargs['name']
+
 
 
     def conf_95(self):

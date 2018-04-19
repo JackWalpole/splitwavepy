@@ -70,10 +70,6 @@ class XcorrM(Measure):
             self.conf95level = self.conf_95()
         self.dfast, self.dlag = self.get_errors(surftype='max')
 
-        # Name
-        self.name = 'Untitled'
-        if 'name' in kwargs: self.name = kwargs['name']
-
 
     
     def conf_95(self):
