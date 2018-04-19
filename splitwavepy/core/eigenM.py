@@ -108,11 +108,11 @@ class EigenM(Measure):
     #     summult = np.sum(mult)
     #     return summult/sumdiffsq     
     
-    def bootstrap(self, **kwargs):
-        if 'n' not in kwargs: kwargs['n'] = 50
-        bslist = [ EigenM(bs, **self.kwargs) for bs in \
-                    [ self._bootstrap_sample() for ii in range(kwargs['n']) ] ]
-        return bslist
+    # def bootstrap(self, **kwargs):
+    #     if 'n' not in kwargs: kwargs['n'] = 50
+    #     bslist = [ EigenM(bs, **self.kwargs) for bs in \
+    #                 [ self._bootstrap_sample() for ii in range(kwargs['n']) ] ]
+    #     return bslist
         
     # def conf_95(self, **kwargs):
     #     """Value of lam2 at 95% confidence contour."""

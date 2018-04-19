@@ -333,6 +333,7 @@ class Measure:
             data_corr = data_corr.unsplit(*self.srccorr)
         return data_corr
         
+        
     # def data_uncorr(self):
     #     """Reapply splitting on corrected data"""
     #     # copy data
@@ -421,25 +422,36 @@ class Measure:
         
     # bootstrap utilities
     
-    def _bootstrap_sample(self, **kwargs):
-        """
-        Return data with new noise sequence
-        """    
-        # copy original, corrected, data
-        bs = self.data_corr()   
-        origang = bs.cmpangs()[0]
-        # replace noise sequence
-        bs.rotateto(self.srcpol())
-        bs.y = core.resample_noise(bs.y)
-        bs.rotateto(origang)
-        # reapply splitting
-        # src side correction
-        if self.srccorr is not None: bs = bs.split(*self.srccorr)
-        # target layer correction
-        bs = bs.split(self.fast, self.lag)
-        # rcv side correction
-        if self.rcvcorr is not None: bs = bs.split(*self.rcvcorr)
-        return bs
+    def _bootstrap_loop(self, n=5000):
+        
+        x, y = self.srcpoldata_corr().chopdata()
+        
+        def _bootstrap_samp():
+            idx = np.random.choice(x.size, x.size)
+            return x[idx], y[idx]
+
+        return [ self.func(*_bootstrap_samp()) for ii in range(n) ]
+
+    
+    # def _bootstrap_sample(self, **kwargs):
+    #     """
+    #     Return data with new noise sequence
+    #     """
+    #     # copy original, corrected, data
+    #     bs = self.data_corr()
+    #     origang = bs.cmpangs()[0]
+    #     # replace noise sequence
+    #     bs.rotateto(self.srcpol())
+    #     bs.y = core.resample_noise(bs.y)
+    #     bs.rotateto(origang)
+    #     # reapply splitting
+    #     # src side correction
+    #     if self.srccorr is not None: bs = bs.split(*self.srccorr)
+    #     # target layer correction
+    #     bs = bs.split(self.fast, self.lag)
+    #     # rcv side correction
+    #     if self.rcvcorr is not None: bs = bs.split(*self.rcvcorr)
+    #     return bs
         
     # def _bootstrap_loop(self, **kwargs):
     #     """
