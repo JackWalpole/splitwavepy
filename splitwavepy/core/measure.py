@@ -394,10 +394,13 @@ class Measure:
         fast_step = self.degs[1] - self.degs[0]
 
         # Find nodes where we fall within the 95% confidence region
+        conf_95 = self.conf_95()
+        # conf_95 = self.bootstrap_conf95()
+        
         if surftype == 'max':
-            confbool = self.errsurf >= self.conf_95()
+            confbool = self.errsurf >= conf_95
         elif surftype == 'min':
-            confbool = self.errsurf <= self.conf_95()
+            confbool = self.errsurf <= conf_95
         else:
             raise ValueError('surftype must be min or max')
 
@@ -432,7 +435,8 @@ class Measure:
 
         return [ self.func(*_bootstrap_samp()) for ii in range(n) ]
 
-    
+
+            
     # def _bootstrap_sample(self, **kwargs):
     #     """
     #     Return data with new noise sequence

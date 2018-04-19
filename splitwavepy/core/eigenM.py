@@ -93,6 +93,12 @@ class EigenM(Measure):
         """Value of lam2 at 95% confidence contour."""
         return core.ftest(self.lam2, self.ndf(), alpha=0.05)
         
+    def bootstrap_conf95(self, **kwargs):
+        """Return lam2 value at 95% confidence level"""
+        vals = np.asarray(self._bootstrap_loop(**kwargs))
+        return np.percentile(vals[:,0], 2.5)
+        
+        
     # auto null classification  
     
     # def ni(self):
