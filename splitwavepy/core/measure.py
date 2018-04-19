@@ -394,13 +394,11 @@ class Measure:
         fast_step = self.degs[1] - self.degs[0]
 
         # Find nodes where we fall within the 95% confidence region
-        conf_95 = self.conf_95()
-        # conf_95 = self.bootstrap_conf95()
         
         if surftype == 'max':
-            confbool = self.errsurf >= conf_95
+            confbool = self.errsurf >= self.conf95level
         elif surftype == 'min':
-            confbool = self.errsurf <= conf_95
+            confbool = self.errsurf <= self.conf95level
         else:
             raise ValueError('surftype must be min or max')
 
@@ -427,7 +425,12 @@ class Measure:
     
     def _bootstrap_loop(self, n=5000):
         
-        x, y = self.srcpoldata_corr().chopdata()
+        if self.func == core.transenergy:
+            x, y = self.srcpoldata_corr().chopdata()
+        elif self.func == core.crosscorr:
+            x, y = self.fastdata_corr().chopdata()
+        else:
+            x, y = self.data_corr().chopdata()
         
         def _bootstrap_samp():
             idx = np.random.choice(x.size, x.size)
@@ -598,7 +601,7 @@ class Measure:
         
         # confidence region
         if 'conf95' in kwargs and kwargs['conf95'] == True:
-            ax.contour(laggrid, deggrid, self.errsurf, levels=[self.conf_95()])
+            ax.contour(laggrid, deggrid, self.errsurf, levels=[self.conf95level])
             
         # marker
         if 'marker' in kwargs and kwargs['marker'] == True:

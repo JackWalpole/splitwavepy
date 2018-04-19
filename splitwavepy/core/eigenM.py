@@ -48,7 +48,7 @@ class EigenM(Measure):
     noise = 0.001  | float       
     """
     
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, bootstrap=True, **kwargs):
         """
         Populates an EigenM instance.
         """        
@@ -80,6 +80,10 @@ class EigenM(Measure):
         # self.snr = self.snrsurf[maxloc]
         # # get errors
         self.errsurf = self.lam2
+        if bootstrap is True:
+            self.conf95level = self.bootstrap_conf95()
+        else:
+            self.conf95level = self.conf_95()
         self.dfast, self.dlag = self.get_errors(surftype='min')
         
         # Name
@@ -96,7 +100,9 @@ class EigenM(Measure):
     def bootstrap_conf95(self, **kwargs):
         """Return lam2 value at 95% confidence level"""
         vals = np.asarray(self._bootstrap_loop(**kwargs))
-        return np.percentile(vals[:,0], 2.5)
+        lam2 = vals[:,0]
+        lam1 = vals[:,1]
+        return np.percentile(lam2, 97.5)
         
         
     # auto null classification  

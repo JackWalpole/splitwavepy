@@ -59,7 +59,7 @@ class TransM(Measure):
         
     """
     
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, bootstrap=True, **kwargs):
         """
         Populates a TransM instance.
         """
@@ -88,6 +88,10 @@ class TransM(Measure):
         # self.snr = self.snrsurf[maxloc]
         # get errors
         self.errsurf = self.energy2
+        if bootstrap is True:
+            self.conf95level = self.bootstrap_conf95()
+        else:
+            self.conf95level = self.conf_95()
         self.dfast, self.dlag = self.get_errors(surftype='min')
 
         # Name
@@ -97,7 +101,14 @@ class TransM(Measure):
 
     def conf_95(self):
         """Value of energy2 at 95% confidence contour."""
-        return core.ftest(self.energy2, self.ndf(), alpha=0.05)       
+        return core.ftest(self.energy2, self.ndf(), alpha=0.05)
+        
+    def bootstrap_conf95(self, **kwargs):
+        """Return lam2 value at 95% confidence level"""
+        vals = np.asarray(self._bootstrap_loop(**kwargs))
+        lam2 = vals[:,1]
+        lam1 = vals[:,0]
+        return np.percentile(lam2, 97.5)   
     
     # Plotting
     def plot(self, **kwargs):

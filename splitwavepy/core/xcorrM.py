@@ -47,7 +47,7 @@ class XcorrM(Measure):
         
     """
     
-    def __init__(self, data, **kwargs):
+    def __init__(self, data, bootstrap=False, **kwargs):
         
         # Derive from Measure
         Measure.__init__(self, data, core.crosscorr, **kwargs)
@@ -64,6 +64,10 @@ class XcorrM(Measure):
 
         # # get errors
         self.errsurf = self.xc
+        if bootstrap is True:
+            self.conf95level = self.bootstrap_conf95()
+        else:
+            self.conf95level = self.conf_95()
         self.dfast, self.dlag = self.get_errors(surftype='max')
 
         # Name
@@ -85,7 +89,13 @@ class XcorrM(Measure):
         xc95 = math.tanh(z95) 
         return xc95
         
-            
+    def bootstrap_conf95(self, **kwargs):
+        """Return lam2 value at 95% confidence level"""
+        xc = np.abs(np.asarray(self._bootstrap_loop(**kwargs)))
+        return np.percentile(xc, 2.5)
+        
+    def fisher(self):
+        return np.arctanh(self.xc)
     
     # Plotting
     
@@ -93,8 +103,10 @@ class XcorrM(Measure):
     def plot(self, **kwargs):
         # error surface
         if 'vals' not in kwargs:
-            kwargs['vals'] = self.xc
-            kwargs['title'] = 'Correlation Coefficient'
+            # kwargs['vals'] = self.xc
+            # kwargs['title'] = 'Correlation Coefficient'
+            kwargs['vals'] = self.fisher()
+            kwargs['title'] = 'Fisher Transformed Correlation Coefficient'
         
         self._plot(**kwargs)
     
