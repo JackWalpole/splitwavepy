@@ -445,33 +445,45 @@ class Measure:
         return [ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ]
 
 
-    # def _correction_variance(self, rcvinfo=None, srcinfo=None, n=5000):
-    #     """Propagate errors in receiver and/or source correction.
-    #     rcvinfo = (fast, dfast, lag, dlag)
-    #     srcinfo = (fast, dfast, lag, dlag)
-    #
-    #     Uses bootstrapping to calculate 95% confidence level.
-    #     Trials receiver corrections randomly drawn from a normal distribution."""
-    #
-    #     def _get_data(self, rcvcorr=None, srccorr=None):
-    #         """same as data_corr but user can change corrections"""
-    #         # copy data
-    #         data_corr = self.data.copy()
-    #         # rcv side correction
-    #         if rcvcorr is not None:
-    #             data_corr = data_corr.unsplit(*rcvcorr)
-    #         # target layer correction
-    #         data_corr = data_corr.unsplit(self.fast, self.lag)
-    #         # src side correction
-    #         if srccorr is not None:
-    #             data_corr = data_corr.unsplit(*srccorr)
-    #         return data_corr
-    #
-    #     def get_rcvcorr(info):
-    #          return np.random.normal(*info)
-    #
-    #     if rcvinfo is not None:
-            
+    def _correction_variance(self, rcvinfo=None, srcinfo=None, n=5000):
+        """Propagate errors in receiver and/or source correction.
+        rcvinfo = (fast, dfast, lag, dlag)
+        srcinfo = (fast, dfast, lag, dlag)
+
+        Uses bootstrapping to calculate 95% confidence level.
+        Trials receiver corrections randomly drawn from a normal distribution."""
+
+        def _get_data(rcvcorr=None, srccorr=None):
+            """same as data_corr but user can change corrections"""
+            # copy data
+            data_corr = self.data.copy()
+            # rcv side correction
+            if rcvcorr is not None:
+                data_corr = data_corr.unsplit(*rcvcorr)
+            # target layer correction
+            data_corr = data_corr.unsplit(self.fast, self.lag)
+            # src side correction
+            if srccorr is not None:
+                data_corr = data_corr.unsplit(*srccorr)
+            # ensure orientation of data is appropriate for func
+            if self.func == core.transenergy:
+                return self.srcpoldata_corr().chopdata()
+            elif (self.func == core.crosscorr) or (self.func == core.pearson):
+                return self.fastdata_corr().chopdata()
+            else:
+                return self.data_corr().chopdata()
+
+        def _get_corr(info):
+            if info is None: return None
+            fast = np.random.normal(info[0], info[1])
+            lag = np.random.normal(info[2], info[3])
+            return fast, lag
+
+        datafeed = ( _get_data(rcvcorr=_get_corr(rcvinfo), 
+                               srccorr=_get_corr(srcinfo))
+                               for ii in range(n) )
+        
+        return [ self.func(*data) for data in datafeed ]
             
         
         
