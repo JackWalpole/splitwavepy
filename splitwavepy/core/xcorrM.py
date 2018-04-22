@@ -50,7 +50,8 @@ class XcorrM(Measure):
     def __init__(self, data, bootstrap=False, **kwargs):
         
         # Derive from Measure
-        Measure.__init__(self, data, core.crosscorr, **kwargs)
+        # Measure.__init__(self, data, core.crosscorr, **kwargs)
+        Measure.__init__(self, data, core.pearson, **kwargs)
 
         # MAKE MEASUREMENT
         gridout = np.asarray(self.gridsearch(**kwargs))

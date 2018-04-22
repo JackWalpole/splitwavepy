@@ -160,9 +160,16 @@ def transenergy(x, y):
     energy = lambda x: np.sum(x**2)
     return energy(x), energy(y) 
     
-def crosscorr(x,y):
+def crosscorr(x, y):
     norm = math.sqrt(np.sum(x**2) * np.sum(y**2))
-    xc = np.correlate(x,y)/norm
+    xc = np.correlate(x, y)/norm
+    return xc
+    
+def pearson(x, y):
+    x = x - np.mean(x)
+    y = y - np.mean(y)
+    norm = math.sqrt(np.sum(x**2) * np.sum(y**2))
+    xc = np.correlate(x, y)/norm
     return xc
 
 def crossconv(obsx, obsy, prex, prey):

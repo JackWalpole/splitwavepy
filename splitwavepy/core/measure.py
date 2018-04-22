@@ -437,7 +437,7 @@ class Measure:
         
         if self.func == core.transenergy:
             x, y = self.srcpoldata_corr().chopdata()
-        elif self.func == core.crosscorr:
+        elif (self.func == core.crosscorr) or (self.func == core.pearson):
             x, y = self.fastdata_corr().chopdata()
         else:
             x, y = self.data_corr().chopdata()
