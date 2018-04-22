@@ -328,6 +328,8 @@ def noise(size, amp, smooth):
     gauss = norm * signal.gaussian(size,smooth)
     n = np.random.normal(0,amp,size)
     return np.convolve(n,gauss,'same')  
+
+# Bootstrapping
     
 def resample_noise(y):
     """
@@ -348,6 +350,11 @@ def resample_noise(y):
     # return
     return x
     
+def bootstrap_resamp(x, y):
+    """Resample data for bootstrapping"""
+    idx = np.random.choice(x.size, x.size)
+    return x[idx], y[idx]    
+
 def min_idx(vals):
     """
     return indices of min value in vals grid

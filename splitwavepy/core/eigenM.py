@@ -140,10 +140,7 @@ class EigenM(Measure):
         
         self._plot(**kwargs)
     
-    def report(self, **kwargs):
-        """Prints fast, lag, dfast, dlag to screen/stdout."""
-        
-        print(self.fast, self.lag, self.dfast, self.dlag)
+
 
         
     # def plot_profiles(self,**kwargs):
