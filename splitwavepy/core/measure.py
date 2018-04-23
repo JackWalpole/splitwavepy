@@ -467,11 +467,11 @@ class Measure:
                 data_corr = data_corr.unsplit(*srccorr)
             # ensure orientation of data is appropriate for func
             if self.func == core.transenergy:
-                return self.srcpoldata_corr().chopdata()
+                return data_corr.chopdata().rotatetto(self.srcpol())
             elif (self.func == core.crosscorr) or (self.func == core.pearson):
-                return self.fastdata_corr().chopdata()
+                return data_corr.chopdata().rotateto(self.fast)
             else:
-                return self.data_corr().chopdata()
+                return data_corr.chopdata()
 
         def _get_corr(info):
             if info is None: return None
