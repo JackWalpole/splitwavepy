@@ -445,10 +445,12 @@ class Measure:
         return [ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ]
 
 
-    def _correction_variance(self, rcvinfo=None, srcinfo=None, n=5000):
+    def _correction_variance(self, rcvinfo=None, srcinfo=None, n=500, m=50):
         """Propagate errors in receiver and/or source correction.
         rcvinfo = (fast, dfast, lag, dlag)
         srcinfo = (fast, dfast, lag, dlag)
+        n = number of trial corrections
+        m = number of bootstrap subsamples per trial
 
         Uses bootstrapping to calculate 95% confidence level.
         Trials receiver corrections randomly drawn from a normal distribution."""
@@ -474,6 +476,7 @@ class Measure:
                 return data_corr.chopdata()
 
         def _get_corr(info):
+            """grab a correction"""
             if info is None: return None
             fast = np.random.normal(info[0], info[1])
             lag = np.random.normal(info[2], info[3])
@@ -483,7 +486,23 @@ class Measure:
                                srccorr=_get_corr(srcinfo))
                                for ii in range(n) )
         
-        return [ self.func(*data) for data in datafeed ]
+        # return [ self.func(*data) for data in datafeed ]
+        
+        def _bootstrap(data):
+            """Bootstrap the data after trial correction applied"""
+            # keep only lower/upper half to make one-sided distribution
+            vals = np.asarray([ self.func(*core.bootstrap_resamp(*data)) for ii in range(m) ])
+            if self.func == core.transenergy:
+                # get minimimum energy and keep upper half
+                return np.sort(vals[:,1])[int(m/2):-1]
+            elif (self.func == core.crosscorr) or (self.func == core.pearson):
+                # get coefficients and keep lower half
+                return np.sort(vals)[0:int(m/2)]
+            elif self.func == core.eigvalcov:
+                # get minimum eigenvalue and keep upper half
+                return np.sort(vals[:,0])[int(m/2):-1]
+        
+        return [ _bootstrap(data) for data in datafeed ]
             
         
         
