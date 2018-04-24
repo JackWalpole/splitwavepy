@@ -98,6 +98,7 @@ class EigenM(Measure):
         lam2 = vals[:,0]
         lam1 = vals[:,1]
         return np.percentile(lam2, 97.5)
+        # return np.percentile(lam1/lam2, 2.5)
         
         
     # auto null classification  
