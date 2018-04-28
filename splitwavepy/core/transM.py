@@ -94,7 +94,8 @@ class TransM(Measure):
             self.conf95level = self.conf_95()
         self.dfast, self.dlag = self.get_errors(surftype='min')
 
-
+    def vals(self):
+        return self.energy1 / self.energy2
 
 
     def conf_95(self):

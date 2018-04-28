@@ -354,6 +354,10 @@ def bootstrap_resamp(x, y):
     """Resample data for bootstrapping"""
     idx = np.random.choice(x.size, x.size)
     return x[idx], y[idx]    
+    
+def kde(vals):
+    # instantiate and fit the KDE model
+    return stats.gaussian_kde(vals)
 
 def min_idx(vals):
     """

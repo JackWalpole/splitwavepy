@@ -19,6 +19,8 @@ from .bootstrap import Bootstrap
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+
+
 # import os.path
 
 
@@ -437,12 +439,26 @@ class Measure:
         # ensure orientation of data is appropriate for func
         if self.func == core.transenergy:
             x, y = self.srcpoldata_corr().chopdata()
+            vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
+            return vals[:,0] / vals[:,1]
+        elif self.func == core.eigvalcov:
+            x, y = self.data_corr().chopdata()
+            vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
+            return vals[:,1] / vals[:,0]
         elif (self.func == core.crosscorr) or (self.func == core.pearson):
             x, y = self.fastdata_corr().chopdata()
-        else:
-            x, y = self.data_corr().chopdata()
+            vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
+            return np.abs(vals[:,0])
+
+    def estimate_pdf(self):
         
-        return [ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ]
+        vals = self._bootstrap_loop(n=5000)
+        kde = core.kde(vals)
+        ravmap = np.ravel(self.vals())
+        pdf = kde.pdf(ravmap).reshape(self.vals().shape)
+        # normalise so that whole surface weighs 1
+        pdf = pdf / np.sum(pdf)
+        return pdf
 
 
     def _correction_variance(self, rcvinfo=None, srcinfo=None, n=500, m=50):
@@ -505,7 +521,9 @@ class Measure:
         return [ _bootstrap(data) for data in datafeed ]
             
         
-        
+
+            
+            
         
             
     # def _bootstrap_sample(self, **kwargs):

@@ -71,7 +71,8 @@ class XcorrM(Measure):
             self.conf95level = self.conf_95()
         self.dfast, self.dlag = self.get_errors(surftype='max')
 
-
+    def vals(self):
+        return self.xc
     
     def conf_95(self):
         """
@@ -88,7 +89,7 @@ class XcorrM(Measure):
         
     def bootstrap_conf95(self, **kwargs):
         """Return lam2 value at 95% confidence level"""
-        xc = np.abs(np.asarray(self._bootstrap_loop(**kwargs)))
+        xc = np.abs(self._bootstrap_loop(**kwargs))
         return np.percentile(xc, 2.5)
         
     def fisher(self):

@@ -86,7 +86,9 @@ class EigenM(Measure):
             self.conf95level = self.conf_95()
         self.dfast, self.dlag = self.get_errors(surftype='min')
         
-      
+    
+    def vals(self):
+        return self.lam1 / self.lam2  
 
     def conf_95(self):
         """Value of lam2 at 95% confidence contour."""
