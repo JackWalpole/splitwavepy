@@ -250,6 +250,36 @@ def val_at_alpha(data, alpha):
     get_val_at_x = interp1d(np.arange(data.size), data[idx])
     xval = get_x_at_cum(tot*alpha)
     return get_val_at_x(xval)
+    
+# Bootstrapping
+    
+def resample_noise(y):
+    """
+    Return a randomly simulated noise trace with similar spectral properties to y.
+    
+    Following Sandvol and Hearn.
+    """  
+    # white noise
+    x = np.random.normal(0, 1, y.size)
+    # convolve with y
+    x = np.convolve(x, y, 'same')
+    # additional randomisation
+    x = np.roll(x, np.random.randint(y.size))
+    # whipeout near nyquist
+    x = np.convolve(np.array([1,1,1]), x, 'same')
+    # normalise energy
+    x = x * np.sqrt((np.sum(y**2) / np.sum(x**2)))
+    # return
+    return x
+    
+def bootstrap_resamp(x, y):
+    """Resample data for bootstrapping"""
+    idx = np.random.choice(x.size, x.size)
+    return x[idx], y[idx]    
+    
+def kde(vals):
+    # instantiate and fit the KDE model
+    return stats.gaussian_kde(vals)
 
 # Null Criterion
 
@@ -329,35 +359,7 @@ def noise(size, amp, smooth):
     n = np.random.normal(0,amp,size)
     return np.convolve(n,gauss,'same')  
 
-# Bootstrapping
-    
-def resample_noise(y):
-    """
-    Return a randomly simulated noise trace with similar spectral properties to y.
-    
-    Following Sandvol and Hearn.
-    """  
-    # white noise
-    x = np.random.normal(0, 1, y.size)
-    # convolve with y
-    x = np.convolve(x, y, 'same')
-    # additional randomisation
-    x = np.roll(x, np.random.randint(y.size))
-    # whipeout near nyquist
-    x = np.convolve(np.array([1,1,1]), x, 'same')
-    # normalise energy
-    x = x * np.sqrt((np.sum(y**2) / np.sum(x**2)))
-    # return
-    return x
-    
-def bootstrap_resamp(x, y):
-    """Resample data for bootstrapping"""
-    idx = np.random.choice(x.size, x.size)
-    return x[idx], y[idx]    
-    
-def kde(vals):
-    # instantiate and fit the KDE model
-    return stats.gaussian_kde(vals)
+
 
 def min_idx(vals):
     """

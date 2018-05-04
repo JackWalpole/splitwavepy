@@ -64,32 +64,37 @@ class XcorrM(Measure):
         self.lag  = laggrid[maxloc]
 
         # # get errors
-        self.errsurf = self.xc
         if bootstrap is True:
             self.conf95level = self.bootstrap_conf95()
+            self.errsurf = self.xc
+            self.dfast, self.dlag = self.get_errors(surftype='max')
         else:
-            self.conf95level = self.conf_95()
-        self.dfast, self.dlag = self.get_errors(surftype='max')
+            self.conf95level = self.F_conf95()
+            self.errsurf = self.xc
+            self.dfast, self.dlag = self.get_errors(surftype='max')
 
     def vals(self):
         return self.xc
     
-    def conf_95(self):
+    def F_conf95(self):
         """
+        Uses a Fisher transform to calculate confidence interval
         returns (positive) xc value at 95% confidence interval
+        Standard Error, SE = 1 / ( sqrt(n-3))
         """    
         # max xc value
         xcmax = np.max(self.xc)
         # Fisher Transform
-        z = math.atanh(xcmax)
-        std = math.sqrt( 1 / (self.ndf()-3) )
-        z95 = z - 1.96 * std
-        xc95 = math.tanh(z95) 
+        f = math.atanh(xcmax)
+        std = 1 / math.sqrt((self.ndf()-3))
+        z95 = 1.96
+        # reverse transform
+        xc95 = math.tanh(f-z95*std) 
         return xc95
         
     def bootstrap_conf95(self, **kwargs):
         """Return lam2 value at 95% confidence level"""
-        xc = np.abs(self._bootstrap_loop(**kwargs))
+        xc = self._bootstrap_loop(**kwargs)
         return np.percentile(xc, 2.5)
         
     def fisher(self):

@@ -440,11 +440,11 @@ class Measure:
         if self.func == core.transenergy:
             x, y = self.srcpoldata_corr().chopdata()
             vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
-            return vals[:,0] / vals[:,1]
+            return vals[:,0], vals[:,1]
         elif self.func == core.eigvalcov:
             x, y = self.data_corr().chopdata()
             vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
-            return vals[:,1] / vals[:,0]
+            return vals[:,1], vals[:,0]
         elif (self.func == core.crosscorr) or (self.func == core.pearson):
             x, y = self.fastdata_corr().chopdata()
             vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
@@ -504,21 +504,21 @@ class Measure:
         
         # return [ self.func(*data) for data in datafeed ]
         
-        def _bootstrap(data):
-            """Bootstrap the data after trial correction applied"""
-            # keep only lower/upper half to make one-sided distribution
-            vals = np.asarray([ self.func(*core.bootstrap_resamp(*data)) for ii in range(m) ])
-            if self.func == core.transenergy:
-                # get minimimum energy and keep upper half
-                return np.sort(vals[:,1])[int(m/2):-1]
-            elif (self.func == core.crosscorr) or (self.func == core.pearson):
-                # get coefficients and keep lower half
-                return np.sort(vals)[0:int(m/2)]
-            elif self.func == core.eigvalcov:
-                # get minimum eigenvalue and keep upper half
-                return np.sort(vals[:,0])[int(m/2):-1]
-        
-        return [ _bootstrap(data) for data in datafeed ]
+        # def _bootstrap(data):
+        #     """Bootstrap the data after trial correction applied"""
+        #     # keep only lower/upper half to make one-sided distribution
+        #     vals = np.asarray([ self.func(*core.bootstrap_resamp(*data)) for ii in range(m) ])
+        #     if self.func == core.transenergy:
+        #         # get minimimum energy and keep upper half
+        #         return np.sort(vals[:,1])[int(m/2):-1]
+        #     elif (self.func == core.crosscorr) or (self.func == core.pearson):
+        #         # get coefficients and keep lower half
+        #         return np.sort(vals)[0:int(m/2)]
+        #     elif self.func == core.eigvalcov:
+        #         # get minimum eigenvalue and keep upper half
+        #         return np.sort(vals[:,0])[int(m/2):-1]
+        #
+        # return [ _bootstrap(data) for data in datafeed ]
             
         
 
@@ -545,7 +545,7 @@ class Measure:
     #     # rcv side correction
     #     if self.rcvcorr is not None: bs = bs.split(*self.rcvcorr)
     #     return bs
-        
+    #
     # def _bootstrap_loop(self, **kwargs):
     #     """
     #     Return list of bootstrap measurements

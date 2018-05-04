@@ -87,27 +87,28 @@ class TransM(Measure):
         self.lag  = laggrid[maxloc]
         # self.snr = self.snrsurf[maxloc]
         # get errors
-        self.errsurf = self.energy2
         if bootstrap is True:
             self.conf95level = self.bootstrap_conf95()
+            self.errsurf = self.energy1 / self.energy2
+            self.dfast, self.dlag = self.get_errors(surftype='max')
         else:
-            self.conf95level = self.conf_95()
-        self.dfast, self.dlag = self.get_errors(surftype='min')
+            self.conf95level = self.F_conf95()
+            self.errsurf = self.energy2
+            self.dfast, self.dlag = self.get_errors(surftype='min')
 
     def vals(self):
+        """returns standard test values for this method i.e. energy1/energy2."""
         return self.energy1 / self.energy2
 
 
-    def conf_95(self):
+    def F_conf95(self):
         """Value of energy2 at 95% confidence contour."""
         return core.ftest(self.energy2, self.ndf(), alpha=0.05)
         
     def bootstrap_conf95(self, **kwargs):
-        """Return lam2 value at 95% confidence level"""
-        vals = np.asarray(self._bootstrap_loop(**kwargs))
-        lam2 = vals[:,1]
-        lam1 = vals[:,0]
-        return np.percentile(lam2, 97.5)   
+        """Return energy1/energy2 value at 95% confidence level"""
+        sig1, sig2 = self._bootstrap_loop(**kwargs)
+        return np.percentile(sig1/sig2, 2.5)   
     
     # Plotting
     def plot(self, **kwargs):

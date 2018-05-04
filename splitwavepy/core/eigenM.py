@@ -12,8 +12,8 @@ from ..core import core
 from .measure import Measure
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+# import matplotlib.pyplot as plt
+# import matplotlib.gridspec as gridspec
 
 
 class EigenM(Measure):
@@ -78,29 +78,29 @@ class EigenM(Measure):
         self.fast = deggrid[self.maxloc]
         self.lag  = laggrid[self.maxloc]
         # self.snr = self.snrsurf[maxloc]
-        # # get errors
-        self.errsurf = self.lam2
+        # # get errors    
         if bootstrap is True:
             self.conf95level = self.bootstrap_conf95()
+            self.errsurf = self.lam1 / self.lam2
+            self.dfast, self.dlag = self.get_errors(surftype='max')
         else:
-            self.conf95level = self.conf_95()
-        self.dfast, self.dlag = self.get_errors(surftype='min')
+            self.conf95level = self.F_conf95()
+            self.errsurf = self.lam2
+            self.dfast, self.dlag = self.get_errors(surftype='min')
         
     
     def vals(self):
+        """returns standard test values for this method i.e. lam1/lam2."""
         return self.lam1 / self.lam2  
 
-    def conf_95(self):
+    def F_conf95(self):
         """Value of lam2 at 95% confidence contour."""
         return core.ftest(self.lam2, self.ndf(), alpha=0.05)
         
     def bootstrap_conf95(self, **kwargs):
         """Return lam2 value at 95% confidence level"""
-        vals = np.asarray(self._bootstrap_loop(**kwargs))
-        lam2 = vals[:,0]
-        lam1 = vals[:,1]
-        return np.percentile(lam2, 97.5)
-        # return np.percentile(lam1/lam2, 2.5)
+        lam1, lam2 = np.asarray(self._bootstrap_loop(**kwargs))
+        return np.percentile(lam1/lam2, 2.5)
         
         
     # auto null classification  
