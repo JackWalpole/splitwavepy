@@ -108,7 +108,11 @@ class TransM(Measure):
     def bootstrap_conf95(self, **kwargs):
         """Return energy1/energy2 value at 95% confidence level"""
         sig1, sig2 = self._bootstrap_loop(**kwargs)
-        return np.percentile(sig1/sig2, 2.5)   
+        return np.percentile(sig1/sig2, 2.5)
+        
+    def bootstrap_samps(self, **kwargs):
+        sig1, sig2 = self._bootstrap_loop(**kwargs)
+        return sig1 / sig2
     
     # Plotting
     def plot(self, **kwargs):
