@@ -102,6 +102,31 @@ class EigenM(Measure):
         lam1, lam2 = np.asarray(self._bootstrap_loop(**kwargs))
         return np.percentile(lam1/lam2, 2.5)
         
+    # Sandvol and Hearn Bootstrapping
+        
+    def bootstrap_sandh(self, **kwargs):
+        """
+        Bootstrap
+        """
+        
+        if 'n' not in kwargs: raise Exception('number of bootstrap iterations *n* required, e.g., n=50')
+        
+        deggrid, laggrid = self._grid_degs_lags()
+        
+        resultslist = []
+        
+        # generate bootstrap sample measurements
+        for bs in ( self._renoise(**kwargs) for x in range(kwargs['n']) ):
+            gridout = np.asarray(bs.gridsearch(**kwargs))
+            bs.lam1, bs.lam2 = gridout[:,:,1].T, gridout[:,:,0].T
+            bs.maxloc = core.max_idx(bs.lam1/bs.lam2)
+            bs.fast = deggrid[bs.maxloc]
+            bs.lag  = laggrid[bs.maxloc]
+            resultslist.append((bs.fast, bs.lag))
+            
+        return resultslist
+    
+    # def bootstrap_sandh
         
     # auto null classification  
     

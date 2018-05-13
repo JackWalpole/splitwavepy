@@ -9,7 +9,7 @@ from __future__ import print_function
 
 from . import core, io
 # from .data import Data
-from .bootstrap import Bootstrap
+# from .bootstrap import Bootstrap
 
 # from ..core import core, core3d, io
 # from ..core.pair import Pair
@@ -450,9 +450,9 @@ class Measure:
             vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
             return np.abs(vals[:,0])
 
-    def estimate_pdf(self):
+    def estimate_pdf(self, **kwargs):
         
-        vals = self._bootstrap_loop(n=5000)
+        vals = self._bootstrap_loop(**kwargs)
         kde = core.kde(vals)
         ravmap = np.ravel(self.vals())
         pdf = kde.pdf(ravmap).reshape(self.vals().shape)
@@ -460,8 +460,9 @@ class Measure:
         pdf = pdf / np.sum(pdf)
         return pdf
 
+    # error propagating corrections
 
-    def _correction_variance(self, rcvinfo=None, srcinfo=None, n=500, m=50):
+    def _correction_variance(self, rcvinfo=None, srcinfo=None, n=100, m=100):
         """Propagate errors in receiver and/or source correction.
         rcvinfo = (fast, dfast, lag, dlag)
         srcinfo = (fast, dfast, lag, dlag)
@@ -482,7 +483,7 @@ class Measure:
             data_corr = data_corr.unsplit(self.fast, self.lag)
             # src side correction
             if srccorr is not None:
-                data_corr = data_corr.unsplit(*srccorr)
+                data_corr = data_corr.unsplit(*srccorr)                
             # ensure orientation of data is appropriate for func
             if self.func == core.transenergy:
                 return data_corr.chopdata().rotatetto(self.srcpol())
@@ -491,18 +492,35 @@ class Measure:
             else:
                 return data_corr.chopdata()
 
-        def _get_corr(info):
-            """grab a correction"""
+        def _draw_corr(info):
+            """draw a correction from a gaussian distribution"""
             if info is None: return None
             fast = np.random.normal(info[0], info[1])
             lag = np.random.normal(info[2], info[3])
             return fast, lag
 
-        datafeed = ( _get_data(rcvcorr=_get_corr(rcvinfo), 
-                               srccorr=_get_corr(srcinfo))
+        datafeed = ( _get_data(rcvcorr=_draw_corr(rcvinfo), 
+                               srccorr=_draw_corr(srcinfo))
                                for ii in range(n) )
+                               
+        vals =  [ [ self.func(*core.bootstrap_resamp(*data)) for ii in range(m) ] 
+                    for data in datafeed ]
+                    
+        return vals
         
-        # return [ self.func(*data) for data in datafeed ]
+        #
+        # # vals = np.asarray([ self.func(*data) for data in datafeed ])
+        #
+        # if self.func == core.transenergy:
+        #     # get minimimum energy and keep upper half
+        #     return np.sort(vals[:,1])[int(m/2):-1]
+        # elif (self.func == core.crosscorr) or (self.func == core.pearson):
+        #     # get coefficients and keep lower half
+        #     return np.sort(vals)[0:int(m/2)]
+        # elif self.func == core.eigvalcov:
+        #     # get minimum eigenvalue and keep upper half
+        #     return np.sort(vals[:,0])[int(m/2):-1]
+
         
         # def _bootstrap(data):
         #     """Bootstrap the data after trial correction applied"""
@@ -524,38 +542,36 @@ class Measure:
 
             
             
-        
+    # bootstrap a la Sandvol and Hearn
             
-    # def _bootstrap_sample(self, **kwargs):
-    #     """
-    #     Return data with new noise sequence
-    #     """
-    #     # copy original, corrected, data
-    #     bs = self.data_corr()
-    #     origang = bs.cmpangs()[0]
-    #     # replace noise sequence
-    #     bs.rotateto(self.srcpol())
-    #     bs.y = core.resample_noise(bs.y)
-    #     bs.rotateto(origang)
-    #     # reapply splitting
-    #     # src side correction
-    #     if self.srccorr is not None: bs = bs.split(*self.srccorr)
-    #     # target layer correction
-    #     bs = bs.split(self.fast, self.lag)
-    #     # rcv side correction
-    #     if self.rcvcorr is not None: bs = bs.split(*self.rcvcorr)
-    #     return bs
-    #
-    # def _bootstrap_loop(self, **kwargs):
-    #     """
-    #     Return list of bootstrap measurements
-    #     """
-    #     if 'n' not in kwargs: raise Exception('number of bootstrap iterations *n* required, e.g., n=50')
-    #     # generate bootstrap sample measurements
-    #     bslist = [ self.measure.gridsearch(bs) for bs in \
-    #                 [ self._bootstrap_sample() for x in range(kwargs['n']) ] ]
-    #     return bslist
-    #
+    def _renoise(self, **kwargs):
+        """
+        Return data with new noise sequence
+        """
+        # copy original, corrected, data
+        newself = self.copy()
+        bs = self.data_corr()
+        origang = bs.cmpangs()[0]
+        # replace noise sequence
+        bs.rotateto(self.srcpol())
+        bs.y = core.resample_noise(bs.y)
+        bs.rotateto(origang)
+        # reapply splitting
+        # src side correction
+        if self.srccorr is not None: bs = bs.split(*self.srccorr)
+        # target layer correction
+        bs = bs.split(self.fast, self.lag)
+        # rcv side correction
+        if self.rcvcorr is not None: bs = bs.split(*self.rcvcorr)
+        newself.data = bs
+        return newself
+
+    def _bootstrap_sandhgrid(self, **kwargs):
+
+        return ( self._renoise(**kwargs) for x in range(kwargs['n']) )
+        # return ( newself.gridsearch(**kwargs) for newself in newselffeed )
+        #
+
     # def bootstrap(self, **kwargs):
     #     return Bootstrap(self)
         
