@@ -97,6 +97,10 @@ class XcorrM(Measure):
         xc = self._bootstrap_loop(**kwargs)
         return np.percentile(xc, 2.5)
         
+    def _bootstrap_prep(self):
+        x, y = self.fastdata_corr().chopdata()
+        return x, y   
+        
     def _bootstrap_stat(self, x, y):
         xc = self.func(x, y)
         return math.fabs(xc)
