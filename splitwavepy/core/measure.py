@@ -434,21 +434,25 @@ class Measure:
         
     # bootstrap utilities
     
+    def _bootstrap_samp(self, x, y):
+        return self._bootstrap_stat(*core.bootstrap_resamp(x, y))
+    
     def _bootstrap_loop(self, n=5000):
         
         # ensure orientation of data is appropriate for func
         if self.func == core.transenergy:
             x, y = self.srcpoldata_corr().chopdata()
-            vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
-            return vals[:,0], vals[:,1]
+            # vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
+            # return vals[:,0], vals[:,1]
         elif self.func == core.eigvalcov:
             x, y = self.data_corr().chopdata()
-            vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
-            return vals[:,1], vals[:,0]
+            # vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
+            # return vals[:,1], vals[:,0]
         elif (self.func == core.crosscorr) or (self.func == core.pearson):
             x, y = self.fastdata_corr().chopdata()
-            vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
-            return np.abs(vals[:,0])
+            # vals = np.asarray([ self.func(*core.bootstrap_resamp(x, y)) for ii in range(n) ])
+            # return np.abs(vals[:,0])
+        return np.asarray([ self._bootstrap_samp(x, y) for ii in range(n) ])
 
     def estimate_pdf(self, **kwargs):
         

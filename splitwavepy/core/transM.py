@@ -110,9 +110,13 @@ class TransM(Measure):
         sig1, sig2 = self._bootstrap_loop(**kwargs)
         return np.percentile(sig1/sig2, 2.5)
         
-    def bootstrap_samps(self, **kwargs):
-        sig1, sig2 = self._bootstrap_loop(**kwargs)
+    def _bootstrap_stat(self, x, y):
+        sig1, sig2 = self.func(x, y)
         return sig1 / sig2
+        
+    # def bootstrap_samps(self, **kwargs):
+    #     sig1, sig2 = self._bootstrap_loop(**kwargs)
+    #     return sig1 / sig2
     
     # Plotting
     def plot(self, **kwargs):

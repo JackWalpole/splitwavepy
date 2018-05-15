@@ -102,6 +102,11 @@ class EigenM(Measure):
         lam1, lam2 = np.asarray(self._bootstrap_loop(**kwargs))
         return np.percentile(lam1/lam2, 2.5)
         
+    def _bootstrap_stat(self, x, y):
+        lam2, lam1 = self.func(x, y)
+        return lam1 / lam2
+        
+        
     # Sandvol and Hearn Bootstrapping
         
     def bootstrap_sandh(self, **kwargs):

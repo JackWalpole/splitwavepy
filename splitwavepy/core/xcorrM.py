@@ -97,6 +97,10 @@ class XcorrM(Measure):
         xc = self._bootstrap_loop(**kwargs)
         return np.percentile(xc, 2.5)
         
+    def _bootstrap_stat(self, x, y):
+        xc = self.func(x, y)
+        return math.fabs(xc)
+        
     def fisher(self):
         return np.arctanh(self.xc)
     
