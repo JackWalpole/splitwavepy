@@ -102,11 +102,11 @@ class EigenM(Measure):
         lam1, lam2 = np.asarray(self._bootstrap_loop(**kwargs))
         return np.percentile(lam1/lam2, 2.5)
         
-    def __bootstrap_prep(self):
+    def _bootstrap_prep(self):
         x, y = self.data_corr().chopdata()
         return x, y
         
-    def __bootstrap_stat(self, x, y):
+    def _bootstrap_stat(self, x, y):
         lam2, lam1 = self.func(x, y)
         return lam1 / lam2
         

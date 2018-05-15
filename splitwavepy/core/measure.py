@@ -614,8 +614,8 @@ class Measure:
         
     def report(self, **kwargs):
         """Prints fast, lag, dfast, dlag to screen/stdout."""
-    
-        print(self.fast, self.lag, self.dfast, self.dlag)
+        print('fast'.rjust(10), 'dfast'.rjust(9), 'lag'.rjust(9), 'dlag'.rjust(9))
+        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}'.format(self.fast, self.dfast, self.lag, self.dlag))
             
     
     # Plotting
@@ -624,6 +624,10 @@ class Measure:
         
         if 'vals' not in kwargs:
             raise Exception('vals must be specified')
+            
+        # if kwargs['vals'] == 'pdf':
+        #     kwargs['vals'] = self.estimate_pdf()
+        #     kwargs['title'] = r'Probability Density'
           
         # setup figure and subplots
         fig = plt.figure(figsize=(12,6)) 

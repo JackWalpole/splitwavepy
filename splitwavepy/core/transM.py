@@ -110,11 +110,11 @@ class TransM(Measure):
         sig1, sig2 = self._bootstrap_loop(**kwargs)
         return np.percentile(sig1/sig2, 2.5)
         
-    def __bootstrap_prep(self):
+    def _bootstrap_prep(self):
         x, y = self.srcpoldata_corr().chopdata()
         return x, y
         
-    def __bootstrap_stat(self, x, y):
+    def _bootstrap_stat(self, x, y):
         sig1, sig2 = self.func(x, y)
         return sig1 / sig2
         
@@ -130,6 +130,7 @@ class TransM(Measure):
             # kwargs['title'] = r'$(\lambda_1 - \lambda_2) / \lambda_2$'
             kwargs['vals'] = self.energy1 / self.energy2
             kwargs['title'] = r'pol energy / trans energy'
+
         
         self._plot(**kwargs)
 
