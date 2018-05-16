@@ -439,7 +439,7 @@ class Measure:
         return self._bootstrap_stat(*core.bootstrap_resamp(x, y))
     
     def _bootstrap_loop(self, n=5000):
-        
+        """Calculate many bootstrap statistics on n resamplings of the data."""
         # ensure data prepped (in correct orientation and windowed) appropriately
         x, y = self._bootstrap_prep()
         # calculate bootstrap values
@@ -499,10 +499,10 @@ class Measure:
                                srccorr=_draw_corr(srcinfo))
                                for ii in range(n) )
                                
-        vals =  [ [ self.func(*core.bootstrap_resamp(*data)) for ii in range(m) ] 
+        vals =  [ [ self._bootstrap_samp(*data) for ii in range(m) ] 
                     for data in datafeed ]
                     
-        return vals
+        return np.asarray(vals).flatten()
         
         #
         # # vals = np.asarray([ self.func(*data) for data in datafeed ])
