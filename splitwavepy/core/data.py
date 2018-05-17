@@ -26,7 +26,11 @@ from matplotlib.collections import LineCollection
 class Data:
     
     """
-    Base data class        
+    Fundamental splitwavepy object.
+    
+    Usage: Data(x, y, delta = *delta*)
+    
+         
     """
     
     def __init__(self, *args, **kwargs):
@@ -261,12 +265,7 @@ class Data:
         chop.window.offset = 0
         return chop
         
-    # def pca(self):
-    #     """
-    #     Principal Component Analysis
-    #     """
-    #     eigvals, eigvecs = core.eigcov(self.x, self.y)
-    #     return eigvecs
+    # polarisation
         
     def estimate_pol(self, **kwargs):
         """Return principal component orientation"""
