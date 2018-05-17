@@ -268,7 +268,7 @@ class Data:
     #     eigvals, eigvecs = core.eigcov(self.x, self.y)
     #     return eigvecs
         
-    def estimate_pol(self):
+    def estimate_pol(self, **kwargs):
         """Return principal component orientation"""
         # rotate to zero
         rot = self.cmpvecs.T
@@ -278,6 +278,10 @@ class Data:
         x,y = eigvecs[:, 0]
         pol = np.rad2deg(np.arctan2(y, x))
         return pol
+        
+    def pol(self, **kwargs):
+        if 'pol' in kwargs: return kwargs['pol']
+        else : return self.estimate_pol()
         
     # window
     
@@ -338,10 +342,11 @@ class Data:
         return core.eigvalcov(*self.chopdata())
     
     
-    # def snrRH(self):
-    #     data = self.copy()
-    #     data.rotateto(data.pol())
-    #     return core.snrRH(data.chop().data())
+    def snr(self):
+        """Signal to noise ratio as defined by Restivo and Helffrich."""
+        data = self.copy()
+        data.rotateto(data.pol())
+        return core.snrRH(*data.chopdata())
 
     def cmpangs(self):
         cmp1 = self.cmpvecs[:, 0]
