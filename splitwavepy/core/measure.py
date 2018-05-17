@@ -205,6 +205,10 @@ class Measure:
     #
     #     return out
     
+    def _grid(self):
+        dd, ll = np.meshgrid(self.degs, self.lags)
+        return ll, dd
+    
     def _grid_degs_lags(self):
         return np.meshgrid(self.degs, self.lags)
 
@@ -702,7 +706,7 @@ class Measure:
             raise Exception('vals must be specified')
             
         # error surface
-        deggrid, laggrid = self._grid_degs_lags()
+        laggrid, deggrid = self._grid()
         cax = ax.contourf(laggrid, deggrid, kwargs['vals'], 26, cmap=kwargs['cmap'])
         cbar = plt.colorbar(cax)
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
