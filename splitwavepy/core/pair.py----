@@ -8,7 +8,7 @@ from .data import Data, Window, WindowPicker
 # from .bootstrap import Bootstrap
 # from .measure import Measure
 from .eigenM import SC
-from .xcorrM import XC
+from .xcorrM import XcorrM
 from .transM import TransM
 
 import pickle
@@ -90,8 +90,8 @@ class Pair:
     # def measureSC(self, **kwargs):
     #     return SC(self.data, **kwargs)
     #
-    # def measureXC(self, **kwargs):
-    #     return XC(self.data, **kwargs)
+    # def measureXcorrM(self, **kwargs):
+    #     return XcorrM(self.data, **kwargs)
     #
     # def measureTransM(self, **kwargs):
     #     return TransM(self.data, **kwargs)

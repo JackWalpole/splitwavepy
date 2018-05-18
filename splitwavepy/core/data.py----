@@ -9,7 +9,7 @@ from __future__ import print_function
 
 from ..core import core, io
 from .eigenM import SC
-from .xcorrM import XC
+from .xcorrM import XcorrM
 from .transM import TransM
 
 #, core3d, io
@@ -358,8 +358,8 @@ class Data:
     def SC(self, **kwargs):        
         return SC(self, **kwargs)
         
-    def XC(self, **kwargs):
-        return XC(self, **kwargs)
+    def XcorrM(self, **kwargs):
+        return XcorrM(self, **kwargs)
         
     def TransM(self, **kwargs):
         return TransM(self, **kwargs)

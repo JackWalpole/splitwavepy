@@ -14,7 +14,7 @@ from .measure import Measure
 import numpy as np
 import math
 
-class XC(Measure):
+class XcorrM(Measure):
     
     """
     e.g. Ando and Bowman (1987) rotation correlation method.
@@ -48,11 +48,6 @@ class XC(Measure):
     """
     
     def __init__(self, data, bootstrap=False, **kwargs):
-               
-        # process input
-        if 'pol' in kwargs: 
-            print('Warning pol not used.')
-            del kwargs['pol']
         
         # Derive from Measure
         # Measure.__init__(self, data, core.crosscorr, **kwargs)
