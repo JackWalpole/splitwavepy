@@ -10,7 +10,8 @@ from __future__ import print_function
 from ..core import core, io
 from .eigenM import SC
 from .xcorrM import XC
-from .transM import TransM
+from .q import Q
+# from .transM import TransM
 
 #, core3d, io
 # from ..core.pair import Pair
@@ -360,9 +361,12 @@ class Data:
         
     def XC(self, **kwargs):
         return XC(self, **kwargs)
+
+    def Q(self, **kwargs):
+        return Q(self, **kwargs)
         
-    def TransM(self, **kwargs):
-        return TransM(self, **kwargs)
+    # def TransM(self, **kwargs):
+    #     return TransM(self, **kwargs)
         
     def splitting_intensity(self, **kwargs):
         """

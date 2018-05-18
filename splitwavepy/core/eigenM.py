@@ -53,12 +53,12 @@ class SC(Measure):
         
         # process input
         if 'pol' in kwargs: 
-            print('Using transverse energy method.')
+            # print('Using transverse energy method.')
             # Derive from Measure
             Measure.__init__(self, data, core.transenergy, **kwargs)
         else:        
             # Use Eigenvalues
-            print('Using eigenvalue method.')
+            # print('Using eigenvalue method.')
             Measure.__init__(self, data, core.eigvalcov, **kwargs)
         
 
