@@ -21,7 +21,7 @@ class CoreTestCases(unittest.TestCase):
         synth = sw.Data(delta=0.1,split=(30,1.4),noise=0.03)
         
         # generate an eigenM object
-        a = synth.EigenM()
+        a = synth.SC()
         
         # save to file
         filename = 'temp.eigm'
@@ -45,7 +45,7 @@ class CoreTestCases(unittest.TestCase):
         synth = sw.Data(delta=0.1,split=(30,1.4),noise=0.03)
         
         # generate an TransM object
-        a = synth.TransM(pol=0)
+        a = synth.SC(pol=0)
         
         # save to file
         filename = 'temp.trnm'
@@ -69,7 +69,7 @@ class CoreTestCases(unittest.TestCase):
         synth = sw.Data(delta=0.1, split=(30,1.4), noise=0.03)
         
         # generate an XcorrM object
-        a = synth.XcorrM()
+        a = synth.XC()
         
         # save to file
         filename = 'temp.xcrm'
