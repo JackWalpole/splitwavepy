@@ -147,7 +147,7 @@ def eigcov(x, y):
 def eigvalcov(x, y):
     """
     return sorted eigenvalues of covariance matrix
-    lambda2 first, lambda1 second
+    lambda1 first, lambda2 second
     """
     data = np.vstack((x,y))
     return np.sort(np.linalg.eigvalsh(np.cov(data)))[::-1]
@@ -157,7 +157,8 @@ def transenergy(x, y):
     return energy
     lambda1 first, lambda2 second
     """
-    energy = lambda x: np.sum(x**2)
+    # energy = lambda x: np.sum(x**2)
+    energy = lambda x: np.var(x)
     return energy(x), energy(y) 
     
 def crosscorr(x, y):

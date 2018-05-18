@@ -66,6 +66,7 @@ class EigenM(Measure):
             Measure.__init__(self, data, core.transenergy, **kwargs)
         else:        
             # Use Eigenvalues
+            print('Using eigenvalue method.')
             Measure.__init__(self, data, core.eigvalcov, **kwargs)
         
 
@@ -106,15 +107,15 @@ class EigenM(Measure):
         
     def bootstrap_conf95(self, **kwargs):
         """Return lam2 value at 95% confidence level"""
-        lam1, lam2 = np.asarray(self._bootstrap_loop(**kwargs))
-        return np.percentile(lam1/lam2, 2.5)
+        bsvals = self._bootstrap_loop(**kwargs)
+        return np.percentile(bsvals, 2.5)
         
     def _bootstrap_prep(self):
-        x, y = self.data_corr().chopdata()
+        x, y = self.srcpoldata_corr().chopdata()
         return x, y
         
     def _bootstrap_stat(self, x, y):
-        lam2, lam1 = self.func(x, y)
+        lam1, lam2 = self.func(x, y)
         return lam1 / lam2
         
         
