@@ -735,8 +735,25 @@ class Measure:
             props = dict(boxstyle='round', facecolor='white', alpha=0.5)
             ax.text(0.6, 0.95, textstr, transform=ax.transAxes, fontsize=12,
                     verticalalignment='top', bbox=props)
+        
+        if 'ppm' in kwargs and kwargs['ppm'] is True:
+            sublags = self.lags[0:-1:int(self.lags.size/6)]
+            subdegs = self.degs[0:-1:int(self.degs.size/6)]
+            sublags = sublags + (self.lags[-1]-sublags[-1]) / 2
+            subdegs = subdegs + (self.degs[-1]-subdegs[-1]) / 2
+            x, y = self.data_corr().chopdata()   
+            lagtot = self.lags[-1] - self.lags[0]
+            degtot = self.degs[-1] - self.degs[0]
+            boost = 10 * lagtot / np.max((x**2 + y**2)**.5)      
+            for fast in subdegs:
+                for lag in sublags:
+                    x, y = self.data.unsplit(fast, lag).chopdata()
+                    ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
+
                     
         return ax
+        
+
         
     def plot_profiles(self,**kwargs):
         # Error analysis
