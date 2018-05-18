@@ -150,7 +150,7 @@ def eigvalcov(x, y):
     lambda2 first, lambda1 second
     """
     data = np.vstack((x,y))
-    return np.sort(np.linalg.eigvalsh(np.cov(data)))
+    return np.sort(np.linalg.eigvalsh(np.cov(data)))[::-1]
   
 def transenergy(x, y):
     """

@@ -59,12 +59,19 @@ class EigenM(Measure):
         # else:
         #     self.data = Pair(*args,**kwargs)
         
-        # Derive from Measure
-        Measure.__init__(self, data, core.eigvalcov, **kwargs)
+        # process input
+        if 'pol' in kwargs: 
+            print('Using transverse energy method.')
+            # Derive from Measure
+            Measure.__init__(self, data, core.transenergy, **kwargs)
+        else:        
+            # Use Eigenvalues
+            Measure.__init__(self, data, core.eigvalcov, **kwargs)
+        
 
         # MAKE MEASUREMENT
         gridout = np.asarray(self.gridsearch(**kwargs))
-        self.lam1, self.lam2 = gridout[:,:,1].T, gridout[:,:,0].T
+        self.lam1, self.lam2 = gridout[:,:,0].T, gridout[:,:,1].T
         self.maxloc = core.max_idx(self.lam1/self.lam2)
         
         deggrid, laggrid = self._grid_degs_lags()
