@@ -29,5 +29,6 @@ class Q(SC,XC):
         self.data = data    
         self.sc = data.SC(**kwargs)
         self.xc = data.XC(**kwargs)
+        self.q = core.q(self.sc.fast, self.sc.lag, self.xc.fast, self.xc.lag)
         
     

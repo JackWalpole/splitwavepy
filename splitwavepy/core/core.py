@@ -284,10 +284,10 @@ def kde(vals):
 
 # Null Criterion
 
-def Q(fastev,lagev,fastrc,lagrc):
+def q(fastsc, lagsc, fastxc, lagxc):
     """Following Wuestefeld et al. 2010"""
-    omega = math.fabs((fastev - fastrc + 3645)%90 - 45) / 45
-    delta = lagrc / lagev
+    omega = math.fabs((fastsc - fastxc + 3645)%90 - 45) / 45
+    delta = lagxc / lagsc
     dnull = math.sqrt(delta**2 + (omega-1)**2) * math.sqrt(2)
     dgood = math.sqrt((delta-1)**2 + omega**2) * math.sqrt(2)
     if dnull < dgood:
