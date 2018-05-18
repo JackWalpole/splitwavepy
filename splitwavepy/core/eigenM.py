@@ -19,12 +19,10 @@ import numpy as np
 class SC(Measure):
     
     """
-    Silver and Chan (1991) eigenvalue method measurement.
+    Silver and Chan (1991) method.
     
-    args:
-    None = create synthetic
-    Pair = Measure splitting on Pair object
-    x, y = Measure splitting on traces x, and y.
+    By default uses the eigenvalue method.
+    If pol = *pol* is specified uses the transverse energy method.
     
     kwargs:
     
@@ -39,13 +37,7 @@ class SC(Measure):
          -- numpy ndarray
     
     rcvcorr = (fast,tlag) | tuple | Receiver Correction
-    srccorr = (fast,tlag) | tuple | Source Correction
-    
-    kwargs for synthetic generation:
-    fast = 0.      | float
-    tlag = 0.      | float
-    pol = 0.       | float
-    noise = 0.001  | float       
+    srccorr = (fast,tlag) | tuple | Source Correction   
     """
     
     def __init__(self, data, bootstrap=False, **kwargs):

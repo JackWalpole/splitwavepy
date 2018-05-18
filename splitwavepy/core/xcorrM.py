@@ -19,10 +19,7 @@ class XC(Measure):
     """
     e.g. Ando and Bowman (1987) rotation correlation method.
     
-    args:
-    None = create synthetic
-    Pair = Measure splitting on Pair object
-    x, y = Measure splitting on traces x, and y.
+    Calculates Pearson r.
     
     kwargs:
     
@@ -38,13 +35,6 @@ class XC(Measure):
     
     rcvcorr = (fast,tlag) | tuple | Receiver Correction
     srccorr = (fast,tlag) | tuple | Source Correction
-    
-    kwargs for synthetic generation:
-    fast = 0.      | float
-    tlag = 0.      | float
-    pol = 0.       | float
-    noise = 0.001  | float
-        
     """
     
     def __init__(self, data, bootstrap=False, **kwargs):
