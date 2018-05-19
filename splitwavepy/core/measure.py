@@ -651,29 +651,24 @@ class Measure:
         ax3 = plt.subplot(gs[2,0])
         ax4 = plt.subplot(gs[2,1])
         ax5 = plt.subplot(gs[:,2])
-        
-        # data to plot
-        d1 = self.data.chop()
-        d1f = self.srcpoldata().chop()
-        d2 = self.data_corr().chop()
-        d2s = self.srcpoldata_corr().chop()
-        
-        # flip polarity of slow wave in panel one if opposite to fast
-        # d1f.y = d1f.y * np.sign(np.tan(self.srcpol()-self.fast))
-        
+
+        orig = self.srcpoldata().chop()
+        corr = self.srcpoldata_corr().chop()
+                
         # get axis scaling
-        lim = np.abs(d2s.data()).max() * 1.1
-        ylim = [-lim,lim]
+        lim = np.abs(corr.data()).max() * 1.1
+        ylim = [-lim, lim]
         
         # long window data
-        self.data._ptr(ax0,ylim=ylim,**kwargs)
+        self.data._ptr(ax0, ylim=ylim, **kwargs)
 
         # original
-        d1f._ptr(ax1,ylim=ylim,**kwargs)
-        d1._ppm(ax2,lims=ylim,**kwargs)
+        orig._ptr(ax1, ylim=ylim, **kwargs)
+        orig._ppm(ax2, lims=ylim, **kwargs)
+        
         # corrected
-        d2s._ptr(ax3,ylim=ylim,**kwargs)
-        d2._ppm(ax4,lims=ylim,**kwargs)
+        corr._ptr(ax3, ylim=ylim, **kwargs)
+        corr._ppm(ax4, lims=ylim, **kwargs)
         
         # add marker and info box by default
         if 'marker' not in kwargs: kwargs['marker'] = True
@@ -702,7 +697,6 @@ class Measure:
         **kwargs
         - cmap = 'magma'
         - vals = (M.lam1-M.lam2) / M.lam2
-        - ax = None (creates new)
         """
     
         if 'cmap' not in kwargs:
