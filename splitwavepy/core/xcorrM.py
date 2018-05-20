@@ -60,8 +60,9 @@ class XC(Measure):
 
         # # get errors
         if bootstrap is True:
-            self.conf95level = self.bootstrap_conf95()
-            self.errsurf = self.xc
+            self.pdf = self.estimate_pdf(**kwargs)
+            self.conf95level = self._pdf_conf95(self.pdf)
+            self.errsurf = self.pdf
             self.dfast, self.dlag = self.get_errors(surftype='max')
         else:
             self.conf95level = self.F_conf95()
@@ -87,10 +88,10 @@ class XC(Measure):
         xc95 = math.tanh(f-z95*std) 
         return xc95
         
-    def bootstrap_conf95(self, **kwargs):
-        """Return lam2 value at 95% confidence level"""
-        xc = self._bootstrap_loop(**kwargs)
-        return np.percentile(xc, 2.5)
+    # def bootstrap_conf95(self, **kwargs):
+    #     """Return lam2 value at 95% confidence level"""
+    #     xc = self._bootstrap_loop(**kwargs)
+    #     return np.percentile(xc, 2.5)
         
     def _bootstrap_prep(self):
         x, y = self.fastdata_corr().chopdata()

@@ -48,7 +48,7 @@ class Q(SC, XC, Measure):
         deggrid, laggrid = self._grid_degs_lags()
         self.fast = deggrid[self.maxloc]
         self.lag  = laggrid[self.maxloc]
-        self.conf95level = self.bootstrap_conf95()
+        self.conf95level = self._pdf_conf95(self.pdf)
         self.errsurf = self.pdf
         self.dfast, self.dlag = self.get_errors(surftype='max')
     
@@ -61,17 +61,92 @@ class Q(SC, XC, Measure):
                
     def _pdf(self, **kwargs):
         
-        sc = self.sc.pdf(**kwargs)
-        xc = self.xc.pdf(**kwargs)
+        sc = self.sc.pdf
+        xc = self.xc.pdf
         return (sc + xc)/2
         
+    # def plot(self, **kwargs):
+    #     # error surface
+    #     if 'vals' not in kwargs:
+    #        kwargs['vals'] = self.pdf
+    #        kwargs['title'] = r'PDF'
+    #
+    #     self._plot(**kwargs)
+    #
+    #     # plot SC and XC methods
+    #     plt.contour(*self._grid(), self.sc.errsurf,
+    #                 levels=[self.sc.conf95level], colors='w')
+                    
     def plot(self, **kwargs):
+        
         # error surface
         if 'vals' not in kwargs:
            kwargs['vals'] = self.pdf
            kwargs['title'] = r'PDF'
-    
-        self._plot(**kwargs)
+          
+        # setup figure and subplots
+        fig = plt.figure(figsize=(12,6)) 
+        
+        gs = gridspec.GridSpec(3, 3,
+                           width_ratios=[2,1,3]
+                           )
+        ax0 = plt.subplot(gs[0,0:2])                     
+        ax1 = plt.subplot(gs[1,0])
+        ax2 = plt.subplot(gs[1,1])
+        ax3 = plt.subplot(gs[2,0])
+        ax4 = plt.subplot(gs[2,1])
+        ax5 = plt.subplot(gs[:,2])
+
+        orig = self.srcpoldata().chop()
+        corr = self.srcpoldata_corr().chop()
+                
+        # get axis scaling
+        lim = np.abs(corr.data()).max() * 1.1
+        ylim = [-lim, lim]
+        
+        # long window data
+        self.data._ptr(ax0, ylim=ylim, **kwargs)
+
+        # original
+        orig._ptr(ax1, ylim=ylim, **kwargs)
+        orig._ppm(ax2, lims=ylim, **kwargs)
+        
+        # corrected
+        corr._ptr(ax3, ylim=ylim, **kwargs)
+        corr._ppm(ax4, lims=ylim, **kwargs)
+        
+        # add marker and info box by default
+        if 'marker' not in kwargs: kwargs['marker'] = True
+        if 'info' not in kwargs: kwargs['info'] = True
+        if 'conf95' not in kwargs: kwargs['conf95'] = True
+        self._psurf(ax5,**kwargs)
+        
+        # plot SC and XC methods
+        ax5.contour(*self._grid(), self.sc.errsurf, 
+                    levels=[self.sc.conf95level], colors='w', 
+                    alpha=0.5, linestyles='dashed')
+        ax5.errorbar(self.sc.lag, self.sc.fast, 
+                        xerr=self.sc.dlag, yerr=self.sc.dfast, alpha=0.2)
+        ax5.contour(*self._grid(), self.xc.errsurf, 
+                    levels=[self.xc.conf95level], colors='w', 
+                    alpha=0.5, linestyles='dotted')
+        ax5.errorbar(self.xc.lag, self.xc.fast, 
+                        xerr=self.xc.dlag, yerr=self.xc.dfast, alpha=0.2)
+
+
+        
+        # title
+        if 'name' in kwargs:
+            plt.suptitle(kwargs['name'])
+                    
+        # neaten
+        plt.tight_layout()
+        
+        # save or show
+        if 'file' in kwargs:
+            plt.savefig(kwargs['file'])
+        else:
+            plt.show()
         
     # def plot(self, **kwargs):
         

@@ -80,8 +80,9 @@ class SC(Measure):
         # self.snr = self.snrsurf[maxloc]
         # # get errors    
         if bootstrap is True:
-            self.conf95level = self.bootstrap_conf95()
-            self.errsurf = self.lam1 / self.lam2
+            self.pdf = self.estimate_pdf(**kwargs)
+            self.conf95level = self._pdf_conf95(self.pdf)
+            self.errsurf = self.pdf
             self.dfast, self.dlag = self.get_errors(surftype='max')
         else:
             self.conf95level = self.F_conf95()
@@ -97,10 +98,10 @@ class SC(Measure):
         """Value of lam2 at 95% confidence contour."""
         return core.ftest(self.lam2, self.ndf(), alpha=0.05)
         
-    def bootstrap_conf95(self, **kwargs):
-        """Return lam2 value at 95% confidence level"""
-        bsvals = self._bootstrap_loop(**kwargs)
-        return np.percentile(bsvals, 2.5)
+    # def bootstrap_conf95(self, **kwargs):
+    #     """Return lam2 value at 95% confidence level"""
+    #     bsvals = self._bootstrap_loop(**kwargs)
+    #     return np.percentile(bsvals, 2.5)
         
     def _bootstrap_prep(self):
         x, y = self.srcpoldata_corr().chopdata()

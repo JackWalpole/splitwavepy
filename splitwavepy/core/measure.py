@@ -466,8 +466,11 @@ class Measure:
         pdf = pdf / np.sum(pdf)
         return pdf
         
-    def pdf(self, **kwargs):
-        return self.estimate_pdf(**kwargs)
+    def _pdf_conf95(self, pdf):
+        return core.val_at_alpha(pdf.flatten(),0.05)
+        
+    # def pdf(self, **kwargs):
+    #     return self.estimate_pdf(**kwargs)
 
     # error propagating corrections
 
@@ -717,7 +720,8 @@ class Measure:
         
         # confidence region
         if 'conf95' in kwargs and kwargs['conf95'] == True:
-            ax.contour(laggrid, deggrid, self.errsurf, levels=[self.conf95level])
+            ax.contour(laggrid, deggrid, self.errsurf, levels=[self.conf95level],
+                    colors='r', alpha=.5, linewidths=3)
             
         # marker
         if 'marker' in kwargs and kwargs['marker'] == True:
