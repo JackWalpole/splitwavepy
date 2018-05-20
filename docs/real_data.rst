@@ -93,16 +93,31 @@ By chance the window looks not bad.  If you want to change it see :ref:`window`.
 .. nbplot::
 	:include-source:
 	
-	# Eigenvalue Metho
-	realdata.EigenM(lags=(2,)).plot(name='Eigenvalue Method', ppm=True)
-	realdata.TransM(lags=(2,), pol=baz).plot(name='Transverse Minimisation Method', ppm=True)
-	realdata.XcorrM(lags=(2,)).plot(name='Cross-correlation Method', ppm=True)
+	# Eigenvalue Method
+	realdata.SC(lags=(2,)).plot(name='Eigenvalue Method', ppm=True)
+	
+	# Specify Pol to use Transverse Energy Method
+	realdata.SC(lags=(2,), pol=baz).plot(name='Transverse Minimisation Method', ppm=True)
+	
+	# Cross-correlation Method
+	realdata.XC(lags=(2,)).plot(name='Cross-correlation Method', ppm=True)
 
-SplitWavePy can also calculate the splitting intensity (Chevrot, 2000) from the data within the window.
+The two methods can be combined.  To do this the PDF from each measurement must be calculated.  I have deomnstrated a way to do this using bootstrapping.  The dashed contour show the 95% confidence interval for the Silver and Chan method and the dotted contour shows the 95% confidence contour calculated from the correlation method.  The coloured surface is the average from the PDFs of each methods and the red line shows the 95% confidence contour for this joint surface.
 
 .. nbplot::
 	:include-source:
 	
-	print(realdata.splitting_intensity(pol=baz))
+	# Q
+	realdata.Q(lags=(2,), pol=baz).plot()
+	
+	
+
+
+.. SplitWavePy can also calculate the splitting intensity (Chevrot, 2000) from the data within the window.
+..
+.. .. nbplot::
+.. 	:include-source:
+..
+.. 	print(realdata.splitting_intensity(pol=baz))
 
 
