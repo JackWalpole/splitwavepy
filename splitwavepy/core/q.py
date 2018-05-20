@@ -125,13 +125,13 @@ class Q(SC, XC, Measure):
         ax5.contour(*self._grid(), self.sc.errsurf, 
                     levels=[self.sc.conf95level], colors='w', 
                     alpha=0.5, linestyles='dashed')
-        ax5.errorbar(self.sc.lag, self.sc.fast, 
-                        xerr=self.sc.dlag, yerr=self.sc.dfast, alpha=0.2)
+        # ax5.errorbar(self.sc.lag, self.sc.fast,
+        #                 xerr=self.sc.dlag, yerr=self.sc.dfast, alpha=0.2)
         ax5.contour(*self._grid(), self.xc.errsurf, 
                     levels=[self.xc.conf95level], colors='w', 
                     alpha=0.5, linestyles='dotted')
-        ax5.errorbar(self.xc.lag, self.xc.fast, 
-                        xerr=self.xc.dlag, yerr=self.xc.dfast, alpha=0.2)
+        # ax5.errorbar(self.xc.lag, self.xc.fast,
+        #                 xerr=self.xc.dlag, yerr=self.xc.dfast, alpha=0.2)
 
 
         
