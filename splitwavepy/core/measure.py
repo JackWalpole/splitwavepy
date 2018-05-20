@@ -448,7 +448,7 @@ class Measure:
         """Calculate a single bootstrap statistic on one resampling of the x, y data."""
         return self._bootstrap_stat(*core.bootstrap_resamp(x, y))
     
-    def _bootstrap_loop(self, n=5000):
+    def _bootstrap_loop(self, n=5000, **kwargs):
         """Calculate many bootstrap statistics on n resamplings of the data."""
         # ensure data prepped (in correct orientation and windowed) appropriately
         x, y = self._bootstrap_prep()
@@ -465,6 +465,9 @@ class Measure:
         # normalise so that whole surface weighs 1
         pdf = pdf / np.sum(pdf)
         return pdf
+        
+    def pdf(self, **kwargs):
+        return self.estimate_pdf(**kwargs)
 
     # error propagating corrections
 
