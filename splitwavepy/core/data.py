@@ -456,7 +456,6 @@ class Data:
         
         # plot additional markers
         if 'marker' in kwargs:
-            print('here')
             if type(kwargs['marker']) is not list: kwargs['marker'] = [ kwargs['marker'] ]
             [ ax.axvline(float(mark), linewidth=1, color='b') for mark in kwargs['marker'] ]
             
@@ -635,6 +634,11 @@ class WindowPicker:
         self.canvas = fig.canvas
         self.ax = ax
         self.data = data
+        
+        # message
+        fig.text(0.05, 0.05,'Left and right click to set window start and end.')
+        fig.text(0.05, 0.01,'Space bar to save window.')
+        
         # window limit lines
         self.x1 = data.wbeg()
         self.x2 = data.wend()
@@ -665,7 +669,9 @@ class WindowPicker:
     
     def keypress(self, event):
         if event.key == " ":
-            self.disconnect()
+            wbeg, wend = sorted((self.x1, self.x2)) 
+            self.data.set_window(wbeg, wend)
+            # self.disconnect()
 
     def enter(self, event):
         if event.inaxes is not self.ax: return
@@ -692,5 +698,4 @@ class WindowPicker:
         self.canvas.mpl_disconnect(self.cidenter)
         self.canvas.mpl_disconnect(self.cidleave)
         plt.close()
-        wbeg, wend = sorted((self.x1, self.x2)) 
-        self.data.set_window(wbeg, wend)
+
