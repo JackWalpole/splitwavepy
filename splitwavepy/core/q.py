@@ -31,11 +31,9 @@ class Q(SC, XC, Measure):
         if 'bootstrap' not in kwargs:
             kwargs['bootstrap'] = True
         
-        # Initiate Measurment object with dummy func
-        def dummy():
-            return float('NaN')
+
         
-        Measure.__init__(self, data, dummy, **kwargs) 
+        Measure.__init__(self, data, None, **kwargs) 
         
         # Make Silver and Chan and XCorrelation Measurements
         self.sc = data.SC(**kwargs)

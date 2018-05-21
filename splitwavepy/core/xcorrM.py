@@ -41,7 +41,7 @@ class XC(Measure):
                
         # process input
         if 'pol' in kwargs: 
-            print('Warning pol not used.')
+            # print('Warning pol not used.')
             del kwargs['pol']
         
         # Derive from Measure
