@@ -63,7 +63,7 @@ class SC(Measure):
         
 
         # MAKE MEASUREMENT
-        gridout = np.asarray(self.gridsearch(**kwargs))
+        gridout = np.asarray(self.gridsearch(self.func, **kwargs))
         self.lam1, self.lam2 = gridout[:,:,0].T, gridout[:,:,1].T
         self.maxloc = core.max_idx(self.lam1/self.lam2)
         

@@ -68,7 +68,7 @@ class Measure:
                 
     # Common methods
     
-    def gridsearch(self, **kwargs):       
+    def gridsearch(self, func, **kwargs):       
         """
         Grid search for splitting parameters applied to self.data using the function defined in func
         rcvcorr = receiver correction parameters in tuple (fast,lag) 
@@ -134,7 +134,7 @@ class Measure:
             x, y = srccorr(x, y, ang)
             x, y = chop(x, y, *win(shift))
             x, y = rotpol(x, y, ang)
-            return self.func(x, y)
+            return func(x, y, **kwargs)
                     
         # Do the grid search
         prerot = ( (rotate(x, y, ang), ang) for ang in self.degs )
@@ -448,22 +448,25 @@ class Measure:
         """Calculate a single bootstrap statistic on one resampling of the x, y data."""
         return self._bootstrap_stat(*core.bootstrap_resamp(x, y))
     
-    def _bootstrap_loop(self, n=5000, **kwargs):
+    def _bootstrap_loop(self, x, y, n=5000, **kwargs):
         """Calculate many bootstrap statistics on n resamplings of the data."""
         # ensure data prepped (in correct orientation and windowed) appropriately
-        x, y = self._bootstrap_prep()
+        # x, y = self._bootstrap_prep()
         # calculate bootstrap values
         bootstrap_vals = np.asarray([ self._bootstrap_samp(x, y) for ii in range(n) ])
         return bootstrap_vals
         
-    def estimate_pdf(self, **kwargs):
+    def _bootstrap_grid(self, **kwargs):
+        return self.gridsearch(self._bootstrap_loop, **kwargs)
         
-        vals = self._bootstrap_loop(**kwargs)
+    def estimate_pdf(self, **kwargs):
+        x, y = self._bootstrap_prep()
+        vals = self._bootstrap_loop(x, y, **kwargs)
         kde = core.kde(vals)
         ravmap = np.ravel(self.vals())
         pdf = kde.pdf(ravmap).reshape(self.vals().shape)
         # normalise so that whole surface weighs 1
-        pdf = pdf / np.sum(pdf)
+        # pdf = pdf / np.sum(pdf)
         return pdf
         
     def _pdf_conf95(self, pdf):

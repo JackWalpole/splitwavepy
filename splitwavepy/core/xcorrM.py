@@ -49,7 +49,7 @@ class XC(Measure):
         Measure.__init__(self, data, core.pearson, **kwargs)
 
         # MAKE MEASUREMENT
-        gridout = np.asarray(self.gridsearch(**kwargs))
+        gridout = np.asarray(self.gridsearch(self.func, **kwargs))
         self.xc = np.abs(gridout[:,:,0].T)
         maxloc = core.max_idx(self.xc)
 

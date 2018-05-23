@@ -61,7 +61,7 @@ class Q(SC, XC, Measure):
         
         sc = self.sc.pdf
         xc = self.xc.pdf
-        return (sc + xc)/2
+        return sc + xc
         
     # def plot(self, **kwargs):
     #     # error surface
