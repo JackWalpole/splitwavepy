@@ -466,7 +466,7 @@ class Measure:
         ravmap = np.ravel(self.vals())
         pdf = kde.pdf(ravmap).reshape(self.vals().shape)
         # normalise so that whole surface weighs 1
-        # pdf = pdf / np.sum(pdf)
+        pdf = pdf / np.sum(pdf)
         return pdf
         
     def _pdf_conf95(self, pdf):
