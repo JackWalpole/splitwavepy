@@ -459,14 +459,31 @@ class Measure:
     def _bootstrap_grid(self, **kwargs):
         return self.gridsearch(self._bootstrap_loop, **kwargs)
         
-    def estimate_pdf(self, **kwargs):
+    def estimate_pdf(self, polar=False, **kwargs):
         x, y = self._bootstrap_prep()
         vals = self._bootstrap_loop(x, y, **kwargs)
         kde = core.kde(vals)
         ravmap = np.ravel(self.vals())
         pdf = kde.pdf(ravmap).reshape(self.vals().shape)
+        
+        if polar == True:
+            # geometric correction to account for variation 
+            # in sampling density if grid is converted to polar coordinates
+            # (more research needed to establish whether this is correct)
+            ###
+            # circle area is pi*r^2
+            # annulus area is pi*r1^2 - pi*r0^2
+            # cell area is annulus area / number of cells
+            # cell area is K*(r1^2-r0^2), where K is pi/number of cells.
+            # K is just a constant scaling factor that can be removed at the end.
+            aa = np.arange(self.lags.size)
+            bb = (aa+1)**2 - aa**2
+            _, cc = np.meshgrid(self.degs, bb)
+            pdf = pdf * cc
+            
         # normalise so that whole surface weighs 1
         pdf = pdf / np.sum(pdf)
+        
         return pdf
         
     def _pdf_conf95(self, pdf):
