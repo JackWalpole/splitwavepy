@@ -448,10 +448,13 @@ class Measure:
         """Calculate a single bootstrap statistic on one resampling of the x, y data."""
         return self._bootstrap_stat(*core.bootstrap_resamp(x, y))
     
-    def _bootstrap_loop(self, x, y, n=5000, **kwargs):
+    def _bootstrap_loop(self, *args, n=5000, **kwargs):
         """Calculate many bootstrap statistics on n resamplings of the data."""
         # ensure data prepped (in correct orientation and windowed) appropriately
-        # x, y = self._bootstrap_prep()
+        if len(args) == 2:
+            x, y = args[0], args[1]
+        else:
+            x, y = self._bootstrap_prep()
         # calculate bootstrap values
         bootstrap_vals = np.asarray([ self._bootstrap_samp(x, y) for ii in range(n) ])
         return bootstrap_vals
