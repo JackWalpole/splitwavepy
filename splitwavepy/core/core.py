@@ -41,7 +41,7 @@ def samps2time(samps,delta):
     
 ################
 
-def lag(x,y,samps):
+def lag(x, y, samps):
     """
     Lag x samps to the left and
     lag y samps to the right.
@@ -52,7 +52,7 @@ def lag(x,y,samps):
     to ensure even trace lengths when measuring splitting.
     """
     if samps == 0:
-        return x,y
+        return x, y
 
     if samps > 0:
         # positive shift
@@ -61,30 +61,40 @@ def lag(x,y,samps):
         # negative shift
         return x[:samps], y[-samps:]
       
-def rotate(x,y,degrees):
+# def rotate(x,y,degrees):
+#     """row 0 is x-axis and row 1 is y-axis,
+#        rotates from x to y axis
+#        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
+#     ang = math.radians(degrees)
+#     rot = np.array([[ np.cos(ang), np.sin(ang)],
+#                     [-np.sin(ang), np.cos(ang)]])
+#     xy = np.dot(rot, np.vstack((x,y)))
+#     return xy[0], xy[1]
+
+def rotate(x, y, degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis
        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
     ang = math.radians(degrees)
     rot = np.array([[ np.cos(ang), np.sin(ang)],
                     [-np.sin(ang), np.cos(ang)]])
-    xy = np.dot(rot, np.vstack((x,y)))
+    xy = np.dot(rot, np.vstack((x, y)))
     return xy[0], xy[1]
 
-def split(x,y,degrees,samps):
+def split(x, y, degrees, samps):
     """Apply forward splitting and rotate back"""
     if samps == 0:
-        return x,y
-    x,y = rotate(x,y,degrees)
-    x,y = lag(x,y,samps)
-    x,y = rotate(x,y,-degrees)
-    return x,y
+        return x, y
+    x, y = rotate(x, y, degrees)
+    x, y = lag(x, y, samps)
+    x, y = rotate(x, y, -degrees)
+    return x, y
 
-def unsplit(x,y,degrees,samps):
+def unsplit(x, y, degrees, samps):
     """Apply inverse splitting and rotate back"""
-    return split(x,y,degrees,-samps)
+    return split(x, y, degrees, -samps)
     
-def chop(x,y,s0,s1):
+def chop(x, y, s0, s1):
     """Chop two 1-d numpy arrays from s0 to s1"""
     return x[s0:s1], y[s0:s1]
 
