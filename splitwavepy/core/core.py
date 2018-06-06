@@ -208,6 +208,75 @@ def crossconvmf(obsx, obsy, prex, prey):
 #     s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
 #     return s
 
+# Grid covariance
+
+def slagchop(x, y, w0, w1, slag):
+    d = int(slag/2)
+    return x[w0+d: w1+d], y[w0-d: w1-d] 
+
+def running_mean(x, w0, w1, slags):
+    d = int(slags[-1]/2)
+    x = x[w0-d: w1+d]
+    n = w1-w0
+    return np.convolve(x, np.ones((n,))/n, mode='valid')
+    
+def gridcov(x, y, w0, w1, degs, slags):
+    # prepare a list of data rotated to degs
+    rot_data = [ rotate(x0, y0, deg) for deg in degs ]
+    # prepare empty covariance arrays
+    gridcov = np.empty((degs.size, slags.size, 2, 2))
+    c = np.empty((2, 2))
+    ii = 0
+    # now loop and calculate
+    for rot in rot_data:  
+        # this is the mean in each window
+        meanx = running_mean(rot[0], w0, w1, slags)
+        meany = running_mean(rot[1], w0, w1, slags)
+        jj = 0
+        for slag in slags:
+            wx, wy  = slagchop(*rot, w0, w1, slag)
+            dx, dy = wx - meanx[slag], wy - meany[slag]
+            n = dx.size
+            c[0, 0] = np.sum(dx * dx)
+            c[1, 0] = c[0, 1] = np.sum(dx * dy)
+            c[1, 1] = np.sum(dy * dy)
+            c = c / n
+            gridcov[ii, jj, :, :] = c 
+            jj += 1
+        ii += 1
+    return gridcov
+    
+def slagchop_srccorr(x, y, w0, w1, slag, srcfast, srcslag):
+    x, y = rot2(x, y, srcfast)
+    x, y = lag(x, y, srcslag)
+    x, y = rot2(x, y, -srcfast)
+    d = int(slag/2) - int(srcslag/2)
+    return x[w0+d: w1+d], y[w0-d: w1-d]
+
+def gridcov_srcorr(x, y, w0, w1, degs, slags, srcfast, srcslag):
+    # prepare a list of data rotated to degs
+    rot_data = [ rot2(x0, y0, deg) for deg in degs ]
+    # prepare empty covariance arrays
+    gridcov = np.empty((degs.size, slags.size, 2, 2))
+    c = np.empty((2, 2))
+    ii = 0
+    # now loop and calculate
+    for rot in rot_data:  
+        jj = 0
+        for slag in slags:
+            wx, wy  = slagchop_srccorr(*rot, w0, w1, slag, srcfast, srcslag)
+            mx, my = np.mean(wx), np.mean(wy)
+            dx, dy = wx - mx, wy - my
+            n = dx.size
+            c[0, 0] = np.sum(dx * dx)
+            c[1, 0] = c[0, 1] = np.sum(dx * dy)
+            c[1, 1] = np.sum(dy * dy)
+            c = c / n
+            gridcov[ii, jj, :, :] = c 
+            jj += 1
+        ii += 1
+    return gridcov
+
 # Errors
 
 def ndf(y):
