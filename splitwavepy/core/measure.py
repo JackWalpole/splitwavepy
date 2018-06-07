@@ -30,12 +30,12 @@ class Measure:
     Base measurement class        
     """
     
-    def __init__(self, data, func, **kwargs):
+    def __init__(self, data, **kwargs):
         
-        self.data = data
-        self.func = func
-        
+        self.data = data.rotateto(0)
+
         self.degs, self.lags, self.slags = self._get_degs_lags_and_slags(**kwargs)
+        self.degmap, self.lagmap = np.meshgrid(self.degs, self.lags)
 
         # receiver correction
         self.rcvcorr = None
@@ -61,9 +61,24 @@ class Measure:
             
         # Grid Search
         self.covmap = self.gridcov()
-        self.lam1, self.lam2 = core.covmap2eigvals(self.covmap)
+        # Silver and Chan
+        if 'pol' in kwargs:
+            raise Exception('Not implemented.')
+        else:
+            # use eigen analysis
+            self.lam1, self.lam2 = core.covmap2eigvals(self.covmap)
+        # Cross-correlation
         self.rho = core.covmap2rho(self.covmap)
-            
+
+        
+        # Extract Fast directions
+        sc_loc = core.max_idx(self.lam1/self.lam2)
+        self.sc_fast, self.sc_lag = self.degmap(sc_loc), self.lagmap(sc_loc) 
+        # self.sc_dfast, self.sc_dlag = 
+        xc_loc = core.max_idx(self.rho)
+        self.xc_fast, self.xc_lag =  self.degmap(xc_loc), self.lagmap(xc_loc)
+        
+        
         # Name
         self.name = 'Untitled'
         if 'name' in kwargs: self.name = kwargs['name']
@@ -72,83 +87,7 @@ class Measure:
         self.kwargs = kwargs
                 
     # Common methods
-    
-    def gridsearch(self, func, **kwargs):       
-        """
-        Grid search for splitting parameters applied to self.data using the function defined in func
-        rcvcorr = receiver correction parameters in tuple (fast,lag) 
-        srccorr = source correction parameters in tuple (fast,lag) 
-        """
-        
-        # avoid using "dots" in loops for performance
-        rotate = core.rotate
-        lag = core.lag
-        chop = core.chop
-        unsplit = core.unsplit
-        
-        # ensure trace1 at zero angle
-        copy = self.data.copy()
-        copy.rotateto(0)
-        x, y = copy.x, copy.y
-        
-        # window
-        s0, s1 = self.data._w0(), self.data._w1()
-        def win(shift): 
-            ds = int(abs(shift)/2)
-            return s0-ds, s1-ds
-        
-        # pre-apply receiver correction
-        if 'rcvcorr' in kwargs:
-            rcvphi, rcvlag = self.__rcvcorr
-            x, y = unsplit(x, y, rcvphi, rcvlag)
-         
-        ######################                  
-        # inner loop function
-        ######################
-    
-        # source correction          
-        if 'srccorr' in kwargs:
-            srcphi, srclag = self.__srccorr
-            def srccorr(x, y, ang):
-                x, y = unsplit(x, y, srcphi-ang, srclag)
-                return x, y
-        else:
-            def srccorr(x, y, ang):
-                return x, y
-                
-        # rotate to polaristation (needed for tranverse min)
-        if 'pol' in kwargs:
-            def rotpol(x, y, ang):
-                # rotate to pol
-                x, y = rotate(x, y, kwargs['pol']-ang)
-                return x, y
-                
-        # if 'mode' in kwargs and kwargs['mode'] == 'rotpol':
-        #     def rotpol(x, y, ang):
-        #         # rotate to pol
-        #         x, y = rotate(x, y, kwargs['pol']-ang)
-        #         return x, y
-        else:
-            def rotpol(x, y, ang):
-                return x, y
-        
-        # actual inner loop function   
-        def getout(x, y, ang, shift):
-            # remove shift
-            x, y = lag(x, y, -shift)
-            x, y = srccorr(x, y, ang)
-            x, y = chop(x, y, *win(shift))
-            x, y = rotpol(x, y, ang)
-            return func(x, y, **kwargs)
-                    
-        # Do the grid search
-        prerot = ( (rotate(x, y, ang), ang) for ang in self.degs )
-        
-        out = [ [ getout(xy[0], xy[1], ang, shift) for shift in self.slags ]
-                for (xy, ang) in prerot  ]
-                               
-        return out
-        
+            
     def gridcov(self, **kwargs):       
         """
         Grid search for splitting parameters applied to self.data using the function defined in func
@@ -164,89 +103,16 @@ class Measure:
         if 'rcvcorr' in kwargs:
             rcvphi, rcvlag = self.__rcvcorr
             x, y = core.unsplit(x, y, rcvphi, rcvlag)
-        #
-        # # source correction
-        # if 'srccorr' not in kwargs:
-        #     srcphi, srclag = self.__srccorr
-        #     return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
+
+        # source correction
+        if 'srccorr' in kwargs:
+            raise Exception('Not implemented.')
+            # srcphi, srclag = self.__srccorr
+            # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
         return core.gridcov(x, y, w0, w1, degs, slags)
         
-  
-        
-    # def gridsearch3d(self, func, **kwargs):
-    #
-    #     """
-    #     Grid search for splitting parameters applied to data using the function defined in func
-    #     rcvcorr = receiver correction parameters in tuple (fast,lag)
-    #     srccorr = source correction parameters in tuple (fast,lag)
-    #     """
-    #
-    #     # avoid using "dots" in loops for performance
-    #     rotate = core3d.rotate
-    #     lag = core3d.lag
-    #     chop = core3d.chop
-    #     unsplit = core3d.unsplit
-    #
-    #     # ensure trace1 at zero angle
-    #     copy = self.data.copy()
-    #     copy.rotate2ray()
-    #     x, y, z = copy.x, copy.y, copy.z
-    #
-    #     # pre-apply receiver correction
-    #     if 'rcvcorr' in kwargs:
-    #         rcvphi, rcvlag = self.__rcvcorr
-    #         x, y, z = unsplit(x, y, z, rcvphi, rcvlag)
-    #
-    #     ######################
-    #     # inner loop function
-    #     ######################
-    #
-    #     # source correction
-    #
-    #     if 'srccorr' in kwargs:
-    #         srcphi, srclag = self.__srccorr
-    #         def srccorr(x, y, z, ang):
-    #             x, y, z = unsplit(x, y, z, srcphi-ang, srclag)
-    #             return x, y, z
-    #     else:
-    #         def srccorr(x, y, z, ang):
-    #             return x, y, z
-    #
-    #     # rotate to polaristation (needed for tranverse min)
-    #     if 'mode' in kwargs and kwargs['mode'] == 'rotpol':
-    #         pol = self.data.pol
-    #         def rotpol(x, y, z, ang):
-    #             # rotate to pol
-    #             x, y, z = rotate(x, y, z, pol-ang)
-    #             return x, y, z
-    #     else:
-    #         def rotpol(x, y, z, ang):
-    #             return x, y, z
-    #
-    #     # actual inner loop function
-    #     def getout(x, y, z, ang, shift):
-    #         # remove shift
-    #         x, y, z = lag(x, y, z, -shift)
-    #         x, y, z = srccorr(x, y, z, ang)
-    #         x, y, z = chop(x, y, z, window=self.data.window)
-    #         x, y, z = rotpol(x, y, z, ang)
-    #         return func(x, y, z)
-    #
-    #     # Do the grid search
-    #     prerot = [ (rotate(x, y, z, ang), ang) for ang in self.__degs ]
-    #
-    #     out = [ [ getout(data[0], data[1], data[2], ang, shift) for shift in self.__slags ]
-    #             for (data,ang) in prerot  ]
-    #
-    #     return out
-    
-    def _grid(self):
-        dd, ll = np.meshgrid(self.degs, self.lags)
-        return ll, dd
-    
-    def _grid_degs_lags(self):
-        return np.meshgrid(self.degs, self.lags)
+    # utility
 
     def _parse_lags(self, **kwargs):
         """return numpy array of lags to explore"""
@@ -299,64 +165,10 @@ class Measure:
         return degs, lags, slags
                     
     # METHODS 
-    #---------    
-                
-    # def report(self,fname=None,**kwargs):
-    #     """
-    #     Report to stdout or to a file.
-    #
-    #     keywords
-    #     --------
-    #
-    #     fname    string e.g. 'myfile.txt'. If None will write to stdout.
-    #     append   bool   e.g. True. Append to existing file.
-    #     header   bool   e.g. False.  Include the header line.
-    #     choose   list   e.g. ['fast','lag'].  Choose which attributes (and order) to report.
-    #
-    #     By default will report to stdout with a header.
-    #
-    #     If a file name is provided using the keyword *file*
-    #     then the code, by default, will write with a header
-    #     to a new file, and append without a header to a pre-
-    #     existing file.
-    #
-    #     By default the code will report:
-    #     name, fast, lag, dfast, dlag,
-    #
-    #     choose
-    #
-    #
-    #     """
-    #
-    #     # by default write to stdout and include the header
-    #     header = True
-    #     append = False
-    #
-    #     if fname is not None:
-    #         if not isinstance(kwargs['file'],str):
-    #             raise TypeError('file name must be a string')
-    #         # does file exist?
-    #         if os.path.isfile(fname):
-    #             # yes -- change defaults
-    #             header = False
-    #             append = True
-    #
-    #     # overwrite defaults with keyword arguments
-    #     if 'header' in kwargs: header = kwargs['header']
-    #     if 'append' in kwargs: append = kwargs['append']
-    #
-    #     # choose what to report
-    #     choose=['name','fast','dfast','lag','dlag','snr','ndf','rcvcorr','srccorr']
-    #     # get header line
-    #     # get data line
-    #
-    #     # if file not exist
-    #     if append
-    #
-    #     # if file exists
-    #     # exists append
+    #--------    
     
-
+    def report(self):
+        raise Exception('Not implemented.')
     
     def srcpol(self):
         # recover source polarisation
@@ -384,20 +196,6 @@ class Measure:
         if self.srccorr is not None:
             data_corr = data_corr.unsplit(*self.srccorr)
         return data_corr
-        
-    # def data_uncorr(self):
-    #     """Reapply splitting on corrected data"""
-    #     # copy data
-    #     data_corr = self.data.copy()
-    #     # src side correction
-    #     if self.srccorr is not None:
-    #         data_corr.split(*self.srccorr)
-    #     # target layer correction
-    #     data_corr.split(self.fast,self.lag)
-    #     # rcv side correction
-    #     if self.rcvcorr is not None:
-    #         data_corr.split(*self.rcvcorr)
-    #     return data_corr
 
     def srcpoldata(self):
         srcpoldata = self.data.copy()
@@ -765,16 +563,15 @@ class Measure:
             raise Exception('vals must be specified')
             
         # error surface
-        laggrid, deggrid = self._grid()
-        cax = ax.contourf(laggrid, deggrid, kwargs['vals'], 26, cmap=kwargs['cmap'])
+        cax = ax.contourf(self.lagmap, self.degmap, kwargs['vals'], 26, cmap=kwargs['cmap'])
         cbar = plt.colorbar(cax)
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
         ax.set_xlabel('Delay Time (' + self.data.units + ')')
         
         # confidence region
-        if 'conf95' in kwargs and kwargs['conf95'] == True:
-            ax.contour(laggrid, deggrid, self.errsurf, levels=[self.conf95level],
-                    colors='r', alpha=.5, linewidths=3)
+        # if 'conf95' in kwargs and kwargs['conf95'] == True:
+        #     ax.contour(self.lagmap, self.degmap, self.errsurf, levels=[self.conf95level],
+        #             colors='r', alpha=.5, linewidths=3)
             
         # marker
         if 'marker' in kwargs and kwargs['marker'] == True:
