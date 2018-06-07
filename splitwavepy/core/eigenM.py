@@ -69,6 +69,8 @@ class SC(Measure):
         
         deggrid, laggrid = self._grid_degs_lags()
         
+
+        
         #
         # # get some measurement attributes
         # # Using signal to noise ratio in 2-D inspired by 3-D treatment of:

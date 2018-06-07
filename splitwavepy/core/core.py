@@ -222,7 +222,7 @@ def running_mean(x, w0, w1, slags):
     
 def gridcov(x, y, w0, w1, degs, slags):
     # prepare a list of data rotated to degs
-    rot_data = [ rotate(x0, y0, deg) for deg in degs ]
+    rot_data = [ rotate(x, y, deg) for deg in degs ]
     # prepare empty covariance arrays
     gridcov = np.empty((degs.size, slags.size, 2, 2))
     c = np.empty((2, 2))
@@ -276,6 +276,22 @@ def gridcov_srcorr(x, y, w0, w1, degs, slags, srcfast, srcslag):
             jj += 1
         ii += 1
     return gridcov
+
+def covmap2eig(c):
+    eigvals, eigvecs = np.linalg.eigh(c[:, :])
+    return eigvals, eigvecs
+
+def covmap2eigvals(c):
+    eigvals = np.linalg.eigvalsh(c[:, :])
+    lam2 = eigvals[:, :, 0]
+    lam1 = eigvals[:, :, 1]
+    return lam1, lam2
+    
+def covmap2rho(c):
+    stdx = np.sqrt(c[:, :, 0, 0])
+    stdy = np.sqrt(c[:, :, 1, 1])
+    rho = c[:, :, 0, 1] / (stdx * stdy)
+    return rho
 
 # Errors
 

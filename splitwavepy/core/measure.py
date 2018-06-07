@@ -59,6 +59,11 @@ class Measure:
             self.__srccorr = (deg, samps)
             self.srccorr = (deg, samps * self.data.delta)
             
+        # Grid Search
+        self.covmap = self.gridcov()
+        self.lam1, self.lam2 = core.covmap2eigvals(self.covmap)
+        self.rho = core.covmap2rho(self.covmap)
+            
         # Name
         self.name = 'Untitled'
         if 'name' in kwargs: self.name = kwargs['name']
@@ -143,6 +148,31 @@ class Measure:
                 for (xy, ang) in prerot  ]
                                
         return out
+        
+    def gridcov(self, **kwargs):       
+        """
+        Grid search for splitting parameters applied to self.data using the function defined in func
+        rcvcorr = receiver correction parameters in tuple (fast,lag) 
+        srccorr = source correction parameters in tuple (fast,lag) 
+        """
+        
+        x, y = np.copy(self.data.x), np.copy(self.data.y)
+        w0, w1 = self.data._w0(), self.data._w1()
+        degs, slags = self.degs, self.slags
+                
+        # receiver correction
+        if 'rcvcorr' in kwargs:
+            rcvphi, rcvlag = self.__rcvcorr
+            x, y = core.unsplit(x, y, rcvphi, rcvlag)
+        #
+        # # source correction
+        # if 'srccorr' not in kwargs:
+        #     srcphi, srclag = self.__srccorr
+        #     return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
+        
+        return core.gridcov(x, y, w0, w1, degs, slags)
+        
+  
         
     # def gridsearch3d(self, func, **kwargs):
     #
