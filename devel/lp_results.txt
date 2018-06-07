@@ -1,0 +1,30 @@
+Timer unit: 1e-06 s
+
+Total time: 0.200245 s
+File: <ipython-input-48-2dbf7ee1bdcf>
+Function: gridcov_loops2 at line 61
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+    61                                           def gridcov_loops2(x, y, w0, w1, degs, slags):
+    62                                               # prepare empty covariance arrays
+    63         1          9.0      9.0      0.0      g = np.empty((degs.size, slags.size, 2, 2))
+    64         1          1.0      1.0      0.0      n = w1 - w0
+    65                                               # now loop and calculate
+    66       181         86.0      0.5      0.0      for ii in prange(degs.size):
+    67                                                   # prepare a list of data rotated to degs
+    68       180        114.0      0.6      0.1          deg = degs[ii] 
+    69                                                   # prepare a list of data rotated to degs
+    70       180       4519.0     25.1      2.3          rot = rot2(x, y, deg)
+    71                                                   # this is the mean in each window
+    72       180       4382.0     24.3      2.2          meanx = running_mean(rot[0], w0, w1, slags)
+    73       180       3104.0     17.2      1.6          meany = running_mean(rot[1], w0, w1, slags)
+    74                                                   # loop over lags
+    75      7560       3884.0      0.5      1.9          for jj in range(slags.size):
+    76      7380       4120.0      0.6      2.1              slag = slags[jj]
+    77      7380      19471.0      2.6      9.7              wx, wy  = slagchop(*rot, w0, w1, slag)
+    78      7380      30203.0      4.1     15.1              dx, dy = wx - meanx[slag], wy - meany[slag]
+    79      7380      46437.0      6.3     23.2              g[ii, jj, 0, 0] = np.sum(dx * dx)
+    80      7380      43359.0      5.9     21.7              g[ii, jj, 1, 0] = g[ii, jj, 0, 1] = np.sum(dx * dy)
+    81      7380      40529.0      5.5     20.2              g[ii, jj, 1, 1] = np.sum(dy * dy)
+    82         1         27.0     27.0      0.0      return g / n

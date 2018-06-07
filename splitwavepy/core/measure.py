@@ -32,7 +32,7 @@ class Measure:
     
     def __init__(self, data, **kwargs):
         
-        self.data = data.rotateto(0)
+        self.data = data
 
         self.degs, self.lags, self.slags = self._get_degs_lags_and_slags(**kwargs)
         self.degmap, self.lagmap = np.meshgrid(self.degs, self.lags)
@@ -60,23 +60,18 @@ class Measure:
             self.srccorr = (deg, samps * self.data.delta)
             
         # Grid Search
-        self.covmap = self.gridcov()
-        # Silver and Chan
-        if 'pol' in kwargs:
-            raise Exception('Not implemented.')
-        else:
-            # use eigen analysis
-            self.lam1, self.lam2 = core.covmap2eigvals(self.covmap)
-        # Cross-correlation
-        self.rho = core.covmap2rho(self.covmap)
-
+        self.covmap = self._gridcov(**kwargs)
         
-        # Extract Fast directions
-        sc_loc = core.max_idx(self.lam1/self.lam2)
-        self.sc_fast, self.sc_lag = self.degmap(sc_loc), self.lagmap(sc_loc) 
-        # self.sc_dfast, self.sc_dlag = 
+        # Inspect the covariance map
+        # Silver and Chan
+        self.lam1, self.lam2 = self._silver_and_chan(**kwargs)
+        sc_loc = core.max_idx(self.lam1 / self.lam2)
+        self.sc_fast, self.sc_lag = self.degmap[sc_loc], self.lagmap[sc_loc]
+
+        # Cross-correlation
+        self.xc = core.covmap2rho()
         xc_loc = core.max_idx(self.rho)
-        self.xc_fast, self.xc_lag =  self.degmap(xc_loc), self.lagmap(xc_loc)
+        self.xc_fast, self.xc_lag =  self.degmap[xc_loc], self.lagmap[xc_loc]
         
         
         # Name
@@ -88,7 +83,7 @@ class Measure:
                 
     # Common methods
             
-    def gridcov(self, **kwargs):       
+    def _gridcov(self, **kwargs):       
         """
         Grid search for splitting parameters applied to self.data using the function defined in func
         rcvcorr = receiver correction parameters in tuple (fast,lag) 
@@ -111,6 +106,18 @@ class Measure:
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
         return core.gridcov(x, y, w0, w1, degs, slags)
+        
+    def _silver_and_chan(self):
+        if 'pol' in kwargs:
+            raise Exception('Not implemented.')
+            #lam1, lam2 = core.covmap2polvar(self.covmap, pol)
+        else:
+            # use eigen analysis
+            lam1, lam2 = core.covmap2eigvals(self.covmap)
+        return lam1, lam2
+        
+    def _correlation(self):
+        return core.covmap2rho(self.covmap)
         
     # utility
 

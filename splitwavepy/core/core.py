@@ -220,62 +220,86 @@ def running_mean(x, w0, w1, slags):
     n = w1-w0
     return np.convolve(x, np.ones((n,))/n, mode='valid')
     
+# def gridcov(x, y, w0, w1, degs, slags):
+#     # prepare a list of data rotated to degs
+#     rot_data = [ rotate(x, y, deg) for deg in degs ]
+#     # prepare empty covariance arrays
+#     gridcov = np.empty((degs.size, slags.size, 2, 2))
+#     c = np.empty((2, 2))
+#     ii = 0
+#     # now loop and calculate
+#     for rot in rot_data:
+#         # this is the mean in each window
+#         meanx = running_mean(rot[0], w0, w1, slags)
+#         meany = running_mean(rot[1], w0, w1, slags)
+#         jj = 0
+#         for slag in slags:
+#             wx, wy  = slagchop(*rot, w0, w1, slag)
+#             dx, dy = wx - meanx[slag], wy - meany[slag]
+#             n = dx.size
+#             c[0, 0] = np.sum(dx * dx)
+#             c[1, 0] = c[0, 1] = np.sum(dx * dy)
+#             c[1, 1] = np.sum(dy * dy)
+#             c = c / n
+#             gridcov[ii, jj, :, :] = c
+#             jj += 1
+#         ii += 1
+#     return gridcov
+
 def gridcov(x, y, w0, w1, degs, slags):
-    # prepare a list of data rotated to degs
-    rot_data = [ rotate(x, y, deg) for deg in degs ]
     # prepare empty covariance arrays
-    gridcov = np.empty((degs.size, slags.size, 2, 2))
-    c = np.empty((2, 2))
-    ii = 0
+    g = np.empty((degs.size, slags.size, 2, 2))
+    n = w1 - w0
+    npsum = np.sum # remove dots from inner loop
     # now loop and calculate
-    for rot in rot_data:  
+    for ii in range(degs.size):
+        # prepare a list of data rotated to degs
+        rot = rotate(x, y, degs[ii])
         # this is the mean in each window
         meanx = running_mean(rot[0], w0, w1, slags)
         meany = running_mean(rot[1], w0, w1, slags)
-        jj = 0
-        for slag in slags:
-            wx, wy  = slagchop(*rot, w0, w1, slag)
+        # loop over lags
+        for jj in range(slags.size):
+            slag = slags[jj]
+            wx, wy  = slagchop(rot[0], rot[1], w0, w1, slag)
             dx, dy = wx - meanx[slag], wy - meany[slag]
-            n = dx.size
-            c[0, 0] = np.sum(dx * dx)
-            c[1, 0] = c[0, 1] = np.sum(dx * dy)
-            c[1, 1] = np.sum(dy * dy)
-            c = c / n
-            gridcov[ii, jj, :, :] = c 
-            jj += 1
-        ii += 1
-    return gridcov
+            g[ii, jj, 0, 0] = npsum(dx * dx)
+            g[ii, jj, 1, 0] = g[ii, jj, 0, 1] = npsum(dx * dy)
+            g[ii, jj, 1, 1] = npsum(dy * dy)
+    return g / n
     
-def slagchop_srccorr(x, y, w0, w1, slag, srcfast, srcslag):
-    x, y = rot2(x, y, srcfast)
-    x, y = lag(x, y, srcslag)
-    x, y = rot2(x, y, -srcfast)
-    d = int(slag/2) - int(srcslag/2)
-    return x[w0+d: w1+d], y[w0-d: w1-d]
 
-def gridcov_srcorr(x, y, w0, w1, degs, slags, srcfast, srcslag):
-    # prepare a list of data rotated to degs
-    rot_data = [ rot2(x0, y0, deg) for deg in degs ]
-    # prepare empty covariance arrays
-    gridcov = np.empty((degs.size, slags.size, 2, 2))
-    c = np.empty((2, 2))
-    ii = 0
-    # now loop and calculate
-    for rot in rot_data:  
-        jj = 0
-        for slag in slags:
-            wx, wy  = slagchop_srccorr(*rot, w0, w1, slag, srcfast, srcslag)
-            mx, my = np.mean(wx), np.mean(wy)
-            dx, dy = wx - mx, wy - my
-            n = dx.size
-            c[0, 0] = np.sum(dx * dx)
-            c[1, 0] = c[0, 1] = np.sum(dx * dy)
-            c[1, 1] = np.sum(dy * dy)
-            c = c / n
-            gridcov[ii, jj, :, :] = c 
-            jj += 1
-        ii += 1
-    return gridcov
+    
+# def slagchop_srccorr(x, y, w0, w1, slag, srcfast, srcslag):
+#     x, y = rot2(x, y, srcfast)
+#     x, y = lag(x, y, srcslag)
+#     x, y = rot2(x, y, -srcfast)
+#     d = int(slag/2) - int(srcslag/2)
+#     return x[w0+d: w1+d], y[w0-d: w1-d]
+#
+# def gridcov_srcorr(x, y, w0, w1, degs, slags, srcfast, srcslag):
+#     # prepare a list of data rotated to degs
+#     rot_data = [ rot2(x0, y0, deg) for deg in degs ]
+#     # prepare empty covariance arrays
+#     gridcov = np.empty((degs.size, slags.size, 2, 2))
+#     c = np.empty((2, 2))
+#     ii = 0
+#     # now loop and calculate
+#     for rot in rot_data:
+#         jj = 0
+#         for slag in slags:
+#             wx, wy  = slagchop_srccorr(*rot, w0, w1, slag, srcfast, srcslag)
+#             mx, my = np.mean(wx), np.mean(wy)
+#             dx, dy = wx - mx, wy - my
+#             n = dx.size
+#             c[0, 0] = np.sum(dx * dx)
+#             c[1, 0] = c[0, 1] = np.sum(dx * dy)
+#             c[1, 1] = np.sum(dy * dy)
+#             c = c / n
+#             gridcov[ii, jj, :, :] = c
+#             jj += 1
+#         ii += 1
+#     return gridcov
 
 def covmap2eig(c):
     eigvals, eigvecs = np.linalg.eigh(c[:, :])
@@ -292,6 +316,7 @@ def covmap2rho(c):
     stdy = np.sqrt(c[:, :, 1, 1])
     rho = c[:, :, 0, 1] / (stdx * stdy)
     return rho
+    
 
 # Errors
 

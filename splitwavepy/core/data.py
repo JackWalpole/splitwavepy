@@ -8,9 +8,10 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core, io
-from .eigenM import SC
-from .xcorrM import XC
-from .q import Q
+# from .eigenM import SC
+# from .xcorrM import XC
+# from .q import Q
+from .measure import Measure
 # from .transM import TransM
 
 #, core3d, io
@@ -356,14 +357,17 @@ class Data:
         
     # Measurement
     
-    def SC(self, **kwargs):        
-        return SC(self, **kwargs)
+    # def SC(self, **kwargs):
+    #     return SC(self, **kwargs)
+    #
+    # def XC(self, **kwargs):
+    #     return XC(self, **kwargs)
+    #
+    # def Q(self, **kwargs):
+    #     return Q(self, **kwargs)
         
-    def XC(self, **kwargs):
-        return XC(self, **kwargs)
-
-    def Q(self, **kwargs):
-        return Q(self, **kwargs)
+    def M(self, **kwargs):
+        return Measure.__init__(self, self.data, **kwargs) 
         
     # def TransM(self, **kwargs):
     #     return TransM(self, **kwargs)
