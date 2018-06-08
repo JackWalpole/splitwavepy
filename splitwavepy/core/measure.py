@@ -193,7 +193,7 @@ class Py:
         
     def snr(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
-        d = self.srcpoldata_corr().chop()
+        d = self.srcpoldata_corr()._chop()
         return core.snrRH(d.x, d.y)
                 
     # data views
@@ -213,26 +213,26 @@ class Py:
 
     def srcpoldata(self):
         srcpoldata = self.SplitWave.copy()
-        srcpoldata.rotateto(self.srcpol())
+        srcpoldata._rotateto(self.srcpol())
         srcpoldata.set_labels(['srcpol', 'trans', 'ray'])
         return srcpoldata
         
     def srcpoldata_corr(self):
         srcpoldata_corr = self.SplitWave_corr()        
-        srcpoldata_corr.rotateto(self.srcpol())
+        srcpoldata_corr._rotateto(self.srcpol())
         srcpoldata_corr.set_labels(['srcpol', 'trans', 'ray'])
         return srcpoldata_corr
         
     def fastdata(self):
         """Plot fast/slow data."""
         fastdata = self.SplitWave.copy()
-        fastdata.rotateto(self.fast)
+        fastdata._rotateto(self.fast)
         fastdata.set_labels(['fast', 'slow', 'ray'])
         return fastdata
 
     def fastdata_corr(self):
         fastdata_corr = self.SplitWave_corr()
-        fastdata_corr.rotateto(self.fast)
+        fastdata_corr._rotateto(self.fast)
         fastdata_corr.set_labels(['fast', 'slow', 'ray'])
         return fastdata_corr
             
@@ -240,7 +240,7 @@ class Py:
     
     def ndf(self):
         """Number of degrees of freedom."""
-        x, y = self.srcpoldata_corr().chopdata()
+        x, y = self.srcpoldata_corr()._chopdata()
         return core.ndf(y)
     
     def get_errors(self, surftype=None):
@@ -295,13 +295,14 @@ class Py:
         if 'pol' not in kwargs:
             raise Exception('pol must be specified')            
         copy = self.copy()
-        copy.rotateto(pol)
+        copy._rotateto(pol)
         copy.x = np.gradient(copy.x)
-        rdiff, trans = copy.chopdata()
+        rdiff, trans = copy._chopdata()
         s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
         return s
         
     # bootstrap utilities
+    # to do: implement block bootstrapping for time series data.
     
     def _bootstrap_samp(self, x, y):
         """Calculate a single bootstrap statistic on one resampling of the x, y data."""
@@ -380,11 +381,11 @@ class Py:
                 data_corr = data_corr.unsplit(*srccorr)                
             # ensure orientation of data is appropriate for func
             if self.func == core.transenergy:
-                return data_corr.chopdata().rotatetto(self.srcpol())
+                return data_corr._chopdata().rotatetto(self.srcpol())
             elif (self.func == core.crosscorr) or (self.func == core.pearson):
-                return data_corr.chopdata().rotateto(self.fast)
+                return data_corr._chopdata()._rotateto(self.fast)
             else:
-                return data_corr.chopdata()
+                return data_corr._chopdata()
 
         def _draw_corr(info):
             """draw a correction from a gaussian distribution"""
@@ -447,16 +448,16 @@ class Py:
         bs = self.SplitWave_corr()
         origang = bs.cmpangs()[0]
         # replace noise sequence
-        bs.rotateto(self.srcpol())
+        bs._rotateto(self.srcpol())
         bs.y = core.resample_noise(bs.y)
-        bs.rotateto(origang)
+        bs._rotateto(origang)
         # reapply splitting
         # src side correction
-        if self.srccorr is not None: bs = bs.split(*self.srccorr)
+        if self.srccorr is not None: bs = bs._split(*self.srccorr)
         # target layer correction
-        bs = bs.split(self.fast, self.lag)
+        bs = bs._split(self.fast, self.lag)
         # rcv side correction
-        if self.rcvcorr is not None: bs = bs.split(*self.rcvcorr)
+        if self.rcvcorr is not None: bs = bs._split(*self.rcvcorr)
         newself.SplitWave = bs
         return newself
 
@@ -499,11 +500,14 @@ class Py:
         
     # I/O stuff
 
-    def save(self,filename):
+    def save(self, filename):
         """
         Save Pyment for future referral
         """
-        io.save(self,filename)
+        io.save(self, filename)
+        
+    def load(self, filename):
+        return io.load(self, filename)
 
     def copy(self):
         return io.copy(self)
@@ -540,8 +544,8 @@ class Py:
         ax4 = plt.subplot(gs[2,1])
         ax5 = plt.subplot(gs[:,2])
 
-        orig = self.srcpoldata().chop()
-        corr = self.srcpoldata_corr().chop()
+        orig = self.srcpoldata()._chop()
+        corr = self.srcpoldata_corr()._chop()
                 
         # get axis scaling
         lim = np.abs(corr.data()).max() * 1.1
@@ -629,13 +633,13 @@ class Py:
             subdegs = self.degs[0:-1:int(self.degs.size/6)]
             sublags = sublags + (self.lags[-1]-sublags[-1]) / 2
             subdegs = subdegs + (self.degs[-1]-subdegs[-1]) / 2
-            x, y = self.SplitWave_corr().chopdata()   
+            x, y = self.SplitWave_corr()._chopdata()   
             lagtot = self.lags[-1] - self.lags[0]
             degtot = self.degs[-1] - self.degs[0]
             boost = 10 * lagtot / np.max((x**2 + y**2)**.5)      
             for fast in subdegs:
                 for lag in sublags:
-                    x, y = self.SplitWave.unsplit(fast, lag).chopdata()
+                    x, y = self.SplitWave.unsplit(fast, lag)._chopdata()
                     ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
 
                     

@@ -75,7 +75,7 @@ class SplitWave:
         
         # implement settings
         self.delta = delta
-        self.t0 = settings['t0']
+        self._split0 = settings['t0']
         self.vecs = settings['vecs']
         self.geom = settings['geom']
         self.units = settings['units']
@@ -84,10 +84,9 @@ class SplitWave:
 
                       
 
-        
-    # USER VISIBLE
+    # USEFUL TO EXAMINE DATA  
     
-    def split(self, fast, lag):
+    def _split(self, fast, lag):
         """
         Applies splitting operator.
         
@@ -95,11 +94,11 @@ class SplitWave:
         """        
         slag = core.time2samps(lag, self.delta, mode='even')
         orient, _ = self.cmpangs()
-        copy = self.copy().rotateto(0)
+        copy = self.copy()._rotateto(0)
         copy.__x, copy__.y = core.split(copy.x, copy.y, fast, slag)
-        return copy.rotateto(orient)
+        return copy._rotateto(orient)
            
-    def unsplit(self, fast, lag):
+    def _unsplit(self, fast, lag):
         """
         Reverses splitting operator.
         
@@ -107,7 +106,7 @@ class SplitWave:
         """
         self.split(fast, -lag)
        
-    def rotateto(self, degrees):
+    def _rotateto(self, degrees):
         """
         Rotate traces so that cmp1 lines up with *degrees*
         """
@@ -119,16 +118,24 @@ class SplitWave:
         oldvecs = self.vecs
         newvecs = np.array([[ cang,-sang],
                             [ sang, cang]])
-        rot = np.dot(newvecs.T, oldvecs)
+        self._rotatetovecs(self, newvecs)
+        
+    def _rotatetovecs(self, vecs):
+        """
+        Rotate traces so that cmp1 lines up with column1 of matrix of vectors
+        """
+        # define the new vecs
+        oldvecs = self.vecs
+        self.vecs = vecs
+        rot = np.dot(self.vecs.T, oldvecs)
         # rotate data
         copy = self.copy()
         xy = np.dot(rot, self._xy())
         copy.__x, copy.__y = xy[0], xy[1]
-        copy.set_vecs(newvecs)
         copy.set_labels()
         return copy
         
-    def shift(self, lag):
+    def _shift(self, lag):
         """
         Apply time shift between traces.
         """
@@ -138,14 +145,14 @@ class SplitWave:
         copy.t0 = self.t0 + abs(slag/2)
         return copy
 
-    def chop(self):
+    def _chop(self):
         """
         Chop data to window.
         """
         chop = self.copy()
-        chop.__x, chop.__y = self._chopdata()
-        chop.window.offset = 0
-        chop.t0 = self.wbeg()
+        copy.__x, copy.__y = self._chopxy()
+        copy.window.offset = 0
+        copy.t0 = self.wbeg()
         return chop
 
         
@@ -172,20 +179,7 @@ class SplitWave:
         width = core.time2samps(time_width, self.delta, 'even') + 1     
         return Window(width, offset, **kwargs) 
         
-    def _rotatetovecs(self, vecs):
-        """
-        Rotate traces so that cmp1 lines up with column1 of matrix of vectors
-        """
-        # define the new vecs
-        backoff = self.vecs
-        self.vecs = vecs
-        rot = np.dot(self.vecs.T, backoff)
-        # rotate data
-        copy = self.copy()
-        xy = np.dot(rot, self._xy())
-        copy.__x, copy.__y = xy[0], xy[1]
-        copy.set_labels()
-        return copy
+
 
     
     def _t(self):
@@ -204,7 +198,7 @@ class SplitWave:
     def _xy(self):
         return np.vstack((self.x, self.y))
         
-    def _chopdata(self):
+    def _chopxy(self):
         """Chop traces to window"""
         t0 = self._w0()
         t1 = self._w1()
@@ -219,7 +213,7 @@ class SplitWave:
         """Return principal component orientation"""
         # rotate to zero
         rot = self.vecs.T
-        data = np.vstack((self._chopdata()))
+        data = np.vstack((self._chopxy()))
         xy = np.dot(rot, data)
         _, eigvecs = core.eigcov(xy[0], xy[1])
         x,y = eigvecs[:, 0]
@@ -278,7 +272,7 @@ class SplitWave:
         
     def eigvalcov(self):
         """return lam1, lam2 after chopping to window"""
-        return core.eigvalcov(*self._chopdata())
+        return core.eigvalcov(*self._chopxy())
         
     # User-visible
     
@@ -286,8 +280,8 @@ class SplitWave:
     # def snr(self):
     #     """Signal to noise ratio as defined by Restivo and Helffrich."""
     #     data = self.copy()
-    #     data.rotateto(data.pol())
-    #     return core.snrRH(*data.chopdata())
+    #     data._rotateto(data.pol())
+    #     return core.snrRH(*data._chopxy())
 
     def cmpangs(self):
         cmp1 = self.vecs[:, 0]
@@ -558,12 +552,12 @@ class SplitWave:
         """
         
         data = self.copy()
-        data.rotateto(0)
-        x, y = data.chopdata()
-        t = data.chopt()
+        data._rotateto(0)
+        x, y = data._chopxy()
+        t = data._chopt()
                 
         # plot data
-        # ax.plot(self.chop().y,self.chop().x)
+        # ax.plot(self._chop().y,self._chop().x)
         
         # multi-colored
         norm = plt.Normalize(t.min(), t.max())
