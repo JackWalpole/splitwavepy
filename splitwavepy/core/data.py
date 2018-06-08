@@ -75,7 +75,7 @@ class SplitWave:
         
         # implement settings
         self.delta = delta
-        self._split0 = settings['t0']
+        self.t0 = settings['t0']
         self.vecs = settings['vecs']
         self.geom = settings['geom']
         self.units = settings['units']
@@ -118,7 +118,7 @@ class SplitWave:
         oldvecs = self.vecs
         newvecs = np.array([[ cang,-sang],
                             [ sang, cang]])
-        self._rotatetovecs(self, newvecs)
+        self._rotatetovecs(newvecs)
         
     def _rotatetovecs(self, vecs):
         """
