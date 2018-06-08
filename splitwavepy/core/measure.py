@@ -8,7 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core, io
-# from .data import SplitWave
+from .data import SplitWave
 # from .bootstrap import Bootstrap
 
 # from ..core import core, core3d, io
@@ -30,11 +30,8 @@ class Py(SplitWave):
     Measure shearwave splitting on a SplitWave object. 
     """
     
-    def __init__(self, **kwargs):
+    def __init__(self, SplitWave, **kwargs):
         
-        self._data = SplitWave
-
-       
         self.degmap, self.lagmap = np.meshgrid(self._degs, self.lags)
         
         # settings
