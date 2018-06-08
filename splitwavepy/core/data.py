@@ -1,23 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-The seismic data class
-"""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 from ..core import core, io
-# from .eigenM import SC
-# from .xcorrM import XC
-# from .q import Q
 from .measure import Measure
-# from .transM import TransM
-
-#, core3d, io
-# from ..core.pair import Pair
-# from ..core.window import Window
-# from . import eigval, rotcorr, transmin, sintens
 
 import numpy as np
 import math
@@ -39,13 +27,23 @@ class Data:
     Methods
     -------
     
-    plot()
-    set_window()
-    measure()
+    plot(**options)
+    set_window(**options) 
+    measure(**options)
+    split(fast, lag)
+    unsplit(fast, lag)
+    rotateto(deg)
+    shift(lag)
     
     
     Settings
     --------
+    
+    delta        the sampling interval.  important set this properly. default = 0.1.
+    t0           the time of first sample.  default = 0.
+    geom        
+    units
+    window
     
     
     
@@ -57,9 +55,11 @@ class Data:
         
         # Parse arguments      
         if len(args) == 0 : 
-            self.__x, self.__y = core.synth(**kwargs)
-        elif len(args) == 2 : self.__x, self.__y = args[0], args[1]
-        else : raise Exception('Unexpected number of arguments')
+            self.__x, self.__y = core.synth(delta=delta, **kwargs)
+        elif len(args) == 2 : 
+            self.__x, self.__y = args[0], args[1]
+        else : 
+            raise Exception('Unexpected number of arguments')
         
         self._sanity_checks()
 
@@ -67,22 +67,21 @@ class Data:
         settings = {}
         settings['t0'] = 0
         settings['geom'] = 'geo'
-        settings['cmpvecs'] = np.eye(2)
+        settings['vecs'] = np.eye(2)
         settings['units'] = 's'
-        settings['window'] = Window(core.odd(self._nsamps() / 3))
+        settings['window'] = Window(core.odd(self.__x.size/3))
         settings.update(**kwargs)
+        self.settings = settings
         
         # implement settings
-        self.set_delta(delta)
+        self.delta = delta
+        self.t0 = settings['t0']
+        self.vecs = settings['vecs']
+        self.geom = settings['geom']
+        self.units = settings['units']
         self.set_window(settings['window'])
-        self.set_cmpvecs(settings['cmpvecs'])
-        self.set_t0(settings['t0'])
-        self.set_geom(setting['geom'])
-        self.set_labels(settings['labels'])
-        self.set_units(settings['units'])
+        self.set_labels()
 
-        # Backup kwargs
-        self.kwargs = kwargs
                       
 
         
@@ -94,16 +93,11 @@ class Data:
         
         .. warning:: shortens trace length by *lag*.
         """        
-        # convert time shift to nsamples -- must be even
         slag = core.time2samps(lag, self.delta, mode='even')
-        # find appropriate rotation angle
         orient, _ = self.cmpangs()
-        copy.rotateto(0)
-        # apply splitting
-        copy = self.copy()
-        copy.__x, copy__.y = core.split(self.x, self.y, fast, slag)
-        copy.rotateto(orient)
-        return copy
+        copy = self.copy().rotateto(0)
+        copy.__x, copy__.y = core.split(copy.x, copy.y, fast, slag)
+        return copy.rotateto(orient)
            
     def unsplit(self, fast, lag):
         """
@@ -121,16 +115,16 @@ class Data:
         ang = math.radians(degrees)
         cang = math.cos(ang)
         sang = math.sin(ang)
-        # define the new cmpvecs
-        oldcmpvecs = self.cmpvecs
-        newcmpvecs = np.array([[ cang,-sang],
-                                 [ sang, cang]])
-        rot = np.dot(newcmpvecs.T, oldcmpvecs)
+        # define the new vecs
+        oldvecs = self.vecs
+        newvecs = np.array([[ cang,-sang],
+                            [ sang, cang]])
+        rot = np.dot(newvecs.T, oldvecs)
         # rotate data
         copy = self.copy()
         xy = np.dot(rot, self._xy())
         copy.__x, copy.__y = xy[0], xy[1]
-        copy.set_cmpvecs(newcmpvecs)
+        copy.set_vecs(newvecs)
         copy.set_labels()
         return copy
         
@@ -140,7 +134,8 @@ class Data:
         """
         slag = core.time2samps(lag, self.delta, mode='even')
         copy = self.copy()
-        copy.__x, copy.__y = core.lag(self.x, self.y)
+        copy.__x, copy.__y = core.lag(copy.x, copy.y)
+        copy.t0 = self.t0 + abs(slag/2)
         return copy
 
     def chop(self):
@@ -150,6 +145,7 @@ class Data:
         chop = self.copy()
         chop.__x, chop.__y = self._chopdata()
         chop.window.offset = 0
+        chop.t0 = self.w0()
         return chop
 
         
@@ -180,10 +176,10 @@ class Data:
         """
         Rotate traces so that cmp1 lines up with column1 of matrix of vectors
         """
-        # define the new cmpvecs
-        backoff = self.cmpvecs
-        self.cmpvecs = vecs
-        rot = np.dot(self.cmpvecs.T, backoff)
+        # define the new vecs
+        backoff = self.vecs
+        self.vecs = vecs
+        rot = np.dot(self.vecs.T, backoff)
         # rotate data
         copy = self.copy()
         xy = np.dot(rot, self._xy())
@@ -222,7 +218,7 @@ class Data:
     def estimate_pol(self, **kwargs):
         """Return principal component orientation"""
         # rotate to zero
-        rot = self.cmpvecs.T
+        rot = self.vecs.T
         data = np.vstack((self._chopdata()))
         xy = np.dot(rot, data)
         _, eigvecs = core.eigcov(xy[0], xy[1])
@@ -294,8 +290,8 @@ class Data:
     #     return core.snrRH(*data.chopdata())
 
     def cmpangs(self):
-        cmp1 = self.cmpvecs[:, 0]
-        cmp2 = self.cmpvecs[:, 1]
+        cmp1 = self.vecs[:, 0]
+        cmp2 = self.vecs[:, 1]
         def getang(c) : return np.rad2deg(np.arctan2(c[1], c[0]))
         return getang(cmp1), getang(cmp2)
         
@@ -344,8 +340,8 @@ class Data:
         if delta <= 0: raise ValueError('delta must be positive')
         self.__delta = float(delta)
         
-    def set_delta(self, delta):
-        self.delta = delta
+    # def set_delta(self, delta):
+    #     self.delta = delta
         
     # t0
     @property
@@ -359,8 +355,8 @@ class Data:
         # windowing and plotting.
         self.__t0 = float(t0)
         
-    def set_t0(self, t0):
-        self.t0 = t0
+    # def set_t0(self, t0):
+    #     self.t0 = t0
     
     # window 
     @property
@@ -388,25 +384,26 @@ class Data:
         >>> set_window(Window)."""            
         
         if len(args) == 0: self.plot(pick=True)            
-        if len(args) == 1: self.window = args[0]
-        if len(args) == 2:
+        elif len(args) == 1: self.window = args[0]
+        elif len(args) == 2:
             start, end = args  
             self.window = self._construct_window(start, end, **kwargs)
         else:
             raise Exception ('unexpected number of arguments')    
     
-    # cmpvecs
+    # vecs
     @property
-    def cmpvecs(self):
-        return self.__cmpvecs
+    def vecs(self):
+        return self.__vecs
     
-    @cmpvecs.setter
-    def cmpvecs(self, cmpvecs):
-        if cmpvecs.shape != (2,2):
-            raise ValueError('cmpvecs must be 2 by 2 array')
+    @vecs.setter
+    def vecs(self, vecs):
+        if vecs.shape != (2,2):
+            raise ValueError('vecs must be 2 by 2 array')
+        self.__vecs = vecs    
             
-    def set_cmpvecs(self, cmpvecs):
-        self.cmpvecs = cmpvecs 
+    # def set_vecs(self, vecs):
+    #     self.vecs = vecs
 
     # geom
     @property
@@ -423,36 +420,36 @@ class Data:
     def set_geom(self, geom):
         self.geom = geom
         
-    # cmplabels
+    # label
     @property
-    def cmplabels(self):
-        return self.__cmplabels
+    def labels(self):
+        return self.__labels
     
-    @camplabels.setter
-    def cmplabels(self, cmplabels):
-        if not isinstance(cmplabels, list): 
-            raise TypeError('cmplabels must be a list')
-        if not len(cmplabels) == 2: raise Exception('list must be length 2')
+    @labels.setter
+    def labels(self, labels):
+        if not isinstance(labels, list): 
+            raise TypeError('labels must be a list')
+        if not len(labels) == 2: raise Exception('list must be length 2')
         if not isinstance(args[0][0], str) and isinstance(args[0][1], str):
-            raise TypeError('cmplabels must be a list of strings')
-        self.__cmplabels = cmplabels
+            raise TypeError('label must be a list of strings')
+        self.__label = label
         
     def set_labels(self, *args):
         if len(args) == 0:
-            if np.allclose(self.cmpvecs, np.eye(2), atol=1e-02):
-                if self.geom == 'geo': self.cmplabels = ['North', 'East']
-                elif self.geom == 'ray': self.cmplabels = ['SV', 'SH']
-                elif self.geom == 'cart': self.cmplabels = ['X', 'Y']
-                else: self.cmplabels = ['Comp1', 'Comp2']
+            if np.allclose(self.vecs, np.eye(2), atol=1e-02):
+                if self.geom == 'geo': self.label = ['North', 'East']
+                elif self.geom == 'ray': self.label = ['SV', 'SH']
+                elif self.geom == 'cart': self.label = ['X', 'Y']
+                else: self.label = ['Comp1', 'Comp2']
                 return
             # if reached here we have a non-standard orientation
             a1,a2 = self.cmpangs()
             lbl1 = str(round(a1))+r' ($^\circ$)'
             lbl2 = str(round(a2))+r' ($^\circ$)'
-            self.cmplabels = [lbl1, lbl2]
+            self.label = [lbl1, lbl2]
             return
         elif len(args) == 1:   
-            self.cmplabels = args[0]
+            self.label = args[0]
             return
         else:
             raise Exception('unexpected number of arguments')
@@ -466,6 +463,7 @@ class Data:
     def units(self, units):
         if not isinstance(units, str):
             raise TypeError('units must be a str')
+        self.__units = units
             
     def set_units(self, units):
         self.units = units
@@ -528,9 +526,9 @@ class Data:
         t = self._t()
         
         # set labels
-        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
-        ax.plot( t, self.x, label=kwargs['cmplabels'][0])
-        ax.plot( t, self.y, label=kwargs['cmplabels'][1])
+        if 'label' not in kwargs: kwargs['label'] = self.label
+        ax.plot( t, self.x, label=kwargs['label'][0])
+        ax.plot( t, self.y, label=kwargs['label'][1])
         ax.legend(framealpha=0.5)
     
         # set limits
@@ -585,9 +583,9 @@ class Data:
         ax.set_ylim(kwargs['lims'])
     
         # set labels
-        if 'cmplabels' not in kwargs: kwargs['cmplabels'] = data.cmplabels
-        ax.set_xlabel(kwargs['cmplabels'][1])
-        ax.set_ylabel(kwargs['cmplabels'][0])
+        if 'label' not in kwargs: kwargs['label'] = data.label
+        ax.set_xlabel(kwargs['label'][1])
+        ax.set_ylabel(kwargs['label'][0])
         
         # turn off tick annotation
         ax.axes.xaxis.set_ticklabels([])
