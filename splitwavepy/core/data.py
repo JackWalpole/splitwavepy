@@ -145,7 +145,7 @@ class Data:
         chop = self.copy()
         chop.__x, chop.__y = self._chopdata()
         chop.window.offset = 0
-        chop.t0 = self.w0()
+        chop.t0 = self.wbeg()
         return chop
 
         
