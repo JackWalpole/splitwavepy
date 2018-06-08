@@ -8,7 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core, io
-# from .data import Data
+# from .data import SplitWave
 # from .bootstrap import Bootstrap
 
 # from ..core import core, core3d, io
@@ -24,15 +24,15 @@ import matplotlib.gridspec as gridspec
 # import os.path
 
 
-class Measure:
+class Py:
     
     """
-    Base measurement class        
+    Measure shearwave splitting on a SplitWave object. 
     """
     
-    def __init__(self, Data, **kwargs):
+    def __init__(self, SplitWave, **kwargs):
         
-        self.Data = Data
+        self.SplitWave = SplitWave
 
        
         self.degmap, self.lagmap = np.meshgrid(self.degs, self.lags)
@@ -46,9 +46,9 @@ class Measure:
             if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['rcvcorr']
-            samps = core.time2samps(lag, self.Data.delta, 'even')
+            samps = core.time2samps(lag, self.SplitWave.delta, 'even')
             self.__rcvcorr = (deg, samps)
-            self.rcvcorr = (deg, samps * self.Data.delta)
+            self.rcvcorr = (deg, samps * self.SplitWave.delta)
 
         # source correction
         self.srccorr = None
@@ -57,9 +57,9 @@ class Measure:
             if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['srccorr']
-            samps = core.time2samps(lag, self.Data.delta, 'even')
+            samps = core.time2samps(lag, self.SplitWave.delta, 'even')
             self.__srccorr = (deg, samps)
-            self.srccorr = (deg, samps * self.Data.delta)
+            self.srccorr = (deg, samps * self.SplitWave.delta)
             
         # Grid Search
         self.covmap = self._gridcov(**kwargs)
@@ -89,13 +89,13 @@ class Measure:
             
     def _gridcov(self, **kwargs):       
         """
-        Grid search for splitting parameters applied to self.Data using the function defined in func
+        Grid search for splitting parameters applied to self.SplitWave using the function defined in func
         rcvcorr = receiver correction parameters in tuple (fast,lag) 
         srccorr = source correction parameters in tuple (fast,lag) 
         """
         
-        x, y = np.copy(self.Data.x), np.copy(self.Data.y)
-        w0, w1 = self.Data._w0(), self.Data._w1()
+        x, y = np.copy(self.SplitWave.x), np.copy(self.SplitWave.y)
+        w0, w1 = self.SplitWave._w0(), self.SplitWave._w1()
         degs, slags = self.degs, self.slags
                 
         # receiver correction
@@ -132,7 +132,7 @@ class Measure:
         """return numpy array of lags to explore"""
         # LAGS
         minlag = 0
-        maxlag = self.Data.wwidth() / 4
+        maxlag = self.SplitWave.wwidth() / 4
         nlags  = 40
         if 'lags' not in kwargs:
             lags = np.linspace( minlag, maxlag, nlags)
@@ -172,8 +172,8 @@ class Measure:
     def _get_degs_lags_and_slags(self, **kwargs):
         # convert lags to samps and back again
         lags = self._parse_lags(**kwargs)
-        slags = np.unique( core.time2samps(lags, self.Data.delta, mode='even')).astype(int)
-        lags = core.samps2time(slags, self.Data.delta)
+        slags = np.unique( core.time2samps(lags, self.SplitWave.delta, mode='even')).astype(int)
+        lags = core.samps2time(slags, self.SplitWave.delta)
         # parse degs
         degs = self._parse_degs(**kwargs)
         return degs, lags, slags
@@ -189,7 +189,7 @@ class Measure:
         if 'pol' in self.kwargs:
             return self.kwargs['pol']
         else:
-            return self.Data_corr().estimate_pol()
+            return self.SplitWave_corr().estimate_pol()
         
     def snr(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
@@ -200,7 +200,7 @@ class Measure:
     
     def data_corr(self):        
         # copy data     
-        data_corr = self.Data.copy()
+        data_corr = self.SplitWave.copy()
         # rcv side correction     
         if self.rcvcorr is not None:
             data_corr = data_corr.unsplit(*self.rcvcorr)    
@@ -212,26 +212,26 @@ class Measure:
         return data_corr
 
     def srcpoldata(self):
-        srcpoldata = self.Data.copy()
+        srcpoldata = self.SplitWave.copy()
         srcpoldata.rotateto(self.srcpol())
         srcpoldata.set_labels(['srcpol', 'trans', 'ray'])
         return srcpoldata
         
     def srcpoldata_corr(self):
-        srcpoldata_corr = self.Data_corr()        
+        srcpoldata_corr = self.SplitWave_corr()        
         srcpoldata_corr.rotateto(self.srcpol())
         srcpoldata_corr.set_labels(['srcpol', 'trans', 'ray'])
         return srcpoldata_corr
         
     def fastdata(self):
         """Plot fast/slow data."""
-        fastdata = self.Data.copy()
+        fastdata = self.SplitWave.copy()
         fastdata.rotateto(self.fast)
         fastdata.set_labels(['fast', 'slow', 'ray'])
         return fastdata
 
     def fastdata_corr(self):
-        fastdata_corr = self.Data_corr()
+        fastdata_corr = self.SplitWave_corr()
         fastdata_corr.rotateto(self.fast)
         fastdata_corr.set_labels(['fast', 'slow', 'ray'])
         return fastdata_corr
@@ -369,7 +369,7 @@ class Measure:
         def _get_data(rcvcorr=None, srccorr=None):
             """same as data_corr but user can change corrections"""
             # copy data
-            data_corr = self.Data.copy()
+            data_corr = self.SplitWave.copy()
             # rcv side correction
             if rcvcorr is not None:
                 data_corr = data_corr.unsplit(*rcvcorr)
@@ -444,7 +444,7 @@ class Measure:
         """
         # copy original, corrected, data
         newself = self.copy()
-        bs = self.Data_corr()
+        bs = self.SplitWave_corr()
         origang = bs.cmpangs()[0]
         # replace noise sequence
         bs.rotateto(self.srcpol())
@@ -457,7 +457,7 @@ class Measure:
         bs = bs.split(self.fast, self.lag)
         # rcv side correction
         if self.rcvcorr is not None: bs = bs.split(*self.rcvcorr)
-        newself.Data = bs
+        newself.SplitWave = bs
         return newself
 
     def _bootstrap_sandhgrid(self, **kwargs):
@@ -501,7 +501,7 @@ class Measure:
 
     def save(self,filename):
         """
-        Save Measurement for future referral
+        Save Pyment for future referral
         """
         io.save(self,filename)
 
@@ -548,7 +548,7 @@ class Measure:
         ylim = [-lim, lim]
         
         # long window data
-        self.Data._ptr(ax0, ylim=ylim, **kwargs)
+        self.SplitWave._ptr(ax0, ylim=ylim, **kwargs)
 
         # original
         orig._ptr(ax1, ylim=ylim, **kwargs)
@@ -597,7 +597,7 @@ class Measure:
         cax = ax.contourf(self.lagmap, self.degmap, kwargs['vals'], 26, cmap=kwargs['cmap'])
         cbar = plt.colorbar(cax)
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
-        ax.set_xlabel('Delay Time (' + self.Data.units + ')')
+        ax.set_xlabel('Delay Time (' + self.SplitWave.units + ')')
         
         # confidence region
         # if 'conf95' in kwargs and kwargs['conf95'] == True:
@@ -629,13 +629,13 @@ class Measure:
             subdegs = self.degs[0:-1:int(self.degs.size/6)]
             sublags = sublags + (self.lags[-1]-sublags[-1]) / 2
             subdegs = subdegs + (self.degs[-1]-subdegs[-1]) / 2
-            x, y = self.Data_corr().chopdata()   
+            x, y = self.SplitWave_corr().chopdata()   
             lagtot = self.lags[-1] - self.lags[0]
             degtot = self.degs[-1] - self.degs[0]
             boost = 10 * lagtot / np.max((x**2 + y**2)**.5)      
             for fast in subdegs:
                 for lag in sublags:
-                    x, y = self.Data.unsplit(fast, lag).chopdata()
+                    x, y = self.SplitWave.unsplit(fast, lag).chopdata()
                     ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
 
                     

@@ -5,7 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core, io
-from .measure import Measure
+from .measure import Py
 
 import numpy as np
 import math
@@ -299,7 +299,7 @@ class SplitWave:
         """Grid search for best one-layer splitting parameters: """
         
         # Measurement
-        m = Measure(self, **kwargs)
+        m = Py(self, **kwargs)
         
         # Settings
         settings = {}
