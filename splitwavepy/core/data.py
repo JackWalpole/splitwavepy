@@ -305,24 +305,9 @@ class SplitWave:
         """Grid search for best one-layer splitting parameters: """
         
         from .measure import Py
+        return Py(self, **kwargs)
         
-        # Measurement
-        m = Py(self, **kwargs)
-        
-        # Settings
-        settings = {}
-        settings['plot'] = False
-        settings['report'] = True
-        settings['bootstrap'] = True
-        settings.update(kwargs) # update using kwargs
-        
-        # Implement Settings
-        if 'bootstrap' == True : m.bootstrap(**kwargs)            
-        if 'report'    == True : m.report(**kwargs)
-        if 'plot'      == True : m.plot(**kwargs)
-        
-        # Finish
-        return m
+
         
     #===================
     # Special Properties

@@ -32,7 +32,19 @@ class Py(SplitWave):
     
     def __init__(self, SplitWave, **kwargs):
         
-        self.degmap, self.lagmap = np.meshgrid(self._degs, self.lags)
+        # Settings
+        settings = {}
+        settings['plot'] = False
+        settings['report'] = True
+        settings['bootstrap'] = True
+        settings.update(kwargs) # update using kwargs
+        
+        # Implement Settings
+        if 'bootstrap' == True : m.bootstrap(**kwargs)            
+        if 'report'    == True : m.report(**kwargs)
+        if 'plot'      == True : m.plot(**kwargs)
+        
+        # self.degmap, self.lagmap = np.meshgrid(self._degs, self.lags)
         
         # settings
 
@@ -107,7 +119,10 @@ class Py(SplitWave):
         settings['maxdeg'] = 90
         settings['ndegs']  = 90
         settings.update(kwargs)
-        self._degs = np.linspace( mindeg, maxdeg, ndegs, endpoint=False)
+        self._degs = np.linspace(settings['mindeg'],
+                                 settings['maxdeg'],
+                                 settings['ndegs'],
+                                 endpoint=False)
         
     #_lags
     @property
@@ -130,24 +145,10 @@ class Py(SplitWave):
         settings['maxlag'] = self.wwidth() / 4
         settings['nlags']  = 40
         settings.update(kwargs)
-        
-        if 'lags' not in kwargs:
-            lags = np.linspace( minlag, maxlag, nlags)
-        else:
-            if isinstance(kwargs['lags'],np.ndarray):
-                lags = kwargs['lags']
-            elif isinstance(kwargs['lags'],tuple):
-                if len(kwargs['lags']) == 1:
-                    lags = np.linspace( minlag, kwargs['lags'][0], nlags)
-                elif len(kwargs['lags']) == 2:
-                    lags = np.linspace( minlag,*kwargs['lags'])
-                elif len(kwargs['lags']) == 3:
-                    lags = np.linspace( *kwargs['lags'])
-                else:
-                    raise Exception('Can\'t parse lags keyword')
-            else:
-                raise TypeError('lags keyword must be a tuple or numpy array') 
-        return lags
+        self._lags = np.linspace(settings['minlag'],
+                                 settings['maxlag'],
+                                 settings['nlags'],
+                                 endpoint = True)
         
     #_rcvcorr
     @property
