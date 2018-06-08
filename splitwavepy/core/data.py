@@ -5,7 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core, io
-from .measure import Py
+
 
 import numpy as np
 import math
@@ -74,13 +74,13 @@ class SplitWave:
         self.settings = settings
         
         # implement settings
-        self.delta = delta
-        self.t0 = settings['t0']
-        self.vecs = settings['vecs']
-        self.geom = settings['geom']
+        self._delta = delta
+        self._t0 = settings['t0']
+        self._vecs = settings['vecs']
+        self._geom = settings['geom']
         self.units = settings['units']
         self.set_window(settings['window'])
-        self.set_labels()
+        self._set_labels()
 
                       
 
@@ -92,7 +92,7 @@ class SplitWave:
         
         .. warning:: shortens trace length by *lag*.
         """        
-        slag = core.time2samps(lag, self.delta, mode='even')
+        slag = core.time2samps(lag, self._delta, mode='even')
         orient, _ = self.cmpangs()
         copy = self.copy()._rotateto(0)
         copy.__x, copy__.y = core.split(copy.x, copy.y, fast, slag)
@@ -115,7 +115,7 @@ class SplitWave:
         cang = math.cos(ang)
         sang = math.sin(ang)
         # define the new vecs
-        oldvecs = self.vecs
+        oldvecs = self._vecs
         newvecs = np.array([[ cang,-sang],
                             [ sang, cang]])
         self._rotatetovecs(newvecs)
@@ -125,24 +125,24 @@ class SplitWave:
         Rotate traces so that cmp1 lines up with column1 of matrix of vectors
         """
         # define the new vecs
-        oldvecs = self.vecs
-        self.vecs = vecs
-        rot = np.dot(self.vecs.T, oldvecs)
+        oldvecs = self._vecs
+        self._vecs = vecs
+        rot = np.dot(self._vecs.T, oldvecs)
         # rotate data
         copy = self.copy()
         xy = np.dot(rot, self._xy())
         copy.__x, copy.__y = xy[0], xy[1]
-        copy.set_labels()
+        copy._set_labels()
         return copy
         
     def _shift(self, lag):
         """
         Apply time shift between traces.
         """
-        slag = core.time2samps(lag, self.delta, mode='even')
+        slag = core.time2samps(lag, self._delta, mode='even')
         copy = self.copy()
         copy.__x, copy.__y = core.lag(copy.x, copy.y)
-        copy.t0 = self.t0 + abs(slag/2)
+        copy._t0 = self._t0 + abs(slag/2)
         return copy
 
     def _chop(self):
@@ -151,8 +151,8 @@ class SplitWave:
         """
         chop = self.copy()
         copy.__x, copy.__y = self._chopxy()
-        copy.window.offset = 0
-        copy.t0 = self.wbeg()
+        copy._window.offset = 0
+        copy._t0 = self.wbeg()
         return chop
 
         
@@ -173,17 +173,17 @@ class SplitWave:
         if start > end: raise ValueError('start is larger than end')
         time_centre = (start + end)/2
         time_width = end - start
-        tcs = core.time2samps(time_centre - self.t0, self.delta)
+        tcs = core.time2samps(time_centre - self._t0, self._delta)
         offset = tcs - self._centresamp()
         # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
-        width = core.time2samps(time_width, self.delta, 'even') + 1     
+        width = core.time2samps(time_width, self._delta, 'even') + 1     
         return Window(width, offset, **kwargs) 
         
 
 
     
     def _t(self):
-        t = self.t0 + np.arange(self.x.size) * self.delta
+        t = self._t0 + np.arange(self.x.size) * self._delta
         return t
         
     def _chopt(self):
@@ -212,7 +212,7 @@ class SplitWave:
     def estimate_pol(self, **kwargs):
         """Return principal component orientation"""
         # rotate to zero
-        rot = self.vecs.T
+        rot = self._vecs.T
         data = np.vstack((self._chopxy()))
         xy = np.dot(rot, data)
         _, eigvecs = core.eigcov(xy[0], xy[1])
@@ -228,39 +228,39 @@ class SplitWave:
     
     def _w0(self):
         """idx of first sample in window"""
-        hw = int(self.window.width/2)
-        return self._centresamp() + self.window.offset - hw
+        hw = int(self._window.width/2)
+        return self._centresamp() + self._window.offset - hw
     
     def _w1(self):
         """idx of last sample in window"""
-        hw = int(self.window.width/2)
-        return self._centresamp() + self.window.offset + hw + 1
+        hw = int(self._window.width/2)
+        return self._centresamp() + self._window.offset + hw + 1
     
     def wbeg(self):
         """
         Window start time.
         """
         sbeg = self._w0()
-        return sbeg * self.delta
+        return sbeg * self._delta
     
     def wend(self):
         """
         Window end time.
         """
         send = self._w1()
-        return send * self.delta
+        return send * self._delta
         
     def wwidth(self):
         """
         Window width.
         """
-        return (self.window.width-1) * self.delta
+        return (self._window.width-1) * self._delta
         
     def wcentre(self):
         """
         Window centre
         """
-        return self.window.centre(self._nsamps()) * self.delta
+        return self._window.centre(self._nsamps()) * self._delta
         
 
         
@@ -284,13 +284,15 @@ class SplitWave:
     #     return core.snrRH(*data._chopxy())
 
     def cmpangs(self):
-        cmp1 = self.vecs[:, 0]
-        cmp2 = self.vecs[:, 1]
+        cmp1 = self._vecs[:, 0]
+        cmp2 = self._vecs[:, 1]
         def getang(c) : return np.rad2deg(np.arctan2(c[1], c[0]))
         return getang(cmp1), getang(cmp2)
         
-    def measure(self, **kwargs):
+    def Py(self, **kwargs):
         """Grid search for best one-layer splitting parameters: """
+        
+        from .measure import Py
         
         # Measurement
         m = Py(self, **kwargs)
@@ -326,39 +328,39 @@ class SplitWave:
         
     # delta
     @property
-    def delta(self):
+    def _delta(self):
         return self.__delta
     
-    @delta.setter
-    def delta(self, delta):
+    @_delta.setter
+    def _delta(self, delta):
         if delta <= 0: raise ValueError('delta must be positive')
         self.__delta = float(delta)
         
     # def set_delta(self, delta):
-    #     self.delta = delta
+    #     self._delta = delta
         
     # t0
     @property
-    def t0(self):
+    def _t0(self):
         return self.__t0
        
-    @t0.setter
-    def t0(self, t0):
+    @_t0.setter
+    def _t0(self, t0):
         # TO DO: put some logic here to allow this
         # to be a datetime object.  This will be useful for
         # windowing and plotting.
         self.__t0 = float(t0)
         
     # def set_t0(self, t0):
-    #     self.t0 = t0
+    #     self._t0 = t0
     
     # window 
     @property
-    def window(self):
+    def _window(self):
         return self.__window
 
-    @window.setter
-    def window(self, window):
+    @_window.setter
+    def _window(self, window):
         if not isinstance(window, Window): 
             raise ValueError('window must be a Window')
         self.__window = window
@@ -378,89 +380,83 @@ class SplitWave:
         >>> set_window(Window)."""            
         
         if len(args) == 0: self.plot(pick=True)            
-        elif len(args) == 1: self.window = args[0]
+        elif len(args) == 1: self._window = args[0]
         elif len(args) == 2:
             start, end = args  
-            self.window = self._construct_window(start, end, **kwargs)
+            self._window = self._construct_window(start, end, **kwargs)
         else:
             raise Exception ('unexpected number of arguments')    
     
     # vecs
     @property
-    def vecs(self):
+    def _vecs(self):
         return self.__vecs
     
-    @vecs.setter
-    def vecs(self, vecs):
+    @_vecs.setter
+    def _vecs(self, vecs):
         if vecs.shape != (2,2):
             raise ValueError('vecs must be 2 by 2 array')
         self.__vecs = vecs    
             
-    # def set_vecs(self, vecs):
-    #     self.vecs = vecs
 
     # geom
     @property
-    def geom(self):
+    def _geom(self):
         return self.__geom
     
-    @geom.setter
-    def geom(self, geom):
+    @_geom.setter
+    def _geom(self, geom):
         known_geoms = ['geo', 'ray', 'cart']
         if geom not in known_geoms:
             raise ValueError('geom not recognized.')
         self.__geom = geom
         
-    def set_geom(self, geom):
-        self.geom = geom
         
     # label
     @property
-    def labels(self):
+    def _labels(self):
         return self.__labels
     
-    @labels.setter
-    def labels(self, labels):
+    @_labels.setter
+    def _labels(self, labels):
         if not isinstance(labels, list): 
             raise TypeError('labels must be a list')
         if not len(labels) == 2: raise Exception('list must be length 2')
-        if not isinstance(args[0][0], str) and isinstance(args[0][1], str):
+        if not isinstance(labels[0], str) and isinstance(labels[1], str):
             raise TypeError('label must be a list of strings')
-        self.__label = label
+        self.__labels = labels
         
-    def set_labels(self, *args):
+    def _set_labels(self, *args):
         if len(args) == 0:
-            if np.allclose(self.vecs, np.eye(2), atol=1e-02):
-                if self.geom == 'geo': self.label = ['North', 'East']
-                elif self.geom == 'ray': self.label = ['SV', 'SH']
-                elif self.geom == 'cart': self.label = ['X', 'Y']
-                else: self.label = ['Comp1', 'Comp2']
+            if np.allclose(self._vecs, np.eye(2), atol=1e-02):
+                if self._geom == 'geo': self._labels = ['North', 'East']
+                elif self._geom == 'ray': self._labels = ['SV', 'SH']
+                elif self._geom == 'cart': self._labels = ['X', 'Y']
+                else: self._labels = ['Comp1', 'Comp2']
                 return
             # if reached here we have a non-standard orientation
             a1,a2 = self.cmpangs()
             lbl1 = str(round(a1))+r' ($^\circ$)'
             lbl2 = str(round(a2))+r' ($^\circ$)'
-            self.label = [lbl1, lbl2]
+            self._labels = [lbl1, lbl2]
             return
-        elif len(args) == 1:   
-            self.label = args[0]
+        elif len(args) == 1:
+            self._labels = args[0]
             return
         else:
             raise Exception('unexpected number of arguments')
             
     # units
     @property
-    def units(self):
+    def _units(self):
         return self.__units
-        
-    @units.setter
-    def units(self, units):
+
+    @_units.setter
+    def _units(self, units):
         if not isinstance(units, str):
             raise TypeError('units must be a str')
         self.__units = units
-            
-    def set_units(self, units):
-        self.units = units
+
     
     ##########
     # Plotting
@@ -515,28 +511,19 @@ class SplitWave:
 
     def _ptr( self, ax, **kwargs):
         """Plot trace data on *ax* matplotlib axis object.
-        """    
+        """
+ 
         # plot data
         t = self._t()
-        
-        # set labels
-        if 'label' not in kwargs: kwargs['label'] = self.label
-        ax.plot( t, self.x, label=kwargs['label'][0])
-        ax.plot( t, self.y, label=kwargs['label'][1])
-        ax.legend(framealpha=0.5)
-    
-        # set limits
+        ax.plot( t, self.x, label=self._labels[0])
+        ax.plot( t, self.y, label=self._labels[1])
         lim = np.abs(self._xy()).max() * 1.1
-        if 'ylim' not in kwargs: kwargs['ylim'] = [-lim, lim]
-        ax.set_ylim(kwargs['ylim'])
-        if 'xlim' in kwargs: ax.set_xlim(kwargs['xlim'])
-    
-        # set axis label
-        if 'units' not in kwargs: kwargs['units'] = 's'            
-        ax.set_xlabel('Time (' + kwargs['units'] +')')
+        ax.set_ylim([-lim, lim])
+        ax.set_xlabel('Time (' + self.units +')')
+        ax.legend(framealpha=0.5)
 
         # plot window markers
-        if self.window.width < self._nsamps():
+        if self._window.width < self._nsamps():
             w1 = ax.axvline(self.wbeg(), linewidth=1, color='k')
             w2 = ax.axvline(self.wend(), linewidth=1, color='k')    
         
@@ -577,7 +564,7 @@ class SplitWave:
         ax.set_ylim(kwargs['lims'])
     
         # set labels
-        if 'label' not in kwargs: kwargs['label'] = data.label
+        if 'label' not in kwargs: kwargs['label'] = data._labels
         ax.set_xlabel(kwargs['label'][1])
         ax.set_ylabel(kwargs['label'][0])
         
@@ -593,7 +580,7 @@ class SplitWave:
         return int(self.x.size/2)
     
     def _centretime(self):
-        return int(self.x.size/2) * self.delta
+        return int(self.x.size/2) * self._delta
            
     # I/O stuff  
                        

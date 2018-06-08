@@ -24,18 +24,18 @@ import matplotlib.gridspec as gridspec
 # import os.path
 
 
-class Py:
+class Py(SplitWave):
     
     """
     Measure shearwave splitting on a SplitWave object. 
     """
     
-    def __init__(self, SplitWave, **kwargs):
+    def __init__(self, **kwargs):
         
-        self.SplitWave = SplitWave
+        self._data = SplitWave
 
        
-        self.degmap, self.lagmap = np.meshgrid(self.degs, self.lags)
+        self.degmap, self.lagmap = np.meshgrid(self._degs, self.lags)
         
         # settings
 
@@ -46,9 +46,9 @@ class Py:
             if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['rcvcorr']
-            samps = core.time2samps(lag, self.SplitWave.delta, 'even')
+            samps = core.time2samps(lag, self._delta, 'even')
             self.__rcvcorr = (deg, samps)
-            self.rcvcorr = (deg, samps * self.SplitWave.delta)
+            self.rcvcorr = (deg, samps * self._delta)
 
         # source correction
         self.srccorr = None
@@ -57,9 +57,9 @@ class Py:
             if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['srccorr']
-            samps = core.time2samps(lag, self.SplitWave.delta, 'even')
+            samps = core.time2samps(lag, self._delta, 'even')
             self.__srccorr = (deg, samps)
-            self.srccorr = (deg, samps * self.SplitWave.delta)
+            self.srccorr = (deg, samps * self._delta)
             
         # Grid Search
         self.covmap = self._gridcov(**kwargs)
@@ -84,6 +84,32 @@ class Py:
             
         # backup keyword args
         self.kwargs = kwargs
+    #
+    # #===================
+    # # Special Properties
+    # #===================
+    #
+    # # _data
+    # @property
+    # def _data(self):
+    #
+    # # _degs
+    # @property
+    # def _degs(self):
+    #     return self.__x
+    #
+    # # _lags
+    # @property
+    # def y(self):
+    #     return self.__y
+    #
+    # # derived
+    # # _grid
+    # @property
+    # def delta(self):
+    #     return self.__delta
+    
+
                 
     # Common methods
             
@@ -94,9 +120,8 @@ class Py:
         srccorr = source correction parameters in tuple (fast,lag) 
         """
         
-        x, y = np.copy(self.SplitWave.x), np.copy(self.SplitWave.y)
-        w0, w1 = self.SplitWave._w0(), self.SplitWave._w1()
-        degs, slags = self.degs, self.slags
+        x, y = np.copy(self.x), np.copy(self.y)
+        w0, w1 = self._w0(), self._w1()
                 
         # receiver correction
         if 'rcvcorr' in kwargs:
@@ -109,7 +134,7 @@ class Py:
             # srcphi, srclag = self.__srccorr
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
-        return core.gridcov(x, y, w0, w1, degs, slags)
+        return core.gridcov(x, y, w0, w1, self._degs, self._slags)
         
     def _silver_and_chan(self):
         if 'pol' in kwargs:
@@ -132,7 +157,7 @@ class Py:
         """return numpy array of lags to explore"""
         # LAGS
         minlag = 0
-        maxlag = self.SplitWave.wwidth() / 4
+        maxlag = self.wwidth() / 4
         nlags  = 40
         if 'lags' not in kwargs:
             lags = np.linspace( minlag, maxlag, nlags)
@@ -172,8 +197,8 @@ class Py:
     def _get_degs_lags_and_slags(self, **kwargs):
         # convert lags to samps and back again
         lags = self._parse_lags(**kwargs)
-        slags = np.unique( core.time2samps(lags, self.SplitWave.delta, mode='even')).astype(int)
-        lags = core.samps2time(slags, self.SplitWave.delta)
+        slags = np.unique( core.time2samps(lags, self._delta, mode='even')).astype(int)
+        lags = core.samps2time(slags, self._delta)
         # parse degs
         degs = self._parse_degs(**kwargs)
         return degs, lags, slags
@@ -200,7 +225,7 @@ class Py:
     
     def data_corr(self):        
         # copy data     
-        data_corr = self.SplitWave.copy()
+        data_corr = self.copy()
         # rcv side correction     
         if self.rcvcorr is not None:
             data_corr = data_corr.unsplit(*self.rcvcorr)    
@@ -212,7 +237,7 @@ class Py:
         return data_corr
 
     def srcpoldata(self):
-        srcpoldata = self.SplitWave.copy()
+        srcpoldata = self.copy()
         srcpoldata._rotateto(self.srcpol())
         srcpoldata.set_labels(['srcpol', 'trans', 'ray'])
         return srcpoldata
@@ -225,7 +250,7 @@ class Py:
         
     def fastdata(self):
         """Plot fast/slow data."""
-        fastdata = self.SplitWave.copy()
+        fastdata = self.copy()
         fastdata._rotateto(self.fast)
         fastdata.set_labels(['fast', 'slow', 'ray'])
         return fastdata
@@ -370,7 +395,7 @@ class Py:
         def _get_data(rcvcorr=None, srccorr=None):
             """same as data_corr but user can change corrections"""
             # copy data
-            data_corr = self.SplitWave.copy()
+            data_corr = self.copy()
             # rcv side correction
             if rcvcorr is not None:
                 data_corr = data_corr.unsplit(*rcvcorr)
@@ -552,7 +577,7 @@ class Py:
         ylim = [-lim, lim]
         
         # long window data
-        self.SplitWave._ptr(ax0, ylim=ylim, **kwargs)
+        self._ptr(ax0, ylim=ylim, **kwargs)
 
         # original
         orig._ptr(ax1, ylim=ylim, **kwargs)
@@ -601,7 +626,7 @@ class Py:
         cax = ax.contourf(self.lagmap, self.degmap, kwargs['vals'], 26, cmap=kwargs['cmap'])
         cbar = plt.colorbar(cax)
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
-        ax.set_xlabel('Delay Time (' + self.SplitWave.units + ')')
+        ax.set_xlabel('Delay Time (' + self.units + ')')
         
         # confidence region
         # if 'conf95' in kwargs and kwargs['conf95'] == True:
@@ -639,7 +664,7 @@ class Py:
             boost = 10 * lagtot / np.max((x**2 + y**2)**.5)      
             for fast in subdegs:
                 for lag in sublags:
-                    x, y = self.SplitWave.unsplit(fast, lag)._chopdata()
+                    x, y = self.unsplit(fast, lag)._chopdata()
                     ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
 
                     
