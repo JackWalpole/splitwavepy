@@ -16,13 +16,25 @@ from matplotlib.collections import LineCollection
 class SplitWave:
     
     """
-    Prepare to easily measure shear wave splitting.
+    Measure shear wave splitting.
     
-    Work with existing data in numpy arrays.
-    >>> SplitWave(x, y, delta=*delta*)
+    Usage:
+    >>> from splitwavepy import *
+    >>> Data = SplitWave(x, y, delta=*delta*, **options)
+    >>> # x and y are numpy arrays.
     
-    Or create new synthetic data.
-    >>> SplitWave(delta=*delta*, noise=*noise*, split=*split*)
+    If no positional arguments provided will create synthetic:
+    >>> Data = SplitWave(split=*split*, noise=*noise*, delta=*delta*)
+    
+    To measure shear wave splitting
+    >>> Measurement = Data.Py(**options)
+    
+    These actions can be chained:
+    >>> SplitWave().Py()
+    
+    Hence the name: "SplitWavePy"
+    
+    -------
     
     Methods
     -------
