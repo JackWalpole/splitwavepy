@@ -30,12 +30,14 @@ class Measure:
     Base measurement class        
     """
     
-    def __init__(self, data, **kwargs):
+    def __init__(self, Data, **kwargs):
         
-        self.data = data
+        self.Data = Data
 
-        self.degs, self.lags, self.slags = self._get_degs_lags_and_slags(**kwargs)
+       
         self.degmap, self.lagmap = np.meshgrid(self.degs, self.lags)
+        
+        # settings
 
         # receiver correction
         self.rcvcorr = None
@@ -44,9 +46,9 @@ class Measure:
             if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['rcvcorr']
-            samps = core.time2samps(lag, self.data.delta, 'even')
+            samps = core.time2samps(lag, self.Data.delta, 'even')
             self.__rcvcorr = (deg, samps)
-            self.rcvcorr = (deg, samps * self.data.delta)
+            self.rcvcorr = (deg, samps * self.Data.delta)
 
         # source correction
         self.srccorr = None
@@ -55,9 +57,9 @@ class Measure:
             if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
             # convert time shift to nsamples -- must be even
             deg, lag = kwargs['srccorr']
-            samps = core.time2samps(lag, self.data.delta, 'even')
+            samps = core.time2samps(lag, self.Data.delta, 'even')
             self.__srccorr = (deg, samps)
-            self.srccorr = (deg, samps * self.data.delta)
+            self.srccorr = (deg, samps * self.Data.delta)
             
         # Grid Search
         self.covmap = self._gridcov(**kwargs)
@@ -70,9 +72,11 @@ class Measure:
 
         # Cross-correlation
         self.xc = core.covmap2rho()
-        xc_loc = core.max_idx(self.rho)
+        xc_loc = core.max_idx(self.xc)
         self.xc_fast, self.xc_lag =  self.degmap[xc_loc], self.lagmap[xc_loc]
         
+        # Splitting Intensity
+        self.splintensity = self._splitting_intensity()
         
         # Name
         self.name = 'Untitled'
@@ -85,13 +89,13 @@ class Measure:
             
     def _gridcov(self, **kwargs):       
         """
-        Grid search for splitting parameters applied to self.data using the function defined in func
+        Grid search for splitting parameters applied to self.Data using the function defined in func
         rcvcorr = receiver correction parameters in tuple (fast,lag) 
         srccorr = source correction parameters in tuple (fast,lag) 
         """
         
-        x, y = np.copy(self.data.x), np.copy(self.data.y)
-        w0, w1 = self.data._w0(), self.data._w1()
+        x, y = np.copy(self.Data.x), np.copy(self.Data.y)
+        w0, w1 = self.Data._w0(), self.Data._w1()
         degs, slags = self.degs, self.slags
                 
         # receiver correction
@@ -120,12 +124,15 @@ class Measure:
         return core.covmap2rho(self.covmap)
         
     # utility
+    
+    def _book_keep(self, **kwargs):
+         self.degs, self.lags, self.slags = self._get_degs_lags_and_slags(**kwargs)
 
     def _parse_lags(self, **kwargs):
         """return numpy array of lags to explore"""
         # LAGS
         minlag = 0
-        maxlag = self.data.wwidth() / 4
+        maxlag = self.Data.wwidth() / 4
         nlags  = 40
         if 'lags' not in kwargs:
             lags = np.linspace( minlag, maxlag, nlags)
@@ -165,8 +172,8 @@ class Measure:
     def _get_degs_lags_and_slags(self, **kwargs):
         # convert lags to samps and back again
         lags = self._parse_lags(**kwargs)
-        slags = np.unique( core.time2samps(lags, self.data.delta, mode='even')).astype(int)
-        lags = core.samps2time(slags, self.data.delta)
+        slags = np.unique( core.time2samps(lags, self.Data.delta, mode='even')).astype(int)
+        lags = core.samps2time(slags, self.Data.delta)
         # parse degs
         degs = self._parse_degs(**kwargs)
         return degs, lags, slags
@@ -182,7 +189,7 @@ class Measure:
         if 'pol' in self.kwargs:
             return self.kwargs['pol']
         else:
-            return self.data_corr().estimate_pol()
+            return self.Data_corr().estimate_pol()
         
     def snr(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
@@ -193,7 +200,7 @@ class Measure:
     
     def data_corr(self):        
         # copy data     
-        data_corr = self.data.copy()
+        data_corr = self.Data.copy()
         # rcv side correction     
         if self.rcvcorr is not None:
             data_corr = data_corr.unsplit(*self.rcvcorr)    
@@ -205,26 +212,26 @@ class Measure:
         return data_corr
 
     def srcpoldata(self):
-        srcpoldata = self.data.copy()
+        srcpoldata = self.Data.copy()
         srcpoldata.rotateto(self.srcpol())
         srcpoldata.set_labels(['srcpol', 'trans', 'ray'])
         return srcpoldata
         
     def srcpoldata_corr(self):
-        srcpoldata_corr = self.data_corr()        
+        srcpoldata_corr = self.Data_corr()        
         srcpoldata_corr.rotateto(self.srcpol())
         srcpoldata_corr.set_labels(['srcpol', 'trans', 'ray'])
         return srcpoldata_corr
         
     def fastdata(self):
         """Plot fast/slow data."""
-        fastdata = self.data.copy()
+        fastdata = self.Data.copy()
         fastdata.rotateto(self.fast)
         fastdata.set_labels(['fast', 'slow', 'ray'])
         return fastdata
 
     def fastdata_corr(self):
-        fastdata_corr = self.data_corr()
+        fastdata_corr = self.Data_corr()
         fastdata_corr.rotateto(self.fast)
         fastdata_corr.set_labels(['fast', 'slow', 'ray'])
         return fastdata_corr
@@ -276,6 +283,23 @@ class Measure:
 
         # return
         return fdfast, fdlag 
+        
+    # splitting intensity
+    def splitting_intensity(self, pol=None, **kwargs):
+        """
+        Calculate the splitting intensity as defined by Chevrot (2000).
+        """        
+        
+        # settings
+        
+        if 'pol' not in kwargs:
+            raise Exception('pol must be specified')            
+        copy = self.copy()
+        copy.rotateto(pol)
+        copy.x = np.gradient(copy.x)
+        rdiff, trans = copy.chopdata()
+        s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
+        return s
         
     # bootstrap utilities
     
@@ -345,7 +369,7 @@ class Measure:
         def _get_data(rcvcorr=None, srccorr=None):
             """same as data_corr but user can change corrections"""
             # copy data
-            data_corr = self.data.copy()
+            data_corr = self.Data.copy()
             # rcv side correction
             if rcvcorr is not None:
                 data_corr = data_corr.unsplit(*rcvcorr)
@@ -420,7 +444,7 @@ class Measure:
         """
         # copy original, corrected, data
         newself = self.copy()
-        bs = self.data_corr()
+        bs = self.Data_corr()
         origang = bs.cmpangs()[0]
         # replace noise sequence
         bs.rotateto(self.srcpol())
@@ -433,7 +457,7 @@ class Measure:
         bs = bs.split(self.fast, self.lag)
         # rcv side correction
         if self.rcvcorr is not None: bs = bs.split(*self.rcvcorr)
-        newself.data = bs
+        newself.Data = bs
         return newself
 
     def _bootstrap_sandhgrid(self, **kwargs):
@@ -524,7 +548,7 @@ class Measure:
         ylim = [-lim, lim]
         
         # long window data
-        self.data._ptr(ax0, ylim=ylim, **kwargs)
+        self.Data._ptr(ax0, ylim=ylim, **kwargs)
 
         # original
         orig._ptr(ax1, ylim=ylim, **kwargs)
@@ -573,7 +597,7 @@ class Measure:
         cax = ax.contourf(self.lagmap, self.degmap, kwargs['vals'], 26, cmap=kwargs['cmap'])
         cbar = plt.colorbar(cax)
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
-        ax.set_xlabel('Delay Time (' + self.data.units + ')')
+        ax.set_xlabel('Delay Time (' + self.Data.units + ')')
         
         # confidence region
         # if 'conf95' in kwargs and kwargs['conf95'] == True:
@@ -605,13 +629,13 @@ class Measure:
             subdegs = self.degs[0:-1:int(self.degs.size/6)]
             sublags = sublags + (self.lags[-1]-sublags[-1]) / 2
             subdegs = subdegs + (self.degs[-1]-subdegs[-1]) / 2
-            x, y = self.data_corr().chopdata()   
+            x, y = self.Data_corr().chopdata()   
             lagtot = self.lags[-1] - self.lags[0]
             degtot = self.degs[-1] - self.degs[0]
             boost = 10 * lagtot / np.max((x**2 + y**2)**.5)      
             for fast in subdegs:
                 for lag in sublags:
-                    x, y = self.data.unsplit(fast, lag).chopdata()
+                    x, y = self.Data.unsplit(fast, lag).chopdata()
                     ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
 
                     

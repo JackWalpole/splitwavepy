@@ -28,119 +28,81 @@ from matplotlib.collections import LineCollection
 class Data:
     
     """
-    Fundamental splitwavepy object.
+    Holds data on which you want to measure shear wave splitting.
     
-    Usage: Data(x, y, delta = *delta*)
+    Work with existing data in numpy arrays.
+    >>> Data(x, y, delta=*delta*)
     
-         
+    Or create new synthetic data.
+    >>> Data(delta=*delta*, noise=*noise*, split=*split*)
+    
+    Methods
+    -------
+    
+    plot()
+    set_window()
+    measure()
+    
+    
+    Settings
+    --------
+    
+    
+    
+    
+    
     """
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, delta=0.1, **kwargs):
+        
+        # Parse arguments      
+        if len(args) == 0 : 
+            self.__x, self.__y = core.synth(**kwargs)
+        elif len(args) == 2 : self.__x, self.__y = args[0], args[1]
+        else : raise Exception('Unexpected number of arguments')
+        
+        self._sanity_checks()
 
-        # ensure delta is set as a keyword argment, e.g. delta=0.1
-        if 'delta' not in kwargs: raise Exception('delta must be set')
-        self.delta = kwargs['delta'] 
+        # Settings
+        settings = {}
+        settings['t0'] = 0
+        settings['geom'] = 'geo'
+        settings['cmpvecs'] = np.eye(2)
+        settings['units'] = 's'
+        settings['window'] = Window(core.odd(self._nsamps() / 3))
+        settings.update(**kwargs)
         
-        # if no args make synthetic
-        if len(args) == 0:
-            self.x, self.y = core.synth(**kwargs)
-        # otherwise read in data
-        elif len(args) == 2:
-            if not (isinstance(args[0], np.ndarray) & isinstance(args[1], np.ndarray)):
-                raise TypeError('expecting numpy arrays')
-            self.x, self.y = args[0], args[1]
-        else:
-            raise Exception('Unexpected number of arguments')
-        
-        # some sanity checks
-        if self.x.ndim != 1: raise Exception('data must be one dimensional')
-        if self.x.size%2 == 0: 
-            # drop last sample to ensure traces have odd number of samples
-            self.x = self.x[:-1]
-            self.y = self.y[:-1]
-        if (self.x.size != self.y.size): raise Exception('x and y must be the same length')    
-        
-        # add geometry info 
-        self.geom = 'geo'
-        if ('geom' in kwargs): self.geom = kwargs['geom']
-               
-        self.cmpvecs = np.eye(2)  
-        if ('cmpvecs' in kwargs): self.cmpvecs = kwargs['cmpvecs']  
-        
-        # labels
-        self.units = 's'
-        if ('units' in kwargs): self.units = kwargs['units']
-        self.set_labels()
-        
-        # default window
-        self.window = Window(core.odd(self._nsamps() / 3))
+        # implement settings
+        self.set_delta(delta)
+        self.set_window(settings['window'])
+        self.set_cmpvecs(settings['cmpvecs'])
+        self.set_t0(settings['t0'])
+        self.set_geom(setting['geom'])
+        self.set_labels(settings['labels'])
+        self.set_units(settings['units'])
+
+        # Backup kwargs
+        self.kwargs = kwargs
                       
-        
-    # COMMON PROPERTIES
-    
-    
-    
-    @property
-    def delta(self):
-        return self.__delta    
 
-    @delta.setter
-    def delta(self, delta):
-        if delta <= 0: raise ValueError('delta must be positive')
-        self.__delta = float(delta)
         
-    # @property
-    # def window(self):
-    #     return self.__window
-    #
-    # @window.setter
-    # def window(self, window):
-    #     self.__window = window
-   
-    @property
-    def cmplabels(self):
-        return self.__cmplabels
-        
-    @cmplabels.setter
-    def cmplabels(self, cmplabels):
-        self.__cmplabels = cmplabels
-   
-    @property
-    def units(self):
-        return self.__units
-    
-    @units.setter
-    def units(self, units):
-        self.__units = units
-        
-    @property
-    def geom(self):
-        return self.__geom
-        
-    @geom.setter
-    def geom(self, geom):
-        possible_geoms = ['geo', 'ray', 'cart']
-        if geom not in possible_geoms:
-            raise ValueError('geom must be one of ' + str(possible_geoms))
-        self.__geom = geom
-        
-    # COMMON METHODS
+    # USER VISIBLE
     
     def split(self, fast, lag):
         """
         Applies splitting operator.
         
         .. warning:: shortens trace length by *lag*.
-        """
-        copy = self.copy()
+        """        
         # convert time shift to nsamples -- must be even
-        samps = core.time2samps(lag, copy.delta, mode='even')
+        slag = core.time2samps(lag, self.delta, mode='even')
         # find appropriate rotation angle
-        origangs = copy.cmpangs()
+        orient, _ = self.cmpangs()
         copy.rotateto(0)
         # apply splitting
-        copy.x, copy.y = core.split(copy.x, copy.y, fast, samps)
-        copy.rotateto(origangs[0])
+        copy = self.copy()
+        copy.__x, copy__.y = core.split(self.x, self.y, fast, slag)
+        copy.rotateto(orient)
         return copy
            
     def unsplit(self, fast, lag):
@@ -149,16 +111,7 @@ class Data:
         
         .. warning:: shortens trace length by *lag*.
         """
-        copy = self.copy()
-        # convert time shift to nsamples -- must be even
-        samps = core.time2samps(lag, copy.delta, mode='even')
-        # find appropriate rotation angle
-        origangs = copy.cmpangs()
-        copy.rotateto(0)
-        # apply splitting
-        copy.x, copy.y = core.unsplit(copy.x, copy.y, fast, samps)
-        copy.rotateto(origangs[0])
-        return copy
+        self.split(fast, -lag)
        
     def rotateto(self, degrees):
         """
@@ -169,17 +122,61 @@ class Data:
         cang = math.cos(ang)
         sang = math.sin(ang)
         # define the new cmpvecs
-        backoff = self.cmpvecs
-        self.cmpvecs = np.array([[ cang,-sang],
+        oldcmpvecs = self.cmpvecs
+        newcmpvecs = np.array([[ cang,-sang],
                                  [ sang, cang]])
-        rot = np.dot(self.cmpvecs.T, backoff)
+        rot = np.dot(newcmpvecs.T, oldcmpvecs)
         # rotate data
-        xy = np.dot(rot, self.data())
-        self.x, self.y = xy[0], xy[1]
-        # reset label
-        self.set_labels()
+        copy = self.copy()
+        xy = np.dot(rot, self._xy())
+        copy.__x, copy.__y = xy[0], xy[1]
+        copy.set_cmpvecs(newcmpvecs)
+        copy.set_labels()
+        return copy
         
-    def rotatetovecs(self, vecs):
+    def shift(self, lag):
+        """
+        Apply time shift between traces.
+        """
+        slag = core.time2samps(lag, self.delta, mode='even')
+        copy = self.copy()
+        copy.__x, copy.__y = core.lag(self.x, self.y)
+        return copy
+
+    def chop(self):
+        """
+        Chop data to window.
+        """
+        chop = self.copy()
+        chop.__x, chop.__y = self._chopdata()
+        chop.window.offset = 0
+        return chop
+
+        
+    # Utility 
+    
+    def _sanity_checks(self):
+        # some sanity checks
+        if self.__x.shape != self.__y.shape:
+             raise Exception('x and y must be the same shape')
+        if self.__x.ndim != 1: 
+            raise Exception('data must be one dimensional')
+        if self.__x.size%2 == 0: # even
+            # drop last sample to ensure traces have odd number of samples
+            self.__x = self.__x[:-1]
+            self.__y = self.__y[:-1]
+            
+    def _construct_window(self, start, end, **kwargs): 
+        if start > end: raise ValueError('start is larger than end')
+        time_centre = (start + end)/2
+        time_width = end - start
+        tcs = core.time2samps(time_centre - self.t0, self.delta)
+        offset = tcs - self._centresamp()
+        # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
+        width = core.time2samps(time_width, self.delta, 'even') + 1     
+        return Window(width, offset, **kwargs) 
+        
+    def _rotatetovecs(self, vecs):
         """
         Rotate traces so that cmp1 lines up with column1 of matrix of vectors
         """
@@ -188,84 +185,37 @@ class Data:
         self.cmpvecs = vecs
         rot = np.dot(self.cmpvecs.T, backoff)
         # rotate data
-        xy = np.dot(rot, self.data())
-        self.x, self.y = xy[0], xy[1]
-        # reset label
-        self.set_labels()
-        
-                
-    def set_window(self, *args, **kwargs):
-        """
-        Set the window
-        """                
-        # if Window provided
-        if 'window' in kwargs:  
-            if isinstance(kwargs['window'], Window):
-                self.window = kwargs['window']
-                return
-            else:
-                raise TypeError('expecting a window')  
-        # start/end given
-        if len(args) == 2:
-            start, end = args  
-            self.window = self.construct_window(start, end, **kwargs)
-            return
-        else:
-            raise Exception ('unexpected number of arguments')
-            
-    def set_labels(self, *args):
-        if len(args) == 0:
-            if np.allclose(self.cmpvecs, np.eye(2), atol=1e-02):
-                if self.geom == 'geo': self.cmplabels = ['North', 'East']
-                elif self.geom == 'ray': self.cmplabels = ['SV', 'SH']
-                elif self.geom == 'cart': self.cmplabels = ['X', 'Y']
-                else: self.cmplabels = ['Comp1', 'Comp2']
-                return
-            # if reached here we have a non-standard orientation
-            a1,a2 = self.cmpangs()
-            lbl1 = str(round(a1))+r' ($^\circ$)'
-            lbl2 = str(round(a2))+r' ($^\circ$)'
-            self.cmplabels = [lbl1, lbl2]
-            return
-        elif len(args) == 1:
-            if not isinstance(args[0], list): raise TypeError('expecting a list')
-            # if not len(args[0]) == 2: raise Exception('list must be length 2')
-            if not (isinstance(args[0][0], str) and isinstance(args[0][1], str)):
-                raise TypeError('cmplabels must be a list of strings')
-            self.cmplabels = args[0]
-            return
-        else:
-            raise Exception('unexpected number of arguments')     
-        
-    # Utility 
+        copy = self.copy()
+        xy = np.dot(rot, self._xy())
+        copy.__x, copy.__y = xy[0], xy[1]
+        copy.set_labels()
+        return copy
+
     
-    def t(self):
-        return np.arange(self._nsamps()) * self.delta
+    def _t(self):
+        t = self.t0 + np.arange(self.x.size) * self.delta
+        return t
         
-    def chopt(self):
+    def _chopt(self):
         """
         Chop time to window
         """
         t0 = self._w0()
         t1 = self._w1()        
-        t = self.t()[t0:t1]
+        t = self._t()[t0:t1]
         return t
         
-    def data(self):
+    def _xy(self):
         return np.vstack((self.x, self.y))
         
-    def chopdata(self):
+    def _chopdata(self):
         """Chop traces to window"""
         t0 = self._w0()
         t1 = self._w1()
         return self.x[t0:t1], self.y[t0:t1]
         # return np.vstack((self.x[t0:t1], self.y[t0:t1]))
         
-    def chop(self):
-        chop = self.copy()
-        chop.x, chop.y = chop.chopdata()
-        chop.window.offset = 0
-        return chop
+
         
     # polarisation
         
@@ -273,7 +223,7 @@ class Data:
         """Return principal component orientation"""
         # rotate to zero
         rot = self.cmpvecs.T
-        data = np.vstack((self.chopdata()))
+        data = np.vstack((self._chopdata()))
         xy = np.dot(rot, data)
         _, eigvecs = core.eigcov(xy[0], xy[1])
         x,y = eigvecs[:, 0]
@@ -322,32 +272,26 @@ class Data:
         """
         return self.window.centre(self._nsamps()) * self.delta
         
-    def construct_window(self, start, end, **kwargs): 
-        if start > end: raise ValueError('start is larger than end')
-        time_centre = (start + end)/2
-        time_width = end - start
-        tcs = core.time2samps(time_centre, self.delta)
-        offset = tcs - self._centresamp()
-        # convert time to nsamples -- must be odd (even plus 1 because x units of deltatime needs x+1 samples)
-        width = core.time2samps(time_width, self.delta, 'even') + 1     
-        return Window(width, offset, **kwargs) 
+
         
     def eigen(self, **kwargs):
-        self.eigvals, self.eigvecs = core.eigcov(self.data())
+        self.eigvals, self.eigvecs = core.eigcov(self._xy())
         
     def power(self):
         return self.x**2, self.y**2
         
     def eigvalcov(self):
         """return lam1, lam2 after chopping to window"""
-        return core.eigvalcov(*self.chopdata())
+        return core.eigvalcov(*self._chopdata())
+        
+    # User-visible
     
     
-    def snr(self):
-        """Signal to noise ratio as defined by Restivo and Helffrich."""
-        data = self.copy()
-        data.rotateto(data.pol())
-        return core.snrRH(*data.chopdata())
+    # def snr(self):
+    #     """Signal to noise ratio as defined by Restivo and Helffrich."""
+    #     data = self.copy()
+    #     data.rotateto(data.pol())
+    #     return core.snrRH(*data.chopdata())
 
     def cmpangs(self):
         cmp1 = self.cmpvecs[:, 0]
@@ -355,46 +299,192 @@ class Data:
         def getang(c) : return np.rad2deg(np.arctan2(c[1], c[0]))
         return getang(cmp1), getang(cmp2)
         
-    # Measurement
-    
-    # def SC(self, **kwargs):
-    #     return SC(self, **kwargs)
-    #
-    # def XC(self, **kwargs):
-    #     return XC(self, **kwargs)
-    #
-    # def Q(self, **kwargs):
-    #     return Q(self, **kwargs)
+    def measure(self, **kwargs):
+        """Grid search for best one-layer splitting parameters: """
         
-    def M(self, **kwargs):
-        return Measure.__init__(self, self.data, **kwargs) 
+        # Measurement
+        m = Measure(self, **kwargs)
         
-    # def TransM(self, **kwargs):
-    #     return TransM(self, **kwargs)
+        # Settings
+        settings = {}
+        settings['plot'] = False
+        settings['report'] = True
+        settings['bootstrap'] = True
+        settings.update(kwargs) # update using kwargs
         
-    def splitting_intensity(self, **kwargs):
-        """
-        Calculate the splitting intensity as defined by Chevrot (2000).
-        """        
-        if 'pol' not in kwargs:
-            raise Exception('pol must be specified')            
-        copy = self.copy()
-        copy.rotateto(kwargs['pol'])
-        copy.x = np.gradient(copy.x)
-        rdiff, trans = copy.chopdata()
-        s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
-        return s
+        # Implement Settings
+        if 'bootstrap' == True : m.bootstrap(**kwargs)            
+        if 'report'    == True : m.report(**kwargs)
+        if 'plot'      == True : m.plot(**kwargs)
+        
+        # Finish
+        return m
+        
+    #===================
+    # Special Properties
+    #===================
     
+    # x
+    @property
+    def x(self):
+        return self.__x
     
+    # y
+    @property
+    def y(self):
+        return self.__y
+        
+    # delta
+    @property
+    def delta(self):
+        return self.__delta
+    
+    @delta.setter
+    def delta(self, delta):
+        if delta <= 0: raise ValueError('delta must be positive')
+        self.__delta = float(delta)
+        
+    def set_delta(self, delta):
+        self.delta = delta
+        
+    # t0
+    @property
+    def t0(self):
+        return self.__t0
+       
+    @t0.setter
+    def t0(self, t0):
+        # TO DO: put some logic here to allow this
+        # to be a datetime object.  This will be useful for
+        # windowing and plotting.
+        self.__t0 = float(t0)
+        
+    def set_t0(self, t0):
+        self.t0 = t0
+    
+    # window 
+    @property
+    def window(self):
+        return self.__window
+
+    @window.setter
+    def window(self, window):
+        if not isinstance(window, Window): 
+            raise ValueError('window must be a Window')
+        self.__window = window
+        
+    def set_window(self, *args, **kwargs):
+        """Changes the window used for shear wave splitting analysis.
+        
+        Usage:
+        
+        # interactively pick on plot.
+        >>> set_window()  
+        
+        # provide start and end times.
+        >>> set_window(start, end)
+        
+        # provide Window object (advanced)
+        >>> set_window(Window)."""            
+        
+        if len(args) == 0: self.plot(pick=True)            
+        if len(args) == 1: self.window = args[0]
+        if len(args) == 2:
+            start, end = args  
+            self.window = self._construct_window(start, end, **kwargs)
+        else:
+            raise Exception ('unexpected number of arguments')    
+    
+    # cmpvecs
+    @property
+    def cmpvecs(self):
+        return self.__cmpvecs
+    
+    @cmpvecs.setter
+    def cmpvecs(self, cmpvecs):
+        if cmpvecs.shape != (2,2):
+            raise ValueError('cmpvecs must be 2 by 2 array')
+            
+    def set_cmpvecs(self, cmpvecs):
+        self.cmpvecs = cmpvecs 
+
+    # geom
+    @property
+    def geom(self):
+        return self.__geom
+    
+    @geom.setter
+    def geom(self, geom):
+        known_geoms = ['geo', 'ray', 'cart']
+        if geom not in known_geoms:
+            raise ValueError('geom not recognized.')
+        self.__geom = geom
+        
+    def set_geom(self, geom):
+        self.geom = geom
+        
+    # cmplabels
+    @property
+    def cmplabels(self):
+        return self.__cmplabels
+    
+    @camplabels.setter
+    def cmplabels(self, cmplabels):
+        if not isinstance(cmplabels, list): 
+            raise TypeError('cmplabels must be a list')
+        if not len(cmplabels) == 2: raise Exception('list must be length 2')
+        if not isinstance(args[0][0], str) and isinstance(args[0][1], str):
+            raise TypeError('cmplabels must be a list of strings')
+        self.__cmplabels = cmplabels
+        
+    def set_labels(self, *args):
+        if len(args) == 0:
+            if np.allclose(self.cmpvecs, np.eye(2), atol=1e-02):
+                if self.geom == 'geo': self.cmplabels = ['North', 'East']
+                elif self.geom == 'ray': self.cmplabels = ['SV', 'SH']
+                elif self.geom == 'cart': self.cmplabels = ['X', 'Y']
+                else: self.cmplabels = ['Comp1', 'Comp2']
+                return
+            # if reached here we have a non-standard orientation
+            a1,a2 = self.cmpangs()
+            lbl1 = str(round(a1))+r' ($^\circ$)'
+            lbl2 = str(round(a2))+r' ($^\circ$)'
+            self.cmplabels = [lbl1, lbl2]
+            return
+        elif len(args) == 1:   
+            self.cmplabels = args[0]
+            return
+        else:
+            raise Exception('unexpected number of arguments')
+            
+    # units
+    @property
+    def units(self):
+        return self.__units
+        
+    @units.setter
+    def units(self, units):
+        if not isinstance(units, str):
+            raise TypeError('units must be a str')
+            
+    def set_units(self, units):
+        self.units = units
+    
+    ##########
     # Plotting
+    ##########
               
     def plot(self, **kwargs):
         """
         Plot trace data and particle motion
         """
+        
+        settings = {}
+        settings['pick'] = False
+        settings.update(**kwargs)
 
-        fig = plt.figure(figsize=(12, 3))     
-        gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1]) 
+        fig = plt.figure(figsize=(12, 3), **kwargs)     
+        gs = gridspec.GridSpec(1, 2, width_ratios=[3, 1], **kwargs) 
         
         # trace
         ax0 = plt.subplot(gs[0])
@@ -405,7 +495,7 @@ class Data:
         self._ppm( ax1, **kwargs)   
         
         # optional pick window
-        if 'pick' in kwargs and kwargs['pick'] == True:
+        if settings['pick'] == True:
             windowpicker = WindowPicker(self, fig, ax0)
             windowpicker.connect()
                                  
@@ -435,7 +525,7 @@ class Data:
         """Plot trace data on *ax* matplotlib axis object.
         """    
         # plot data
-        t = self.t()
+        t = self._t()
         
         # set labels
         if 'cmplabels' not in kwargs: kwargs['cmplabels'] = self.cmplabels
@@ -444,7 +534,7 @@ class Data:
         ax.legend(framealpha=0.5)
     
         # set limits
-        lim = np.abs(self.data()).max() * 1.1
+        lim = np.abs(self._xy()).max() * 1.1
         if 'ylim' not in kwargs: kwargs['ylim'] = [-lim, lim]
         ax.set_ylim(kwargs['ylim'])
         if 'xlim' in kwargs: ax.set_xlim(kwargs['xlim'])
@@ -488,7 +578,7 @@ class Data:
         # plt.colorbar(line)
     
         # set limit
-        lim = np.abs(self.data()).max() * 1.1
+        lim = np.abs(self._xy()).max() * 1.1
         if 'lims' not in kwargs: kwargs['lims'] = [-lim, lim] 
         ax.set_aspect('equal')
         ax.set_xlim(kwargs['lims'])
@@ -633,11 +723,11 @@ class WindowPicker:
     Pick a Window
     """
 
-    def __init__(self, data, fig, ax):
+    def __init__(self, Data, fig, ax):
            
         self.canvas = fig.canvas
         self.ax = ax
-        self.data = data
+        self.Data = Data
         
         # message
         fig.text(0.05, 0.05,'Left and right click to set window start and end.')
@@ -674,7 +764,7 @@ class WindowPicker:
     def keypress(self, event):
         if event.key == " ":
             wbeg, wend = sorted((self.x1, self.x2)) 
-            self.data.set_window(wbeg, wend)
+            self.Data.set_window(wbeg, wend)
             # self.disconnect()
 
     def enter(self, event):
