@@ -13,16 +13,16 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.collections import LineCollection
 
-class Data:
+class SplitWave:
     
     """
-    Holds data on which you want to measure shear wave splitting.
+    Prepare to easily measure shear wave splitting.
     
     Work with existing data in numpy arrays.
-    >>> Data(x, y, delta=*delta*)
+    >>> SplitWave(x, y, delta=*delta*)
     
     Or create new synthetic data.
-    >>> Data(delta=*delta*, noise=*noise*, split=*split*)
+    >>> SplitWave(delta=*delta*, noise=*noise*, split=*split*)
     
     Methods
     -------
@@ -721,11 +721,11 @@ class WindowPicker:
     Pick a Window
     """
 
-    def __init__(self, Data, fig, ax):
+    def __init__(self, SplitWave, fig, ax):
            
         self.canvas = fig.canvas
         self.ax = ax
-        self.Data = Data
+        self.SplitWave = SplitWave
         
         # message
         fig.text(0.05, 0.05,'Left and right click to set window start and end.')
@@ -762,7 +762,7 @@ class WindowPicker:
     def keypress(self, event):
         if event.key == " ":
             wbeg, wend = sorted((self.x1, self.x2)) 
-            self.Data.set_window(wbeg, wend)
+            self.SplitWave.set_window(wbeg, wend)
             # self.disconnect()
 
     def enter(self, event):
