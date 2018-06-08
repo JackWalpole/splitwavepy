@@ -81,32 +81,111 @@ class Py(SplitWave):
             
         # backup keyword args
         self.kwargs = kwargs
-    #
-    # #===================
-    # # Special Properties
-    # #===================
-    #
-    # # _data
-    # @property
-    # def _data(self):
-    #
-    # # _degs
-    # @property
-    # def _degs(self):
-    #     return self.__x
-    #
-    # # _lags
-    # @property
-    # def y(self):
-    #     return self.__y
-    #
-    # # derived
-    # # _grid
-    # @property
-    # def delta(self):
-    #     return self.__delta
-    
 
+    #===================
+    # Special Properties
+    #===================
+
+    # _degs
+    @property
+    def _degs(self):
+        return self.__degs
+        
+    @_degs.setter
+    def _degs(self, degs):
+        if not isinstance(degs, np.ndarray):
+            raise TypeError('degs must be numpy array')
+        if degs.ndim != 1:
+            raise ValueError('degs must be 1-d')
+        self.__degs = degs
+        self.__rads = np.radians(degs)
+        
+    def _set_degs(self, **kwargs):
+        """return numpy array of degs to explore"""
+        settings = {}
+        settings['mindeg'] = -90
+        settings['maxdeg'] = 90
+        settings['ndegs']  = 90
+        settings.update(kwargs)
+        self._degs = np.linspace( mindeg, maxdeg, ndegs, endpoint=False)
+        
+    #_lags
+    @property
+    def _lags(self):
+        return self.__lags
+        
+    @_lags.setter
+    def _lags(self, lags):
+        if not isinstance(degs, np.ndarray):
+            raise TypeError('degs must be numpy array')
+        if degs.ndim != 1:
+            raise ValueError('degs must be 1-d')
+        self.__lags = lags
+        self.__slags = np.unique(core.time2samps(lags, self._delta, mode='even')).astype(int)
+    
+    def _set_lags(self, **kwargs):
+        """return numpy array of lags to explore"""
+        settings = {}
+        settings['minlag'] = 0
+        settings['maxlag'] = self.wwidth() / 4
+        settings['nlags']  = 40
+        settings.update(kwargs)
+        
+        if 'lags' not in kwargs:
+            lags = np.linspace( minlag, maxlag, nlags)
+        else:
+            if isinstance(kwargs['lags'],np.ndarray):
+                lags = kwargs['lags']
+            elif isinstance(kwargs['lags'],tuple):
+                if len(kwargs['lags']) == 1:
+                    lags = np.linspace( minlag, kwargs['lags'][0], nlags)
+                elif len(kwargs['lags']) == 2:
+                    lags = np.linspace( minlag,*kwargs['lags'])
+                elif len(kwargs['lags']) == 3:
+                    lags = np.linspace( *kwargs['lags'])
+                else:
+                    raise Exception('Can\'t parse lags keyword')
+            else:
+                raise TypeError('lags keyword must be a tuple or numpy array') 
+        return lags
+        
+    #_rcvcorr
+    @property
+    def _rcvcorr(self):
+        return self.__rcvcorr
+        
+    @_rcvcorr.setter
+    def _rcvcorr(self, rcvcorr):
+        return 
+
+        
+
+        
+
+                
+    def _get_degs_lags_and_slags(self, **kwargs):
+        # convert lags to samps and back again
+        lags = self._parse_lags(**kwargs)
+        slags = np.unique( core.time2samps(lags, self._delta, mode='even')).astype(int)
+        lags = core.samps2time(slags, self._delta)
+        # parse degs
+        degs = self._parse_degs(**kwargs)
+        return degs, lags, slags
+        
+
+    # _lags
+    @property
+    def y(self):
+        return self.__y
+
+    # derived
+    # _grid
+    @property
+    def delta(self):
+        return self.__delta
+    
+    def _book_keep(self, **kwargs):
+         self.degs, self.lags, self.slags = self._get_degs_lags_and_slags(**kwargs)
                 
     # Common methods
             
@@ -147,58 +226,9 @@ class Py(SplitWave):
         
     # utility
     
-    def _book_keep(self, **kwargs):
-         self.degs, self.lags, self.slags = self._get_degs_lags_and_slags(**kwargs)
 
-    def _parse_lags(self, **kwargs):
-        """return numpy array of lags to explore"""
-        # LAGS
-        minlag = 0
-        maxlag = self.wwidth() / 4
-        nlags  = 40
-        if 'lags' not in kwargs:
-            lags = np.linspace( minlag, maxlag, nlags)
-        else:
-            if isinstance(kwargs['lags'],np.ndarray):
-                lags = kwargs['lags']
-            elif isinstance(kwargs['lags'],tuple):
-                if len(kwargs['lags']) == 1:
-                    lags = np.linspace( minlag, kwargs['lags'][0], nlags)
-                elif len(kwargs['lags']) == 2:
-                    lags = np.linspace( minlag,*kwargs['lags'])
-                elif len(kwargs['lags']) == 3:
-                    lags = np.linspace( *kwargs['lags'])
-                else:
-                    raise Exception('Can\'t parse lags keyword')
-            else:
-                raise TypeError('lags keyword must be a tuple or numpy array') 
-        return lags
-        
-    def _parse_degs(self, **kwargs):
-        """return numpy array of degs to explore"""
-        # DEGS
-        mindeg = -90
-        maxdeg = 90
-        ndegs = 90
-        if 'degs' not in kwargs:
-            degs = np.linspace( mindeg, maxdeg, ndegs, endpoint=False)
-        else:
-            if isinstance(kwargs['degs'], np.ndarray):
-                degs = kwargs['degs']
-            elif isinstance(kwargs['degs'], int):
-                degs = np.linspace( mindeg, maxdeg, kwargs['degs'], endpoint=False)
-            else:
-                raise TypeError('degs must be an integer or numpy array')
-        return degs
-                
-    def _get_degs_lags_and_slags(self, **kwargs):
-        # convert lags to samps and back again
-        lags = self._parse_lags(**kwargs)
-        slags = np.unique( core.time2samps(lags, self._delta, mode='even')).astype(int)
-        lags = core.samps2time(slags, self._delta)
-        # parse degs
-        degs = self._parse_degs(**kwargs)
-        return degs, lags, slags
+
+
                     
     # METHODS 
     #--------    
