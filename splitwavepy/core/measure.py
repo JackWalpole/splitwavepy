@@ -31,36 +31,37 @@ class Py(SplitWave):
     """
     
     def __init__(self, SplitWave, **kwargs):
+        
+        # The SplitWave (Data) object
+        self.__data = SplitWave
 
         # Settings
         settings = {}
         settings['plot'] = False
         settings['report'] = True
-        settings['bootstrap'] = True
+        # settings['bootstrap'] = True
         settings['rcvcorr'] = None
         settings['srccorr'] = None
-        
+        settings['pol'] = None    
         settings.update(kwargs) # update using kwargs
-        # backup keyword args
         self._settings = settings
         
-
+        # Book Keeping
         _set_degs(**settings)
         _set_lags(**settings)
+        self._pol = settings['pol']
         self._rcvcorr = settings['rcvcorr']
         self._srccorr = settings['srccorr']
-        
-
-
             
         # Grid Search
-        self.covmap = self._gridcov(**kwargs)
-        
-        # Inspect the covariance map
+        self._covmap = self._gridcov()
+
         # Silver and Chan
-        self.lam1, self.lam2 = self._silver_and_chan(**kwargs)
-        sc_loc = core.max_idx(self.lam1 / self.lam2)
-        self.sc_fast, self.sc_lag = self.degmap[sc_loc], self.lagmap[sc_loc]
+        silver_chan()
+        
+        # Cross Correlation
+        correlation()
+
 
         # Cross-correlation
         self.xc = core.covmap2rho()
@@ -85,13 +86,26 @@ class Py(SplitWave):
     # Special Properties
     #===================
     
-    #
-    # # _data
-    # @property
-    # def _data(self):
-    #     return self.__data
-    #
 
+    # _data
+    @property
+    def _data(self):
+        return self.__data
+
+    # _pol
+    @property
+    def _pol(self):
+        return self.__pol
+    
+    @pol.setter
+    def _pol(self, pol):
+        if pol is None:
+            self.__pol = pol
+        elif isinstance(pol, float):
+            self.__pol = pol
+        else:
+            raise TypeError('pol not understood.')
+    
     # _degs
     @property
     def _degs(self):
@@ -99,13 +113,11 @@ class Py(SplitWave):
         
     @_degs.setter
     def _degs(self, degs):
-        if not isinstance(degs, np.ndarray):
-            raise TypeError('degs must be numpy array')
-        if degs.ndim != 1:
-            raise ValueError('degs must be 1-d')
-        self.__degs = degs
-        self.__rads = np.radians(degs)
-        
+        if isinstance(degs, np.ndarray) and degs.ndim == 1:
+            self.__degs = degs
+            self.__rads = np.radians(degs)
+        else: raise ValueError('degs not understood.')
+       
     def _set_degs(self, **kwargs):
         """return numpy array of degs to explore"""
         settings = {}
@@ -125,12 +137,10 @@ class Py(SplitWave):
         
     @_lags.setter
     def _lags(self, lags):
-        if not isinstance(lags, np.ndarray):
-            raise TypeError('lags must be numpy array')
-        if lags.ndim != 1:
-            raise ValueError('lags must be 1-d')
-        self.__slags = np.unique(core.time2samps(lags, self._delta, mode='even')).astype(int)
-        self.__lags = self.__slags * self._delta
+        if isinstance(lags, np.ndarray) and lags.ndim == 1:
+            self.__slags = np.unique(core.time2samps(lags, self._delta, mode='even')).astype(int)
+            self.__lags = self.__slags * self._delta
+        else: raise ValueError('lags not understood.')
     
     def _set_lags(self, **kwargs):
         """return numpy array of lags to explore"""
@@ -164,7 +174,7 @@ class Py(SplitWave):
             slag = core.time2samps(lag, self._delta, 'even')
             self.__rcvslag = (deg, slag)
             self.__rcvcorr = (deg, slag * self._delta)
-        else: raise ValueError('rcvcorr not understood.')
+        else: raise TypeError('rcvcorr not understood.')
                 
     #_srccorr
     @property
@@ -181,48 +191,77 @@ class Py(SplitWave):
             slag = core.time2samps(lag, self._delta, 'even')
             self.__rcvslag = (deg, slag)
             self.__srccorr = (deg, slag * self._delta)
-        else: raise ValueError('srccorr not understood.')      
+        else: raise TypeError('srccorr not understood.')      
 
-                
-
+    @property
+    def silver_chan(self):
+        return self.__silver_chan
+        
+    @silver_chan.setter
+    def silver_chan(self, **kwargs):
+        if 'pol' in kwargs:
+            raise NotImplementedError('Not implemented.')
+            #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
+        else:
+            # use eigen analysis
+            lam1, lam2 = core.covmap2eigvals(self._covmap)
+        sc = {}
+        sc['lam1'] = lam1
+        sc['lam2'] = lam2
+        ml = core.max_idx(lam1/lam2)
+        dd, ll = self._grid
+        sc['fast'] = dd[ml]
+        sc['lag']  = ll[ml]
+        # sc['dfast']
+        # sc['dlag']
+        self.__silver_chan = sc
+        
+    @property
+    def correlation(self):
+        return self.__correlation
+    
+    @correlation.setter
+    def correlation(self):
+        xc = {}
+        xc['rho'] = core.covmap2rho(self._covmap)
+        ml = core.max_idx(rho)
+        dd, ll = self._grid
+        xc['fast'] = dd[ml]
+        xc['lag']  = ll[ml]
+        self.__correlation = xc
     
                 
     # Common methods
             
-    def _gridcov(self, **kwargs):       
+    def _gridcov(self):       
         """
         Grid search for splitting parameters applied to self.SplitWave using the function defined in func
         rcvcorr = receiver correction parameters in tuple (fast,lag) 
         srccorr = source correction parameters in tuple (fast,lag) 
         """
         
-        x, y = np.copy(self.x), np.copy(self.y)
-        w0, w1 = self._w0(), self._w1()
+        # ensure data rotated to zero
+        data = self._data.rotateto(0)
+        x, y = data.x, data.y
+        w0, w1 = data._w0(), data._w1()
                 
         # receiver correction
-        if 'rcvcorr' in kwargs:
-            rcvphi, rcvlag = self.__rcvcorr
-            x, y = core.unsplit(x, y, rcvphi, rcvlag)
+        if self._rcvcorr is not None:
+            fast, slag = self._rcvslag
+            x, y = core.unsplit(x, y, fast, slag)
 
         # source correction
-        if 'srccorr' in kwargs:
-            raise Exception('Not implemented.')
+        if self._srccorr is not None:
+            raise NotImplementedError('Not implemented.')
             # srcphi, srclag = self.__srccorr
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
         return core.gridcov(x, y, w0, w1, self._degs, self._slags)
         
-    def _silver_and_chan(self):
-        if 'pol' in kwargs:
-            raise Exception('Not implemented.')
-            #lam1, lam2 = core.covmap2polvar(self.covmap, pol)
-        else:
-            # use eigen analysis
-            lam1, lam2 = core.covmap2eigvals(self.covmap)
-        return lam1, lam2
+
         
     def _correlation(self):
-        return core.covmap2rho(self.covmap)
+        return core.covmap2rho(self._covmap)
         
     # utility
     
@@ -315,7 +354,7 @@ class Py(SplitWave):
         elif surftype == 'min':
             confbool = self.errsurf <= self.conf95level
         else:
-            raise ValueError('surftype must be min or max')
+            raise ValueError('surftype must be \'min\' or \'max\'')
 
         # tlag error
         lagbool = confbool.any(axis=1)
