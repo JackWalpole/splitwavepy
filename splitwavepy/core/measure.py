@@ -27,7 +27,11 @@ import matplotlib.gridspec as gridspec
 class Py(SplitWave):
     
     """
-    Measure shearwave splitting on a SplitWave object. 
+    Measure shearwave splitting on a SplitWave object.
+    
+    Usage:
+    
+    
     """
     
     def __init__(self, SplitWave, **kwargs):
@@ -44,7 +48,7 @@ class Py(SplitWave):
         settings['srccorr'] = None
         settings['pol'] = None    
         settings.update(kwargs) # update using kwargs
-        self._settings = settings
+        self._settings = settings # backup settings
         
         # Book Keeping
         _set_degs(**settings)
@@ -62,25 +66,19 @@ class Py(SplitWave):
         # Cross Correlation
         correlation()
 
-
-        # Cross-correlation
-        self.xc = core.covmap2rho()
-        xc_loc = core.max_idx(self.xc)
-        self.xc_fast, self.xc_lag =  self.degmap[xc_loc], self.lagmap[xc_loc]
-        
-        # Splitting Intensity
-        self.splintensity = self._splitting_intensity()
+        # # Splitting Intensity
+        # self.splintensity = self._splitting_intensity()
         
         # Name
         self.name = 'Untitled'
         if 'name' in kwargs: self.name = kwargs['name']
             
-
-        
-        # Implement Settings
-        if 'bootstrap' == True : m.bootstrap(**kwargs)            
-        if 'report'    == True : m.report(**kwargs)
-        if 'plot'      == True : m.plot(**kwargs)
+        #
+        #
+        # # Implement Settings
+        # if 'bootstrap' == True : m.bootstrap(**kwargs)
+        # if 'report'    == True : m.report(**kwargs)
+        # if 'plot'      == True : m.plot(**kwargs)
 
     #===================
     # Special Properties
@@ -199,12 +197,12 @@ class Py(SplitWave):
         
     @silver_chan.setter
     def silver_chan(self, **kwargs):
-        if 'pol' in kwargs:
-            raise NotImplementedError('Not implemented.')
-            #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
-        else:
+        if self._pol is None:
             # use eigen analysis
             lam1, lam2 = core.covmap2eigvals(self._covmap)
+        else:
+            raise NotImplementedError('Not implemented.')
+            #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
         sc = {}
         sc['lam1'] = lam1
         sc['lam2'] = lam2
@@ -212,6 +210,7 @@ class Py(SplitWave):
         dd, ll = self._grid
         sc['fast'] = dd[ml]
         sc['lag']  = ll[ml]
+        # sc['srcpol'] = self._covmap[ml]
         # sc['dfast']
         # sc['dlag']
         self.__silver_chan = sc
