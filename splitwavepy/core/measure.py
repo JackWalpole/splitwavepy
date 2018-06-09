@@ -51,20 +51,16 @@ class Py(SplitWave):
         self._settings = settings # backup settings
         
         # Book Keeping
-        _set_degs(**settings)
-        _set_lags(**settings)
+        self._set_degs(**settings)
+        self._set_lags(**settings)
         self._pol = settings['pol']
         self._rcvcorr = settings['rcvcorr']
         self._srccorr = settings['srccorr']
             
         # Grid Search
         self._covmap = self._gridcov()
-
-        # Silver and Chan
-        silver_chan()
-        
-        # Cross Correlation
-        correlation()
+        self.silver_chan()
+        self.correlation()
 
         # # Splitting Intensity
         # self.splintensity = self._splitting_intensity()
@@ -95,7 +91,7 @@ class Py(SplitWave):
     def _pol(self):
         return self.__pol
     
-    @pol.setter
+    @_pol.setter
     def _pol(self, pol):
         if pol is None:
             self.__pol = pol
@@ -136,15 +132,15 @@ class Py(SplitWave):
     @_lags.setter
     def _lags(self, lags):
         if isinstance(lags, np.ndarray) and lags.ndim == 1:
-            self.__slags = np.unique(core.time2samps(lags, self._delta, mode='even')).astype(int)
-            self.__lags = self.__slags * self._delta
+            self.__slags = np.unique(core.time2samps(lags, self._data._delta, mode='even')).astype(int)
+            self.__lags = self.__slags * self._data._delta
         else: raise ValueError('lags not understood.')
     
     def _set_lags(self, **kwargs):
         """return numpy array of lags to explore"""
         settings = {}
         settings['minlag'] = 0
-        settings['maxlag'] = self.wwidth() / 4
+        settings['maxlag'] = self._data.wwidth() / 4
         settings['nlags']  = 40
         settings.update(kwargs)
         self._lags = np.linspace(settings['minlag'],
@@ -167,11 +163,11 @@ class Py(SplitWave):
         if rcvcorr == None:
             self.__rcvslag = None
             self.__rcvcorr = None
-        if isinstance(rcvcorr, tuple) and len(rcvcorr) == 2: 
+        elif isinstance(rcvcorr, tuple) and len(rcvcorr) == 2: 
             deg, lag = rcvcorr
-            slag = core.time2samps(lag, self._delta, 'even')
+            slag = core.time2samps(lag, self._data._delta, 'even')
             self.__rcvslag = (deg, slag)
-            self.__rcvcorr = (deg, slag * self._delta)
+            self.__rcvcorr = (deg, slag * self._data._delta)
         else: raise TypeError('rcvcorr not understood.')
                 
     #_srccorr
@@ -184,11 +180,11 @@ class Py(SplitWave):
         if srccorr == None:
             self.__rcvslag = None
             self.__srccorr = None
-        if isinstance(srccorr, tuple) and len(srccorr) == 2: 
+        elif isinstance(srccorr, tuple) and len(srccorr) == 2: 
             deg, lag = srccorr
-            slag = core.time2samps(lag, self._delta, 'even')
+            slag = core.time2samps(lag, self._data._delta, 'even')
             self.__rcvslag = (deg, slag)
-            self.__srccorr = (deg, slag * self._delta)
+            self.__srccorr = (deg, slag * self._data._delta)
         else: raise TypeError('srccorr not understood.')      
 
     @property
@@ -240,7 +236,7 @@ class Py(SplitWave):
         """
         
         # ensure data rotated to zero
-        data = self._data.rotateto(0)
+        data = self._data._rotateto(0)
         x, y = data.x, data.y
         w0, w1 = data._w0(), data._w1()
                 

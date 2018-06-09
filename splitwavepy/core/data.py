@@ -138,7 +138,6 @@ class SplitWave:
         cang = math.cos(ang)
         sang = math.sin(ang)
         # define the new vecs
-        oldvecs = self._vecs
         newvecs = np.array([[ cang,-sang],
                             [ sang, cang]])
         self._rotatetovecs(newvecs)
