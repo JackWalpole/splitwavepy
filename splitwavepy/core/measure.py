@@ -31,44 +31,27 @@ class Py(SplitWave):
     """
     
     def __init__(self, SplitWave, **kwargs):
-        
+
         # Settings
         settings = {}
         settings['plot'] = False
         settings['report'] = True
         settings['bootstrap'] = True
+        settings['rcvcorr'] = None
+        settings['srccorr'] = None
+        
         settings.update(kwargs) # update using kwargs
+        # backup keyword args
+        self._settings = settings
         
-        # Implement Settings
-        if 'bootstrap' == True : m.bootstrap(**kwargs)            
-        if 'report'    == True : m.report(**kwargs)
-        if 'plot'      == True : m.plot(**kwargs)
-        
-        # self.degmap, self.lagmap = np.meshgrid(self._degs, self.lags)
-        
-        # settings
 
-        # receiver correction
-        self.rcvcorr = None
-        if ('rcvcorr' in kwargs):
-            if not isinstance(kwargs['rcvcorr'],tuple): raise TypeError('rcvcorr must be tuple')
-            if len(kwargs['rcvcorr']) != 2: raise Exception('rcvcorr must be length 2')
-            # convert time shift to nsamples -- must be even
-            deg, lag = kwargs['rcvcorr']
-            samps = core.time2samps(lag, self._delta, 'even')
-            self.__rcvcorr = (deg, samps)
-            self.rcvcorr = (deg, samps * self._delta)
+        _set_degs(**settings)
+        _set_lags(**settings)
+        self._rcvcorr = settings['rcvcorr']
+        self._srccorr = settings['srccorr']
+        
 
-        # source correction
-        self.srccorr = None
-        if ('srccorr' in kwargs):
-            if not isinstance(kwargs['srccorr'],tuple): raise TypeError('srccorr must be tuple')
-            if len(kwargs['srccorr']) != 2: raise Exception('srccorr must be length 2')
-            # convert time shift to nsamples -- must be even
-            deg, lag = kwargs['srccorr']
-            samps = core.time2samps(lag, self._delta, 'even')
-            self.__srccorr = (deg, samps)
-            self.srccorr = (deg, samps * self._delta)
+
             
         # Grid Search
         self.covmap = self._gridcov(**kwargs)
@@ -91,12 +74,23 @@ class Py(SplitWave):
         self.name = 'Untitled'
         if 'name' in kwargs: self.name = kwargs['name']
             
-        # backup keyword args
-        self.kwargs = kwargs
+
+        
+        # Implement Settings
+        if 'bootstrap' == True : m.bootstrap(**kwargs)            
+        if 'report'    == True : m.report(**kwargs)
+        if 'plot'      == True : m.plot(**kwargs)
 
     #===================
     # Special Properties
     #===================
+    
+    #
+    # # _data
+    # @property
+    # def _data(self):
+    #     return self.__data
+    #
 
     # _degs
     @property
@@ -131,12 +125,12 @@ class Py(SplitWave):
         
     @_lags.setter
     def _lags(self, lags):
-        if not isinstance(degs, np.ndarray):
-            raise TypeError('degs must be numpy array')
-        if degs.ndim != 1:
-            raise ValueError('degs must be 1-d')
-        self.__lags = lags
+        if not isinstance(lags, np.ndarray):
+            raise TypeError('lags must be numpy array')
+        if lags.ndim != 1:
+            raise ValueError('lags must be 1-d')
         self.__slags = np.unique(core.time2samps(lags, self._delta, mode='even')).astype(int)
+        self.__lags = self.__slags * self._delta
     
     def _set_lags(self, **kwargs):
         """return numpy array of lags to explore"""
@@ -149,44 +143,49 @@ class Py(SplitWave):
                                  settings['maxlag'],
                                  settings['nlags'],
                                  endpoint = True)
-        
-    #_rcvcorr
+                                 
+    #_grid
+    @property
+    def _grid(self):
+        return np.meshgrid(self._degs, self._lags)
+                   
+    #_rcvcorr    
     @property
     def _rcvcorr(self):
         return self.__rcvcorr
         
     @_rcvcorr.setter
     def _rcvcorr(self, rcvcorr):
-        return 
-
+        if rcvcorr == None:
+            self.__rcvslag = None
+            self.__rcvcorr = None
+        if isinstance(rcvcorr, tuple) and len(rcvcorr) == 2: 
+            deg, lag = rcvcorr
+            slag = core.time2samps(lag, self._delta, 'even')
+            self.__rcvslag = (deg, slag)
+            self.__rcvcorr = (deg, slag * self._delta)
+        else: raise ValueError('rcvcorr not understood.')
+                
+    #_srccorr
+    @property
+    def _srccorr(self):
+        return self.__srccorr
         
-
-        
+    @_srccorr.setter
+    def _srccorr(self, srccorr):
+        if srccorr == None:
+            self.__rcvslag = None
+            self.__srccorr = None
+        if isinstance(srccorr, tuple) and len(srccorr) == 2: 
+            deg, lag = srccorr
+            slag = core.time2samps(lag, self._delta, 'even')
+            self.__rcvslag = (deg, slag)
+            self.__srccorr = (deg, slag * self._delta)
+        else: raise ValueError('srccorr not understood.')      
 
                 
-    def _get_degs_lags_and_slags(self, **kwargs):
-        # convert lags to samps and back again
-        lags = self._parse_lags(**kwargs)
-        slags = np.unique( core.time2samps(lags, self._delta, mode='even')).astype(int)
-        lags = core.samps2time(slags, self._delta)
-        # parse degs
-        degs = self._parse_degs(**kwargs)
-        return degs, lags, slags
-        
 
-    # _lags
-    @property
-    def y(self):
-        return self.__y
-
-    # derived
-    # _grid
-    @property
-    def delta(self):
-        return self.__delta
     
-    def _book_keep(self, **kwargs):
-         self.degs, self.lags, self.slags = self._get_degs_lags_and_slags(**kwargs)
                 
     # Common methods
             
