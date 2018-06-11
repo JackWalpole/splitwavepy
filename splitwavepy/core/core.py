@@ -76,10 +76,23 @@ def rotate(x, y, degrees):
        rotates from x to y axis
        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
     ang = math.radians(degrees)
-    rot = np.array([[ np.cos(ang), np.sin(ang)],
-                    [-np.sin(ang), np.cos(ang)]])
+    cang = math.cos(ang)
+    sang = math.sin(ang)
+    rot = np.array([[ cang, sang],
+                    [-sang, cang]])
     xy = np.dot(rot, np.vstack((x, y)))
     return xy[0], xy[1]
+    
+# def rotrad(x, y, radians):
+#     """row 0 is x-axis and row 1 is y-axis,
+#        rotates from x to y axis
+#        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
+#     cang = math.cos(radians)
+#     sang = math.sin(radians)
+#     rot = np.array([[ cang, sang],
+#                     [-sang, cang]])
+#     xy = np.dot(rot, np.vstack((x, y)))
+#     return xy[0], xy[1]
 
 def split(x, y, degrees, samps):
     """Apply forward splitting and rotate back"""
@@ -261,7 +274,7 @@ def gridcov(x, y, w0, w1, degs, slags):
         # loop over lags
         for jj in range(slags.size):
             slag = slags[jj]
-            wx, wy  = slagchop(rot[0], rot[1], w0, w1, slag)
+            wx, wy  = slagchop(rot[0], rot[1], w0, w1, -slag)
             dx, dy = wx - meanx[slag], wy - meany[slag]
             g[ii, jj, 0, 0] = npsum(dx * dx)
             g[ii, jj, 1, 0] = g[ii, jj, 0, 1] = npsum(dx * dy)

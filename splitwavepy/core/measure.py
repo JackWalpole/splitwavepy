@@ -37,16 +37,17 @@ class Py(SplitWave):
     def __init__(self, SplitWave, **kwargs):
         
         # The SplitWave (Data) object
-        self.__data = SplitWave
+        self.__data = SplitWave.rotateto(0)
 
         # Settings
         settings = {}
         settings['plot'] = False
         settings['report'] = True
         # settings['bootstrap'] = True
+        settings['pol'] = None  
         settings['rcvcorr'] = None
         settings['srccorr'] = None
-        settings['pol'] = None    
+  
         settings.update(kwargs) # update using kwargs
         self._settings = settings # backup settings
         
@@ -59,15 +60,15 @@ class Py(SplitWave):
             
         # Grid Search
         self._covmap = self._gridcov()
-        self.silver_chan()
-        self.correlation()
+        # self.silver_chan()
+        # self.correlation()
 
         # # Splitting Intensity
         # self.splintensity = self._splitting_intensity()
-        
-        # Name
-        self.name = 'Untitled'
-        if 'name' in kwargs: self.name = kwargs['name']
+        #
+        # # Name
+        # self.name = 'Untitled'
+        # if 'name' in kwargs: self.name = kwargs['name']
             
         #
         #
@@ -109,7 +110,7 @@ class Py(SplitWave):
     def _degs(self, degs):
         if isinstance(degs, np.ndarray) and degs.ndim == 1:
             self.__degs = degs
-            self.__rads = np.radians(degs)
+            # self.__rads = np.radians(degs)
         else: raise ValueError('degs not understood.')
        
     def _set_degs(self, **kwargs):
@@ -151,7 +152,8 @@ class Py(SplitWave):
     #_grid
     @property
     def _grid(self):
-        return np.meshgrid(self._degs, self._lags)
+        dd, ll = np.meshgrid(self._degs, self._lags, indexing='ij')
+        return dd, ll
                    
     #_rcvcorr    
     @property
@@ -187,43 +189,43 @@ class Py(SplitWave):
             self.__srccorr = (deg, slag * self._data._delta)
         else: raise TypeError('srccorr not understood.')      
 
-    @property
-    def silver_chan(self):
-        return self.__silver_chan
-        
-    @silver_chan.setter
-    def silver_chan(self, **kwargs):
-        if self._pol is None:
-            # use eigen analysis
-            lam1, lam2 = core.covmap2eigvals(self._covmap)
-        else:
-            raise NotImplementedError('Not implemented.')
-            #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
-        sc = {}
-        sc['lam1'] = lam1
-        sc['lam2'] = lam2
-        ml = core.max_idx(lam1/lam2)
-        dd, ll = self._grid
-        sc['fast'] = dd[ml]
-        sc['lag']  = ll[ml]
-        # sc['srcpol'] = self._covmap[ml]
-        # sc['dfast']
-        # sc['dlag']
-        self.__silver_chan = sc
-        
-    @property
-    def correlation(self):
-        return self.__correlation
-    
-    @correlation.setter
-    def correlation(self):
-        xc = {}
-        xc['rho'] = core.covmap2rho(self._covmap)
-        ml = core.max_idx(rho)
-        dd, ll = self._grid
-        xc['fast'] = dd[ml]
-        xc['lag']  = ll[ml]
-        self.__correlation = xc
+    # @property
+    # def silver_chan(self):
+    #     return self.__silver_chan
+    #
+    # @silver_chan.setter
+    # def silver_chan(self, **kwargs):
+    #     if self._pol is None:
+    #         # use eigen analysis
+    #         lam1, lam2 = core.covmap2eigvals(self._covmap)
+    #     else:
+    #         raise NotImplementedError('Not implemented.')
+    #         #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
+    #     sc = {}
+    #     sc['lam1'] = lam1
+    #     sc['lam2'] = lam2
+    #     ml = core.max_idx(lam1/lam2)
+    #     dd, ll = self._grid
+    #     sc['fast'] = dd[ml]
+    #     sc['lag']  = ll[ml]
+    #     # sc['srcpol'] = self._covmap[ml]
+    #     # sc['dfast']
+    #     # sc['dlag']
+    #     self.__silver_chan = sc
+    #
+    # @property
+    # def correlation(self):
+    #     return self.__correlation
+    #
+    # @correlation.setter
+    # def correlation(self):
+    #     xc = {}
+    #     xc['rho'] = core.covmap2rho(self._covmap)
+    #     ml = core.max_idx(rho)
+    #     dd, ll = self._grid
+    #     xc['fast'] = dd[ml]
+    #     xc['lag']  = ll[ml]
+    #     self.__correlation = xc
     
                 
     # Common methods
@@ -236,7 +238,7 @@ class Py(SplitWave):
         """
         
         # ensure data rotated to zero
-        data = self._data._rotateto(0)
+        data = self._data.rotateto(0)
         x, y = data.x, data.y
         w0, w1 = data._w0(), data._w1()
                 
@@ -251,12 +253,32 @@ class Py(SplitWave):
             # srcphi, srclag = self.__srccorr
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
-        return core.gridcov(x, y, w0, w1, self._degs, self._slags)
+        return core.gridcov(x, y, w0, w1, self.__degs, self.__slags)
         
-
+    def silver_and_chan(self, **kwargs):
+        if self._pol is None:
+            # use eigen analysis
+            lam1, lam2 = core.covmap2eigvals(self._covmap)
+        else:
+            raise NotImplementedError('Not implemented.')
+            #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
+        sc = {}
+        sc['lam1'] = lam1
+        sc['lam2'] = lam2
+        ml = core.max_idx(lam1/lam2)
+        dd, ll = self._grid
+        sc['fast'] = dd[ml]
+        sc['lag']  = ll[ml]
+        return sc
+        # sc['srcpol'] = self._covmap[ml]
+        # sc['dfast']
+        # sc['dlag']
+        # self.__silver_chan = sc
         
-    def _correlation(self):
-        return core.covmap2rho(self._covmap)
+    #
+    #
+    # def _correlation(self):
+    #     return core.covmap2rho(self._covmap)
         
     # utility
     
@@ -298,27 +320,23 @@ class Py(SplitWave):
         return data_corr
 
     def srcpoldata(self):
-        srcpoldata = self.copy()
-        srcpoldata._rotateto(self.srcpol())
+        srcpoldata = self._rotateto(self.srcpol())
         srcpoldata.set_labels(['srcpol', 'trans', 'ray'])
         return srcpoldata
         
     def srcpoldata_corr(self):
-        srcpoldata_corr = self.SplitWave_corr()        
-        srcpoldata_corr._rotateto(self.srcpol())
+        srcpoldata_corr = self.data_corr().rotateto(self.srcpol())      
         srcpoldata_corr.set_labels(['srcpol', 'trans', 'ray'])
         return srcpoldata_corr
         
     def fastdata(self):
         """Plot fast/slow data."""
-        fastdata = self.copy()
-        fastdata._rotateto(self.fast)
+        fastdata = self.rotateto(self.fast)
         fastdata.set_labels(['fast', 'slow', 'ray'])
         return fastdata
 
     def fastdata_corr(self):
-        fastdata_corr = self.SplitWave_corr()
-        fastdata_corr._rotateto(self.fast)
+        fastdata_corr = self.data_corr().rotateto(self.fast)
         fastdata_corr.set_labels(['fast', 'slow', 'ray'])
         return fastdata_corr
             
@@ -380,8 +398,7 @@ class Py(SplitWave):
         
         if 'pol' not in kwargs:
             raise Exception('pol must be specified')            
-        copy = self.copy()
-        copy._rotateto(pol)
+        copy = self.rotateto(pol)
         copy.x = np.gradient(copy.x)
         rdiff, trans = copy._chopdata()
         s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
@@ -469,7 +486,7 @@ class Py(SplitWave):
             if self.func == core.transenergy:
                 return data_corr._chopdata().rotatetto(self.srcpol())
             elif (self.func == core.crosscorr) or (self.func == core.pearson):
-                return data_corr._chopdata()._rotateto(self.fast)
+                return data_corr._chopdata().rotateto(self.fast)
             else:
                 return data_corr._chopdata()
 
@@ -531,12 +548,12 @@ class Py(SplitWave):
         """
         # copy original, corrected, data
         newself = self.copy()
-        bs = self.SplitWave_corr()
+        bs = self.data_corr()
         origang = bs.cmpangs()[0]
         # replace noise sequence
-        bs._rotateto(self.srcpol())
+        bs.rotateto(self.srcpol())
         bs.y = core.resample_noise(bs.y)
-        bs._rotateto(origang)
+        bs.rotateto(origang)
         # reapply splitting
         # src side correction
         if self.srccorr is not None: bs = bs._split(*self.srccorr)

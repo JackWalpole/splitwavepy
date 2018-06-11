@@ -109,7 +109,7 @@ class SplitWave:
 
     # USEFUL TO EXAMINE DATA  
     
-    def _split(self, fast, lag):
+    def split(self, fast, lag):
         """
         Applies splitting operator.
         
@@ -117,11 +117,11 @@ class SplitWave:
         """        
         slag = core.time2samps(lag, self._delta, mode='even')
         orient, _ = self.cmpangs()
-        copy = self.copy()._rotateto(0)
-        copy.__x, copy__.y = core.split(copy.x, copy.y, fast, slag)
-        return copy._rotateto(orient)
+        copy = self.rotateto(0)
+        copy.__x, copy.__y = core.split(copy.x, copy.y, fast, slag)
+        return copy.rotateto(orient)
            
-    def _unsplit(self, fast, lag):
+    def unsplit(self, fast, lag):
         """
         Reverses splitting operator.
         
@@ -129,7 +129,7 @@ class SplitWave:
         """
         self.split(fast, -lag)
        
-    def _rotateto(self, degrees):
+    def rotateto(self, degrees):
         """
         Rotate traces so that cmp1 lines up with *degrees*
         """
@@ -140,7 +140,7 @@ class SplitWave:
         # define the new vecs
         newvecs = np.array([[ cang,-sang],
                             [ sang, cang]])
-        self._rotatetovecs(newvecs)
+        return self._rotatetovecs(newvecs)
         
     def _rotatetovecs(self, vecs):
         """
@@ -152,30 +152,30 @@ class SplitWave:
         rot = np.dot(self._vecs.T, oldvecs)
         # rotate data
         copy = self.copy()
-        xy = np.dot(rot, self._xy())
+        xy = np.dot(rot, self._xy)
         copy.__x, copy.__y = xy[0], xy[1]
         copy._set_labels()
         return copy
         
-    def _shift(self, lag):
+    def shift(self, lag):
         """
         Apply time shift between traces.
         """
         slag = core.time2samps(lag, self._delta, mode='even')
         copy = self.copy()
-        copy.__x, copy.__y = core.lag(copy.x, copy.y)
-        copy._t0 = self._t0 + abs(slag/2)
+        copy.__x, copy.__y = core.lag(copy.x, copy.y, slag)
+        copy._t0 = self._t0 + abs(slag/2) * self._delta
         return copy
 
-    def _chop(self):
+    def chop(self):
         """
         Chop data to window.
         """
-        chop = self.copy()
+        copy = self.copy()
         copy.__x, copy.__y = self._chopxy()
         copy._window.offset = 0
         copy._t0 = self.wbeg()
-        return chop
+        return copy
 
         
     # Utility 
@@ -204,9 +204,7 @@ class SplitWave:
 
 
     
-    def _t(self):
-        t = self._t0 + np.arange(self.x.size) * self._delta
-        return t
+
         
     def _chopt(self):
         """
@@ -214,11 +212,11 @@ class SplitWave:
         """
         t0 = self._w0()
         t1 = self._w1()        
-        t = self._t()[t0:t1]
+        t = self._t[t0:t1]
         return t
         
-    def _xy(self):
-        return np.vstack((self.x, self.y))
+    # def _xy(self):
+    #     return np.vstack((self.x, self.y))
         
     def _chopxy(self):
         """Chop traces to window"""
@@ -287,7 +285,7 @@ class SplitWave:
 
         
     def eigen(self, **kwargs):
-        self.eigvals, self.eigvecs = core.eigcov(self._xy())
+        self.eigvals, self.eigvecs = core.eigcov(self._xy)
         
     def power(self):
         return self.x**2, self.y**2
@@ -332,6 +330,11 @@ class SplitWave:
     @property
     def y(self):
         return self.__y
+    
+    # xy
+    @property
+    def _xy(self):
+        return np.vstack((self.x, self.y))
         
     # delta
     @property
@@ -358,8 +361,10 @@ class SplitWave:
         # windowing and plotting.
         self.__t0 = float(t0)
         
-    # def set_t0(self, t0):
-    #     self._t0 = t0
+    @property
+    def _t(self):
+        t = self._t0 + np.arange(self.x.size) * self._delta
+        return t
     
     # window 
     @property
@@ -521,10 +526,10 @@ class SplitWave:
         """
  
         # plot data
-        t = self._t()
+        t = self._t
         ax.plot( t, self.x, label=self._labels[0])
         ax.plot( t, self.y, label=self._labels[1])
-        lim = np.abs(self._xy()).max() * 1.1
+        lim = np.abs(self._xy).max() * 1.1
         ax.set_ylim([-lim, lim])
         ax.set_xlabel('Time (' + self.units +')')
         ax.legend(framealpha=0.5)
@@ -545,8 +550,7 @@ class SplitWave:
         """Plot particle motion on *ax* matplotlib axis object.
         """
         
-        data = self.copy()
-        data._rotateto(0)
+        data = self.rotateto(0)
         x, y = data._chopxy()
         t = data._chopt()
                 
@@ -564,7 +568,7 @@ class SplitWave:
         # plt.colorbar(line)
     
         # set limit
-        lim = np.abs(self._xy()).max() * 1.1
+        lim = np.abs(self._xy).max() * 1.1
         if 'lims' not in kwargs: kwargs['lims'] = [-lim, lim] 
         ax.set_aspect('equal')
         ax.set_xlim(kwargs['lims'])
