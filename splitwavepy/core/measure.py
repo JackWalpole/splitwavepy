@@ -60,8 +60,9 @@ class Py(SplitWave):
             
         # Grid Search
         self._covmap = self._gridcov()
-        # self.silver_chan()
-        # self.correlation()
+        self.sc = self.silver_chan()
+        self.xc = self.correlation()
+        self.q = core.q(self.sc['fast'], self.sc['lag'], self.xc['fast'], self.xc['lag'])
 
         # # Splitting Intensity
         # self.splintensity = self._splitting_intensity()
@@ -255,7 +256,7 @@ class Py(SplitWave):
         
         return core.gridcov(x, y, w0, w1, self.__degs, self.__slags)
         
-    def silver_and_chan(self, **kwargs):
+    def silver_chan(self, **kwargs):
         if self._pol is None:
             # use eigen analysis
             lam1, lam2 = core.covmap2eigvals(self._covmap)
@@ -265,24 +266,24 @@ class Py(SplitWave):
         sc = {}
         sc['lam1'] = lam1
         sc['lam2'] = lam2
-        ml = core.max_idx(lam1/lam2)
+        sc['maxidx'] = core.max_idx(lam1/lam2)
         dd, ll = self._grid
-        sc['fast'] = dd[ml]
-        sc['lag']  = ll[ml]
+        sc['fast'] = dd[sc['maxidx']]
+        sc['lag']  = ll[sc['maxidx']]
         return sc
         # sc['srcpol'] = self._covmap[ml]
         # sc['dfast']
         # sc['dlag']
         # self.__silver_chan = sc
         
-    #
-    #
-    # def _correlation(self):
-    #     return core.covmap2rho(self._covmap)
-        
-    # utility
-    
-
+    def correlation(self):
+        xc = {}
+        xc['rho'] = np.abs(core.covmap2rho(self._covmap))
+        xc['maxidx'] = core.max_idx(xc['rho'])
+        dd, ll = self._grid
+        xc['fast'] = dd[xc['maxidx']]
+        xc['lag']  = ll[xc['maxidx']]
+        return xc        
 
 
                     
