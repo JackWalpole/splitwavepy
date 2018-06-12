@@ -89,6 +89,7 @@ class SplitWave:
         # Settings
         settings = {}
         settings['t0'] = 0
+        settings['pol'] = None 
         settings['geom'] = 'geo'
         settings['vecs'] = np.eye(2)
         settings['units'] = 's'
@@ -98,6 +99,7 @@ class SplitWave:
         
         # implement settings
         self._delta = delta
+        self._pol = settings['pol']
         self._t0 = settings['t0']
         self._vecs = settings['vecs']
         self._geom = settings['geom']
@@ -229,7 +231,7 @@ class SplitWave:
         
     # polarisation
         
-    def estimate_pol(self, **kwargs):
+    def _estimate_pol(self, **kwargs):
         """Return principal component orientation"""
         # rotate to zero
         rot = self._vecs.T
@@ -240,9 +242,9 @@ class SplitWave:
         pol = np.rad2deg(np.arctan2(y, x))
         return pol
         
-    def pol(self, **kwargs):
-        if 'pol' in kwargs: return kwargs['pol']
-        else : return self.estimate_pol()
+    # def pol(self, **kwargs):
+    #     if 'pol' in kwargs: return kwargs['pol']
+    #     else : return self.estimate_pol()
         
     # window
     
@@ -346,8 +348,19 @@ class SplitWave:
         if delta <= 0: raise ValueError('delta must be positive')
         self.__delta = float(delta)
         
-    # def set_delta(self, delta):
-    #     self._delta = delta
+    # _pol
+    @property
+    def _pol(self):
+        return self.__pol
+    
+    @_pol.setter
+    def _pol(self, pol):
+        if pol is None:
+            self.__pol = pol
+        elif isinstance(pol, float):
+            self.__pol = pol
+        else:
+            raise TypeError('pol not understood.')
         
     # t0
     @property

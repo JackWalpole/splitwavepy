@@ -43,8 +43,7 @@ class Py(SplitWave):
         settings = {}
         settings['plot'] = False
         settings['report'] = True
-        # settings['bootstrap'] = True
-        settings['pol'] = None  
+        # settings['bootstrap'] = True 
         settings['rcvcorr'] = None
         settings['srccorr'] = None
   
@@ -54,7 +53,7 @@ class Py(SplitWave):
         # Book Keeping
         self._set_degs(**settings)
         self._set_lags(**settings)
-        self._pol = settings['pol']
+        # self._pol = settings['pol']
         self._rcvcorr = settings['rcvcorr']
         self._srccorr = settings['srccorr']
             
@@ -88,19 +87,7 @@ class Py(SplitWave):
     def _data(self):
         return self.__data
 
-    # _pol
-    @property
-    def _pol(self):
-        return self.__pol
-    
-    @_pol.setter
-    def _pol(self, pol):
-        if pol is None:
-            self.__pol = pol
-        elif isinstance(pol, float):
-            self.__pol = pol
-        else:
-            raise TypeError('pol not understood.')
+
     
     # _degs
     @property
@@ -257,11 +244,11 @@ class Py(SplitWave):
         return core.gridcov(x, y, w0, w1, self.__degs, self.__slags)
         
     def silver_chan(self, **kwargs):
-        if self._pol is None:
-            # use eigen analysis
-            lam1, lam2 = core.covmap2eigvals(self._covmap)
-        else:
-            raise NotImplementedError('Not implemented.')
+        # if self._pol is None:
+        # use eigen analysis
+        lam1, lam2 = core.covmap2eigvals(self._covmap)
+        # else:
+        #     raise NotImplementedError('Not implemented.')
             #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
         sc = {}
         sc['lam1'] = lam1
@@ -289,16 +276,14 @@ class Py(SplitWave):
                     
     # METHODS 
     #--------    
-    
-    def report(self):
-        raise Exception('Not implemented.')
+
     
     def srcpol(self):
         # recover source polarisation
-        if 'pol' in self.kwargs:
-            return self.kwargs['pol']
+        if self._data._pol is not None:
+            return self._data._pol
         else:
-            return self.SplitWave_corr().estimate_pol()
+            return self.data_corr()._estimate_pol()
         
     def snr(self):
         """Restivo and Helffrich (1999) signal to noise ratio"""
@@ -311,17 +296,17 @@ class Py(SplitWave):
         # copy data     
         data_corr = self.copy()
         # rcv side correction     
-        if self.rcvcorr is not None:
-            data_corr = data_corr.unsplit(*self.rcvcorr)    
+        if self._rcvcorr is not None:
+            data_corr = data_corr.unsplit(*self._rcvcorr)    
         # target layer correction
         data_corr = data_corr.unsplit(self.fast, self.lag)  
         # src side correction
-        if self.srccorr is not None:
-            data_corr = data_corr.unsplit(*self.srccorr)
+        if self._srccorr is not None:
+            data_corr = data_corr.unsplit(*self._srccorr)
         return data_corr
 
     def srcpoldata(self):
-        srcpoldata = self._rotateto(self.srcpol())
+        srcpoldata = self._data.rotateto(self.srcpol())
         srcpoldata.set_labels(['srcpol', 'trans', 'ray'])
         return srcpoldata
         
@@ -397,9 +382,9 @@ class Py(SplitWave):
         
         # settings
         
-        if 'pol' not in kwargs:
-            raise Exception('pol must be specified')            
-        copy = self.rotateto(pol)
+        if 'pol' is None:
+            raise ValueError('pol must be specified')            
+        copy = self._data.rotateto(pol)
         copy.x = np.gradient(copy.x)
         rdiff, trans = copy._chopdata()
         s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
@@ -557,11 +542,11 @@ class Py(SplitWave):
         bs.rotateto(origang)
         # reapply splitting
         # src side correction
-        if self.srccorr is not None: bs = bs._split(*self.srccorr)
+        if self._srccorr is not None: bs = bs._split(*self._srccorr)
         # target layer correction
         bs = bs._split(self.fast, self.lag)
         # rcv side correction
-        if self.rcvcorr is not None: bs = bs._split(*self.rcvcorr)
+        if self._rcvcorr is not None: bs = bs._split(*self._rcvcorr)
         newself.SplitWave = bs
         return newself
 
@@ -625,6 +610,14 @@ class Py(SplitWave):
             
     
     # Plotting
+    
+    def plot(self, **kwargs):
+        # error surface
+        if 'vals' not in kwargs:
+           kwargs['vals'] = self.sc['lam1'] / self.sc['lam2']
+           kwargs['title'] = r'$\lambda_1 / \lambda_2$'
+        
+        self._plot(**kwargs)
     
     def _plot(self, **kwargs):
         
