@@ -259,9 +259,31 @@ def running_mean(x, w0, w1, slags):
 #         ii += 1
 #     return gridcov
 
+# def gridcov(x, y, w0, w1, degs, slags):
+#     # prepare empty covariance arrays
+#     g = np.empty((degs.size, slags.size, 2, 2))
+#     n = w1 - w0
+#     npsum = np.sum # remove dots from inner loop
+#     # now loop and calculate
+#     for ii in range(degs.size):
+#         # prepare a list of data rotated to degs
+#         rot = rotate(x, y, degs[ii])
+#         # this is the mean in each window
+#         meanx = running_mean(rot[0], w0, w1, slags)
+#         meany = running_mean(rot[1], w0, w1, slags)
+#         # loop over lags
+#         for jj in range(slags.size):
+#             slag = slags[jj]
+#             wx, wy  = slagchop(rot[0], rot[1], w0, w1, -slag)
+#             dx, dy = wx - meanx[slag], wy - meany[slag]
+#             g[ii, jj, 0, 0] = npsum(dx * dx)
+#             g[ii, jj, 1, 0] = g[ii, jj, 0, 1] = npsum(dx * dy)
+#             g[ii, jj, 1, 1] = npsum(dy * dy)
+#     return g / n
+
 def gridcov(x, y, w0, w1, degs, slags):
     # prepare empty covariance arrays
-    g = np.empty((degs.size, slags.size, 2, 2))
+    g = np.empty((slags.size, degs.size, 2, 2))
     n = w1 - w0
     npsum = np.sum # remove dots from inner loop
     # now loop and calculate
@@ -276,13 +298,59 @@ def gridcov(x, y, w0, w1, degs, slags):
             slag = slags[jj]
             wx, wy  = slagchop(rot[0], rot[1], w0, w1, -slag)
             dx, dy = wx - meanx[slag], wy - meany[slag]
-            g[ii, jj, 0, 0] = npsum(dx * dx)
-            g[ii, jj, 1, 0] = g[ii, jj, 0, 1] = npsum(dx * dy)
-            g[ii, jj, 1, 1] = npsum(dy * dy)
-    return g / n
-    
+            g[jj, ii, 0, 0] = npsum(dx * dx)
+            g[jj, ii, 1, 0] = g[ii, jj, 0, 1] = npsum(dx * dy)
+            g[jj, ii, 1, 1] = npsum(dy * dy)
+    return g / n    
 
-    
+# faster covariance mapping exploiting correlation in frequency domain
+def gridcovfreq(x, y, ndegs=60, nlags=50):
+    """Returns grid of covariance matrices of shape (ndegs/2, 1+2*nlags, 2, 2).
+       Use covfreq_reshape to get this into a more user friendly shape.
+       x and y are the windowed traces.  
+       Probably best to use a reasonably long, tapered, window as shifts
+       are performed implicitly in the Frequency domain (so wrap around?).
+    """
+    mdegs = int(ndegs/2)
+    mlags = int(nlags*2) + 1
+    degs = np.linspace(0, 90, mdegs, endpoint=False)
+    n = x.size
+    g = np.empty((mdegs, mlags, 2, 2))
+    # Fourier Transform
+    x = x - np.mean(x)
+    y = y - np.mean(y)
+    fx = np.fft.rfft(x)
+    fy = np.fft.rfft(y)    
+    # now loop and calculate
+    for ii in range(mdegs):
+        # rotate
+        fxr, fyr = rotate(fx, fy, degs[ii])
+        # correlate
+        cxx = fxr * fxr.conj()
+        cyy = fyr * fyr.conj()
+        cxy = fxr * fyr.conj()
+        # inverse transform
+        icxx = np.fft.irfft(cxx) 
+        icyy = np.fft.irfft(cyy)
+        icxy = np.fft.irfft(cxy)
+        # get info
+        varx = icxx[0]
+        vary = icyy[0]
+        rho = np.roll(icxy, int(nlags))[0:mlags]
+        # basic covariance map
+        g[ii,:,0,0] = varx
+        g[ii,:,1,1] = vary
+        g[ii,:,0,1] = g[ii,:,1,0] = rho
+    return g / n
+
+def covfreq_reshape(cov):
+    """Reshape a covariance map output using the Fourier method to match the standard."""
+    shp = cov.shape
+    mid = int((shp[0]-1)/2)
+    neg = np.flip(cov[:mid+1,:,:,:], 0)
+    pos = cov[mid:,:,:,:]
+    return np.concatenate((neg, pos), axis=1)    
+
 # def slagchop_srccorr(x, y, w0, w1, slag, srcfast, srcslag):
 #     x, y = rot2(x, y, srcfast)
 #     x, y = lag(x, y, srcslag)
