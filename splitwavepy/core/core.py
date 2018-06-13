@@ -299,26 +299,24 @@ def gridcov(x, y, w0, w1, degs, slags):
             wx, wy  = slagchop(rot[0], rot[1], w0, w1, -slag)
             dx, dy = wx - meanx[slag], wy - meany[slag]
             g[jj, ii, 0, 0] = npsum(dx * dx)
-            g[jj, ii, 1, 0] = g[ii, jj, 0, 1] = npsum(dx * dy)
+            g[jj, ii, 1, 0] = g[jj, ii, 0, 1] = npsum(dx * dy)
             g[jj, ii, 1, 1] = npsum(dy * dy)
     return g / n    
 
 # faster covariance mapping exploiting correlation in frequency domain
-def gridcovfreq(x, y, ndegs=60, nlags=50):
-    """Returns grid of covariance matrices of shape (ndegs/2, 1+2*nlags, 2, 2).
+def gridcovfreq(x, y, ndegs=60, maxslag=50):
+    """Returns grid of covariance matrices of shape (ndegs/2, 1+2*maxslag, 2, 2).
        Use covfreq_reshape to get this into a more user friendly shape.
        x and y are the windowed traces.  
        Probably best to use a reasonably long, tapered, window as shifts
        are performed implicitly in the Frequency domain (so wrap around?).
     """
     mdegs = int(ndegs/2)
-    mlags = int(nlags*2) + 1
+    mlags = int(maxslag*2) + 1
     degs = np.linspace(0, 90, mdegs, endpoint=False)
     n = x.size
-    g = np.empty((mdegs, mlags, 2, 2))
+    g = np.empty((mlags, mdegs, 2, 2))
     # Fourier Transform
-    x = x - np.mean(x)
-    y = y - np.mean(y)
     fx = np.fft.rfft(x)
     fy = np.fft.rfft(y)    
     # now loop and calculate
@@ -336,11 +334,11 @@ def gridcovfreq(x, y, ndegs=60, nlags=50):
         # get info
         varx = icxx[0]
         vary = icyy[0]
-        rho = np.roll(icxy, int(nlags))[0:mlags]
+        rho = np.roll(icxy, int(maxslag))[0:mlags]
         # basic covariance map
-        g[ii,:,0,0] = varx
-        g[ii,:,1,1] = vary
-        g[ii,:,0,1] = g[ii,:,1,0] = rho
+        g[:,ii,0,0] = varx
+        g[:,ii,1,1] = vary
+        g[:,ii,0,1] = g[:,ii,1,0] = rho
     return g / n
 
 def covfreq_reshape(cov):

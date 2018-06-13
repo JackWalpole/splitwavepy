@@ -59,9 +59,10 @@ class Py(SplitWave):
             
         # Grid Search
         self._covmap = self._gridcov()
-        self.sc = self.silver_chan()
-        self.xc = self.correlation()
-        self.q = core.q(self.sc['fast'], self.sc['lag'], self.xc['fast'], self.xc['lag'])
+        self._covmapfreq = self._gridcovfreq()
+        # self.sc = self.silver_chan()
+        # self.xc = self.correlation()
+        # self.q = core.q(self.sc['fast'], self.sc['lag'], self.xc['fast'], self.xc['lag'])
 
         # # Splitting Intensity
         # self.splintensity = self._splitting_intensity()
@@ -241,8 +242,36 @@ class Py(SplitWave):
             # srcphi, srclag = self.__srccorr
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
-        return core.gridcov(x, y, w0, w1, self.__degs, self.__slags)
+        cov = core.gridcov(x, y, w0, w1, self.__degs, self.__slags)
+        # cov = core.covfreq_reshape(cov)  
+        return cov
         
+    def _gridcovfreq(self):       
+        """
+        Fast shear wave splitting using Fourier transform.
+        rcvcorr = receiver correction parameters in tuple (fast,lag) 
+        """
+        
+        # ensure data rotated to zero
+        data = self._data.rotateto(0)
+        x, y = data.x, data.y
+        w0, w1 = data._w0(), data._w1()
+                
+        # receiver correction
+        if self._rcvcorr is not None:
+            fast, slag = self._rcvslag
+            x, y = core.unsplit(x, y, fast, slag)
+
+        # source correction
+        if self._srccorr is not None:
+            raise NotImplementedError('Not implemented.')
+            # srcphi, srclag = self.__srccorr
+            # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
+        
+        cov = core.gridcovfreq(x, y, ndegs=self.__degs.size, maxslag=self.__slags[-1])
+        cov = core.covfreq_reshape(cov) 
+        return cov
+    
     def silver_chan(self, **kwargs):
         # if self._pol is None:
         # use eigen analysis
