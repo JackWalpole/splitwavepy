@@ -357,10 +357,8 @@ class SplitWave:
     def _pol(self, pol):
         if pol is None:
             self.__pol = pol
-        elif isinstance(pol, float):
-            self.__pol = pol
         else:
-            raise TypeError('pol not understood.')
+            self.__pol = float(pol)
         
     # t0
     @property
