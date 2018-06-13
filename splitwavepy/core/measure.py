@@ -246,7 +246,7 @@ class Py(SplitWave):
         # cov = core.covfreq_reshape(cov)  
         return cov
         
-    def _gridcovfreq(self):       
+    def _gridcovfreq(self, ndegs=60, maxlag=4):       
         """
         Fast shear wave splitting using Fourier transform.
         rcvcorr = receiver correction parameters in tuple (fast,lag) 
@@ -268,7 +268,9 @@ class Py(SplitWave):
             # srcphi, srclag = self.__srccorr
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
-        cov = core.gridcovfreq(x, y, ndegs=self.__degs.size, maxslag=self.__slags[-1])
+        maxslag = core.time2samps(maxlag, self._data._delta)
+        
+        cov = core.gridcovfreq(x, y, ndegs=ndegs, maxslag=maxslag)
         cov = core.covfreq_reshape(cov) 
         return cov
     
