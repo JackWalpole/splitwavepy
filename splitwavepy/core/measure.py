@@ -46,19 +46,22 @@ class Py(SplitWave):
         # settings['bootstrap'] = True 
         settings['rcvcorr'] = None
         settings['srccorr'] = None
-  
+        settings['ndegs'] = 60
+        settings['maxlag'] = None
         settings.update(kwargs) # update using kwargs
         self._settings = settings # backup settings
         
         # Book Keeping
-        self._set_degs(**settings)
-        self._set_lags(**settings)
+        # self._set_degs(**settings)
+        # self._set_lags(**settings)
         # self._pol = settings['pol']
         self._rcvcorr = settings['rcvcorr']
         self._srccorr = settings['srccorr']
+        self._ndegs = settings['ndegs']
+        self._maxlag =  settings['maxlag']
             
         # Grid Search
-        self._covmap = self._gridcov()
+        # self._covmap = self._gridcov()
         self._covmapfreq = self._gridcovfreq()
         # self.sc = self.silver_chan()
         # self.xc = self.correlation()
@@ -137,6 +140,29 @@ class Py(SplitWave):
                                  settings['maxlag'],
                                  settings['nlags'],
                                  endpoint = True)
+                                 
+    #_ndegs
+    @property
+    def _ndegs(self):
+        return self.__ndegs
+        
+    @_ndegs.setter
+    def _ndegs(self, ndegs):
+        self.__ndegs  = int(ndegs)
+        
+    #_maxlag
+    @property
+    def _maxlag(self):
+        return self.__maxlag
+        
+    @_maxlag.setter
+    def _maxlag(self, maxlag=None):
+        if maxlag is None:
+            maxlag = self._data.wwidth() / 4
+        maxslag = core.time2samps(maxlag, self._data._delta)
+        maxlag = maxslag * self._data._delta
+        self.__maxslag = maxslag
+        self.__maxlag = maxlag
                                  
     #_grid
     @property
@@ -246,7 +272,7 @@ class Py(SplitWave):
         # cov = core.covfreq_reshape(cov)  
         return cov
         
-    def _gridcovfreq(self, ndegs=60, maxlag=4):       
+    def _gridcovfreq(self):       
         """
         Fast shear wave splitting using Fourier transform.
         rcvcorr = receiver correction parameters in tuple (fast,lag) 
@@ -255,7 +281,7 @@ class Py(SplitWave):
         # ensure data rotated to zero
         data = self._data.rotateto(0)
         x, y = data.x, data.y
-        w0, w1 = data._w0(), data._w1()
+        # w0, w1 = data._w0(), data._w1()
                 
         # receiver correction
         if self._rcvcorr is not None:
@@ -268,9 +294,7 @@ class Py(SplitWave):
             # srcphi, srclag = self.__srccorr
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
-        maxslag = core.time2samps(maxlag, self._data._delta)
-        
-        cov = core.gridcovfreq(x, y, ndegs=ndegs, maxslag=maxslag)
+        cov = core.gridcovfreq(x, y, ndegs=self.__ndegs, maxslag=self.__maxslag)
         cov = core.covfreq_reshape(cov) 
         return cov
     
