@@ -356,8 +356,11 @@ def gridcovfreq(x, y, ndegs=60, maxslag=50):
     # Fourier Transform
     fx = np.fft.fft(x)
     fy = np.fft.fft(y)
+    # force mean to 0
     fx[0] = 0
     fy[0] = 0
+    # precalculate
+    sumsqrs = np.sum(np.abs(fx)**2 + np.abs(fy)**2)
     # now loop and calculate
     for ii in range(mdegs):
         # rotate
@@ -367,8 +370,9 @@ def gridcovfreq(x, y, ndegs=60, maxslag=50):
         # inverse transform
         icxy = np.fft.ifft(cxy).real
         # get info
-        varx = np.sum(np.abs(fxr)**2)/n
-        vary = np.sum(np.abs(fyr)**2)/n
+        sumxsqr = np.sum(np.abs(fxr)**2)
+        varx = sumxsqr/n
+        vary = (sumsqrs-sumxsqr)/n
         rho = np.roll(icxy, int(maxslag))[0:mlags]
         # basic covariance map
         g[:,ii,0,0] = varx
