@@ -304,6 +304,43 @@ def gridcov(x, y, w0, w1, degs, slags):
     return g / n    
 
 # faster covariance mapping exploiting correlation in frequency domain
+# def gridcovfreq(x, y, ndegs=60, maxslag=50):
+#     """Returns grid of covariance matrices of shape (ndegs/2, 1+2*maxslag, 2, 2).
+#        Use covfreq_reshape to get this into a more user friendly shape.
+#        x and y are the windowed traces.
+#        Probably best to use a reasonably long, tapered, window as shifts
+#        are performed implicitly in the Frequency domain (so wrap around?).
+#     """
+#     mdegs = int(ndegs/2)
+#     mlags = int(maxslag*2) + 1
+#     degs = np.linspace(0, 90, mdegs, endpoint=False)
+#     n = x.size
+#     g = np.empty((mlags, mdegs, 2, 2))
+#     # Fourier Transform
+#     fx = np.fft.rfft(x)
+#     fy = np.fft.rfft(y)
+#     # now loop and calculate
+#     for ii in range(mdegs):
+#         # rotate
+#         fxr, fyr = rotate(fx, fy, degs[ii])
+#         # correlate
+#         cxx = fxr * fxr.conj()
+#         cyy = fyr * fyr.conj()
+#         cxy = fxr * fyr.conj()
+#         # inverse transform
+#         icxx = np.fft.irfft(cxx)
+#         icyy = np.fft.irfft(cyy)
+#         icxy = np.fft.irfft(cxy)
+#         # get info
+#         varx = icxx[0]
+#         vary = icyy[0]
+#         rho = np.roll(icxy, int(maxslag))[0:mlags]
+#         # basic covariance map
+#         g[:,ii,0,0] = varx
+#         g[:,ii,1,1] = vary
+#         g[:,ii,0,1] = g[:,ii,1,0] = rho
+#     return g / n
+    
 def gridcovfreq(x, y, ndegs=60, maxslag=50):
     """Returns grid of covariance matrices of shape (ndegs/2, 1+2*maxslag, 2, 2).
        Use covfreq_reshape to get this into a more user friendly shape.
@@ -317,23 +354,21 @@ def gridcovfreq(x, y, ndegs=60, maxslag=50):
     n = x.size
     g = np.empty((mlags, mdegs, 2, 2))
     # Fourier Transform
-    fx = np.fft.rfft(x)
-    fy = np.fft.rfft(y)    
+    fx = np.fft.fft(x)
+    fy = np.fft.fft(y)
+    fx[0] = 0
+    fy[0] = 0
     # now loop and calculate
     for ii in range(mdegs):
         # rotate
         fxr, fyr = rotate(fx, fy, degs[ii])
         # correlate
-        cxx = fxr * fxr.conj()
-        cyy = fyr * fyr.conj()
         cxy = fxr * fyr.conj()
         # inverse transform
-        icxx = np.fft.irfft(cxx) 
-        icyy = np.fft.irfft(cyy)
-        icxy = np.fft.irfft(cxy)
+        icxy = np.fft.ifft(cxy).real
         # get info
-        varx = icxx[0]
-        vary = icyy[0]
+        varx = np.sum(np.abs(fxr)**2)/n
+        vary = np.sum(np.abs(fyr)**2)/n
         rho = np.roll(icxy, int(maxslag))[0:mlags]
         # basic covariance map
         g[:,ii,0,0] = varx
