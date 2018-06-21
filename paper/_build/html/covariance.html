@@ -61,8 +61,6 @@
                                                         \end{bmatrix}.\end{split}\]</div>
 <p>Pearson’s R is the statistic that is maximised in the rotation correlation method.  It can be simply plucked from the covariance matrix.</p>
 <div class="math">
-\[\rho_{x,y} = \frac{\Sigma_{x,y}}{\sqrt{\Sigma_{x,x} \Sigma_{y,y}}}\]</div>
-<div class="math">
 \[\rho_{x,y} = \frac{\Sigma_{x,y}}{(\Sigma_{x,x} \Sigma_{y,y})^{1/2}}\]</div>
 <p>If the mean of each trace is zero then the covariance matrix can be cheaply calculated.</p>
 <div class="math">
@@ -79,10 +77,10 @@ If <span class="math">\(x\)</span> can be guaranteed to point in the <em>polaris
 <p>Now that we know which statistics from the covariance matrix are useful for measuring shear wave splitting we can consider the grid search.</p>
 <p>The rotation exchanges energy between traces</p>
 <div class="math">
-\[(X,Y)_{\theta} = (X,Y)_{\theta} \begin{bmatrix}
-cos(\theta) &amp; -sin(\theta)
+\[\begin{split}\mathbf{R}(\theta) = \begin{bmatrix}
+cos(\theta) &amp; -sin(\theta) \\
 sin(\theta) &amp; cos(\theta)
-\end{bmatrix}.\]</div>
+\end{bmatrix}.\end{split}\]</div>
 <p>Notice that the term in the upper right corner has similar form to a cross-correlation with zero lag (<span class="math">\(j=0\)</span>).</p>
 <p>The lag can be easily converted to a meaningful delay time if the sampling interval <span class="math">\(\Delta\)</span> of the data is known</p>
 <div class="math">

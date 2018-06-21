@@ -34,7 +34,7 @@ Where :math:`\sigma_x` is the standard deviation of :math:`\mathbf{x}`, and :mat
 
 Pearson's R is the statistic that is maximised in the rotation correlation method.  It can be simply plucked from the covariance matrix.
 
-.. math:: \rho_{x,y} = \frac{\Sigma_{x,y}}{\sqrt{\Sigma_{x,x} \Sigma_{y,y}}}
+.. .. math:: \rho_{x,y} = \frac{\Sigma_{x,y}}{\sqrt{\Sigma_{x,x} \Sigma_{y,y}}}
 
 .. math:: \rho_{x,y} = \frac{\Sigma_{x,y}}{(\Sigma_{x,x} \Sigma_{y,y})^{1/2}}
 
@@ -60,8 +60,8 @@ Now that we know which statistics from the covariance matrix are useful for meas
 
 The rotation exchanges energy between traces
 
-.. math:: (X,Y)_{\theta} = (X,Y)_{\theta} \begin{bmatrix}
-	 								cos(\theta) & -sin(\theta)
+.. math:: \mathbf{R}(\theta) = \begin{bmatrix}
+	 								cos(\theta) & -sin(\theta) \\
 									sin(\theta) & cos(\theta)
 									\end{bmatrix}.
 
