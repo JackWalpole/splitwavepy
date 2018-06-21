@@ -19,29 +19,31 @@ where :math:`\mu_{x}` is the mean of :math:`\mathbf{x}`.  Note that the covarian
 	
 	{cov} (\mathbf{x}, \mathbf{y}) = {cov} (\mathbf{y}, \mathbf{x}),
 	
-	{cov} (\mathbf{x}, \mathbf{y}) = \sigma_x \sigma_y \rho_{x,y}.
+	{cov} (\mathbf{x}, \mathbf{y}) = \sigma_x \sigma_y \rho_{\mathbf{x},\mathbf{y}}.
 	
-Where :math:`\sigma_x` is the standard deviation of :math:`\mathbf{x}`, and :math:`\rho` is the normalised correlation coefficient, also known as Pearson's R. The covariance matrix :math:`\mathbf{\Sigma}(\mathbf{x},\mathbf{y})` for this can be viewed as
+Where :math:`\sigma_x` is the standard deviation of :math:`\mathbf{x}`, and :math:`\rho` is the normalised correlation coefficient, also known as Pearson's r. The covariance matrix :math:`\mathbf{C}(\mathbf{x},\mathbf{y})` for this can be viewed as
 
-.. math:: \mathbf{\Sigma}(\mathbf{x},\mathbf{y}) = \begin{bmatrix}
+.. math:: \mathbf{C}(\mathbf{x},\mathbf{y}) = \begin{bmatrix}
 		{cov} (\mathbf{x},\mathbf{x}) & {cov} (\mathbf{x},\mathbf{y}) \\
 									  & {cov} (\mathbf{y},\mathbf{y})
 			            			  		\end{bmatrix} 
 										  = \begin{bmatrix}
-			                \sigma_x^2 & \sigma_x \sigma_y \rho_{x,y} \\
+			                \sigma_x^2 & \sigma_x \sigma_y \rho_{\mathbf{x},\mathbf{y}} \\
 									  & \sigma_y^2
 			            			  		\end{bmatrix}.
 
-Pearson's R is the statistic that is maximised in the rotation correlation method.  It can be simply plucked from the covariance matrix.
+Pearson's r is the statistic that is maximised in the rotation correlation method.  It can be simply plucked from the covariance matrix.
 
-.. .. math:: \rho_{x,y} = \frac{\Sigma_{x,y}}{\sqrt{\Sigma_{x,x} \Sigma_{y,y}}}
+.. .. math:: \rho_{x,y} = \frac{C_{x,y}}{\sqrt{C_{x,x} C_{y,y}}}
 
-.. math:: \rho_{x,y} = \frac{\Sigma_{x,y}}{(\Sigma_{x,x} \Sigma_{y,y})^{1/2}}
+.. .. math:: \rho_{x,y} = \frac{C_{x,y}}{(C_{x,x} C_{y,y})^{1/2}}
+
+.. math:: \rho_{\mathbf{x},\mathbf{y}}  = \frac{C_{1,2}}{(C_{1,1} C_{2,2})^{1/2}}
 
 
 If the mean of each trace is zero then the covariance matrix can be cheaply calculated.
 
-.. math:: \mathbf{\Sigma}(\mathbf{x},\mathbf{y}) = \frac{1}{N}
+.. math:: \mathbf{C}(\mathbf{x},\mathbf{y}) = \frac{1}{N}
 								\begin{bmatrix}
 						\sum{x_i^2} & \sum{x_i y_i} \\
 				  	  			  & \sum{y_i^2}
@@ -76,17 +78,40 @@ The lag can be easily converted to a meaningful delay time if the sampling inter
 
 Furthermore, if energy in the window is conserved for all lags, then the terms in the upper left and lower right of the covariance matrix are constant.
 
-.. math:: \mathbf{\Sigma}(\mathbf{x},\mathbf{y})_j = \frac{1}{N}
+.. math:: \mathbf{C}(\mathbf{x},\mathbf{y})_j = \frac{1}{N}
 								\begin{bmatrix}
 						\sum{x_i^2}  & (\mathbf{x} \star \mathbf{y})_j \\
 				  	  			  & \sum{y_i^2} 
 			            		  \end{bmatrix} 
 									
-As a consequence of the convolution theorem a computational speedup is achieved by calculating the cross-correlation in the frequency domain.
+As a consequence of the convolution theorem a computational speedup is achieved by calculating the cross-correlation in the frequency domain. 
 
-.. math:: \mathbf{x} \star \mathbf{y} = \mathcal{F}^{-1} \{ \mathcal{F} \{ \mathbf{x} \}^* \mathcal{F} \{ \mathbf{y} \} \}
 
-.. {\mathcal{F}} \left f^* \right
 
-.. .. math:: f \star g = \mathcal{F}^{-1}\big\{\mathcal{F}{f^*}\cdot \mathcal{F} {g}\big}
+.. math::
+    
+	
+	\mathbf{X} = \mathcal{F} \{ \mathbf{x} \}
+	
+	\mathbf{Y} = \mathcal{F} \{ \mathbf{y} \}
+	
+	(\mathbf{x} \star \mathbf{y})_j = (\mathcal{F}^{-1} \{ \mathbf{X} \mathbf{Y}^* \})_j
+
+By Parseval's theorem the sum of squares in the time domain signal is equal to the sum of squares on its Fourier transformed frequency domain companion.
+
+.. math:: \sum _{i=0}^{N-1}x_{i}^2 = {\frac {1}{N}} \sum _{i=0}^{N-1}|X_i|^{2}
+
+This leads to the efficient calculation of multiple covariance matrices at lag :math:`j` via
+
+.. math:: \mathbf{C}(\mathbf{x},\mathbf{y})_j = \frac{1}{N}
+								\begin{bmatrix}
+								\frac {1}{N} \sum _{i=0}^{N-1}|X_i|^{2}  & 
+								(\mathcal{F}^{-1} \{ \mathbf{X} \mathbf{Y}^* \})_j \\
+				  	  			  & \frac {1}{N} \sum _{i=0}^{N-1}|Y_i|^{2}
+			            		  \end{bmatrix} 
+								  
+=====================
+Practical Issues
+=====================
+
 									

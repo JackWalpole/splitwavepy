@@ -48,23 +48,23 @@
 \[{cov} (\mathbf{x}, \mathbf{y})=\frac {1}{N} \sum _{m=0}^{N-1}(\mathbf{x}[m] -\mu _{x})(\mathbf{y}[m]-\mu _{y}),\]</div>
 <p>where <span class="math">\(\mu_{x}\)</span> is the mean of <span class="math">\(\mathbf{x}\)</span>.  Note that the covariance of a trace with itself is simply its variance</p>
 <div class="math">
-\[ \begin{align}\begin{aligned}{cov} (\mathbf{x},\mathbf{x}) = \sigma_{x}^{2},\\{cov} (\mathbf{x}, \mathbf{y}) = {cov} (\mathbf{y}, \mathbf{x}),\\{cov} (\mathbf{x}, \mathbf{y}) = \sigma_x \sigma_y \rho_{x,y}.\end{aligned}\end{align} \]</div>
-<p>Where <span class="math">\(\sigma_x\)</span> is the standard deviation of <span class="math">\(\mathbf{x}\)</span>, and <span class="math">\(\rho\)</span> is the normalised correlation coefficient, also known as Pearson’s R. The covariance matrix <span class="math">\(\mathbf{\Sigma}(\mathbf{x},\mathbf{y})\)</span> for this can be viewed as</p>
+\[ \begin{align}\begin{aligned}{cov} (\mathbf{x},\mathbf{x}) = \sigma_{x}^{2},\\{cov} (\mathbf{x}, \mathbf{y}) = {cov} (\mathbf{y}, \mathbf{x}),\\{cov} (\mathbf{x}, \mathbf{y}) = \sigma_x \sigma_y \rho_{\mathbf{x},\mathbf{y}}.\end{aligned}\end{align} \]</div>
+<p>Where <span class="math">\(\sigma_x\)</span> is the standard deviation of <span class="math">\(\mathbf{x}\)</span>, and <span class="math">\(\rho\)</span> is the normalised correlation coefficient, also known as Pearson’s r. The covariance matrix <span class="math">\(\mathbf{C}(\mathbf{x},\mathbf{y})\)</span> for this can be viewed as</p>
 <div class="math">
-\[\begin{split}\mathbf{\Sigma}(\mathbf{x},\mathbf{y}) = \begin{bmatrix}
+\[\begin{split}\mathbf{C}(\mathbf{x},\mathbf{y}) = \begin{bmatrix}
 {cov} (\mathbf{x},\mathbf{x}) &amp; {cov} (\mathbf{x},\mathbf{y}) \\
                                                           &amp; {cov} (\mathbf{y},\mathbf{y})
                                                         \end{bmatrix}
                                                                   = \begin{bmatrix}
-                        \sigma_x^2 &amp; \sigma_x \sigma_y \rho_{x,y} \\
+                        \sigma_x^2 &amp; \sigma_x \sigma_y \rho_{\mathbf{x},\mathbf{y}} \\
                                                           &amp; \sigma_y^2
                                                         \end{bmatrix}.\end{split}\]</div>
-<p>Pearson’s R is the statistic that is maximised in the rotation correlation method.  It can be simply plucked from the covariance matrix.</p>
+<p>Pearson’s r is the statistic that is maximised in the rotation correlation method.  It can be simply plucked from the covariance matrix.</p>
 <div class="math">
-\[\rho_{x,y} = \frac{\Sigma_{x,y}}{(\Sigma_{x,x} \Sigma_{y,y})^{1/2}}\]</div>
+\[\rho_{\mathbf{x},\mathbf{y}}  = \frac{C_{1,2}}{(C_{1,1} C_{2,2})^{1/2}}\]</div>
 <p>If the mean of each trace is zero then the covariance matrix can be cheaply calculated.</p>
 <div class="math">
-\[\begin{split}\mathbf{\Sigma}(\mathbf{x},\mathbf{y}) = \frac{1}{N}
+\[\begin{split}\mathbf{C}(\mathbf{x},\mathbf{y}) = \frac{1}{N}
                 \begin{bmatrix}
 \sum{x_i^2} &amp; \sum{x_i y_i} \\
                   &amp; \sum{y_i^2}
@@ -89,14 +89,25 @@ sin(\theta) &amp; cos(\theta)
 \[(\mathbf{x} \star \mathbf{y})_j\ {\stackrel {\mathrm {def} }{=}}\sum _{m=-\infty }^{\infty }x_i y_{i+j}.\]</div>
 <p>Furthermore, if energy in the window is conserved for all lags, then the terms in the upper left and lower right of the covariance matrix are constant.</p>
 <div class="math">
-\[\begin{split}\mathbf{\Sigma}(\mathbf{x},\mathbf{y})_j = \frac{1}{N}
+\[\begin{split}\mathbf{C}(\mathbf{x},\mathbf{y})_j = \frac{1}{N}
                 \begin{bmatrix}
 \sum{x_i^2}  &amp; (\mathbf{x} \star \mathbf{y})_j \\
                   &amp; \sum{y_i^2}
   \end{bmatrix}\end{split}\]</div>
 <p>As a consequence of the convolution theorem a computational speedup is achieved by calculating the cross-correlation in the frequency domain.</p>
 <div class="math">
-\[\mathbf{x} \star \mathbf{y} = \mathcal{F}^{-1} \{ \mathcal{F} \{ \mathbf{x} \}^* \mathcal{F} \{ \mathbf{y} \} \}\]</div>
+\[ \begin{align}\begin{aligned}\mathbf{X} = \mathcal{F} \{ \mathbf{x} \}\\\mathbf{Y} = \mathcal{F} \{ \mathbf{y} \}\\(\mathbf{x} \star \mathbf{y})_j = (\mathcal{F}^{-1} \{ \mathbf{X} \mathbf{Y}^* \})_j\end{aligned}\end{align} \]</div>
+<p>By Parseval’s theorem the sum of squares in the time domain signal is equal to the sum of squares on its Fourier transformed frequency domain companion.</p>
+<div class="math">
+\[\sum _{i=0}^{N-1}x_{i}^2 = {\frac {1}{N}} \sum _{i=0}^{N-1}|X_i|^{2}\]</div>
+<p>This leads to the efficient calculation of multiple covariance matrices at lag <span class="math">\(j\)</span> via</p>
+<div class="math">
+\[\begin{split}\mathbf{C}(\mathbf{x},\mathbf{y})_j = \frac{1}{N}
+              \begin{bmatrix}
+              \frac {1}{N} \sum _{i=0}^{N-1}|X_i|^{2}  &amp;
+              (\mathcal{F}^{-1} \{ \mathbf{X} \mathbf{Y}^* \})_j \\
+                &amp; \frac {1}{N} \sum _{i=0}^{N-1}|Y_i|^{2}
+\end{bmatrix}\end{split}\]</div>
 </div>
 </div>
 
