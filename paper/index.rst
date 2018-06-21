@@ -8,8 +8,8 @@ SplitWavePy Paper
 =======================================
 
 .. toctree::
-	background
-	.. background
+	covariance
+	.. covariance
 
 
 

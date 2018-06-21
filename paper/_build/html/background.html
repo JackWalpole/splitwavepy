@@ -45,11 +45,11 @@
 <p>The covariance <span class="math">\({cov} (\mathbf{x},\mathbf{y})\)</span> of the energy measured on traces <span class="math">\((\mathbf{x},\mathbf{y})\)</span> representing the two orthogonal components in the plane of the shear wave is fundamental to the grid search methods for finding the best fitting inverse splitting operator.  These methods are the Silver and Chan method which seeks to miniminise the energy on the transverse component, and the rotation correlation method which seeks to maximise the correlation between fast and slow wavelets.</p>
 <p>The covariance between two traces <span class="math">\((\mathbf{x}, \mathbf{y})\)</span> each containing <span class="math">\(N\)</span> samples is</p>
 <div class="math">
-\[{cov} (\mathbf{x}, \mathbf{y})=\frac {\sum(\mathbf{x}-\mu _{x})(\mathbf{y}-\mu _{y})}{N},\]</div>
+\[{cov} (\mathbf{x}, \mathbf{y})=\frac {1}{N} \sum _{m=0}^{N-1}(\mathbf{x}[m] -\mu _{x})(\mathbf{y}[m]-\mu _{y}),\]</div>
 <p>where <span class="math">\(\mu_{x}\)</span> is the mean of <span class="math">\(\mathbf{x}\)</span>.  Note that the covariance of a trace with itself is simply its variance</p>
 <div class="math">
-\[{cov} (\mathbf{x},\mathbf{x}) = {var} (\mathbf{x}) = \sigma_{x}^{2}.\]</div>
-<p>The covariance matrix <span class="math">\(\Sigma(\mathbf{x},\mathbf{y})\)</span> for this can be viewed as</p>
+\[{cov} (\mathbf{x},\mathbf{x}) = {var} (\mathbf{x}) = \sigma_{x}^{2},\]</div>
+<p>where <span class="math">\(\sigma_x\)</span> is the standard deviation of <span class="math">\(\mathbf{x}\)</span>. The covariance matrix <span class="math">\(\Sigma(\mathbf{x},\mathbf{y})\)</span> for this can be viewed as</p>
 <div class="math">
 \[\begin{split}\Sigma (\mathbf{x},\mathbf{y})) = \begin{bmatrix}
     {var} (\mathbf{x}) &amp; {cov} (\mathbf{x},\mathbf{y}) \\
@@ -57,8 +57,7 @@
 \end{bmatrix}.\end{split}\]</div>
 <p>The covariance can be normalised to produce the Pearson correlation coefficient which is the statistic which the rotation correlation method seeks to maximise.</p>
 <div class="math">
-\[\rho(\mathbf{x},\mathbf{y}) = \frac{ {cov} (\mathbf{x},\mathbf{y})}{\sigma_{x}\sigma_{y}}.\]</div>
-<p>where <span class="math">\(\sigma_x\)</span> is the standard deviation of <span class="math">\(\mathbf{x}\)</span>.  The value of <span class="math">\(\rho\)</span> can be extracted from the covariance matrix.</p>
+\[ \begin{align}\begin{aligned}\rho(\mathbf{x},\mathbf{y}) = \frac{ {cov} (\mathbf{x},\mathbf{y})}{\sigma_{x}\sigma_{y}}.\\The value of :math:`\rho` can be extracted from the covariance matrix.\end{aligned}\end{align} \]</div>
 <div class="math">
 \[\begin{split}\Sigma (X,Y) = \begin{bmatrix}
     \sigma_x^2 &amp; \sigma_x \sigma_y \rho_{xy} \\
