@@ -374,11 +374,11 @@ def gridcovfreq(x, y, ndegs=90, maxslag=50):
         # multiply by 2 because using real fft "rfft" (so symmetric negative freqs not calculated)
         varx = 2*sumxsqr/n
         vary = 2*(sumsqrs-sumxsqr)/n
-        rho = np.roll(icxy, int(maxslag))[0:mlags]
+        covxy = np.roll(icxy, int(maxslag))[0:mlags]
         # basic covariance map
         g[:,ii,0,0] = varx
         g[:,ii,1,1] = vary
-        g[:,ii,0,1] = g[:,ii,1,0] = rho
+        g[:,ii,0,1] = g[:,ii,1,0] = covxy
     return g / n
 
 def covfreq_reshape(cov):

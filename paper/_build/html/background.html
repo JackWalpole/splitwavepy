@@ -1,0 +1,149 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Covariance &#8212; SplitWavePy 1.0.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="SplitWavePy Paper" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="covariance">
+<span id="background"></span><h1>Covariance<a class="headerlink" href="#covariance" title="Permalink to this headline">¶</a></h1>
+<p>The covariance <span class="math">\({cov} (\mathbf{x},\mathbf{y})\)</span> of the energy measured on traces <span class="math">\((\mathbf{x},\mathbf{y})\)</span> representing the two orthogonal components in the plane of the shear wave is fundamental to the grid search methods for finding the best fitting inverse splitting operator.  These methods are the Silver and Chan method which seeks to miniminise the energy on the transverse component, and the rotation correlation method which seeks to maximise the correlation between fast and slow wavelets.</p>
+<p>The covariance between two traces <span class="math">\((\mathbf{x}, \mathbf{y})\)</span> each containing <span class="math">\(N\)</span> samples is</p>
+<div class="math">
+\[{cov} (\mathbf{x}, \mathbf{y})=\frac {\sum(\mathbf{x}-\mu _{x})(\mathbf{y}-\mu _{y})}{N},\]</div>
+<p>where <span class="math">\(\mu_{x}\)</span> is the mean of <span class="math">\(\mathbf{x}\)</span>.  Note that the covariance of a trace with itself is simply its variance</p>
+<div class="math">
+\[{cov} (\mathbf{x},\mathbf{x}) = {var} (\mathbf{x}) = \sigma_{x}^{2}.\]</div>
+<p>The covariance matrix <span class="math">\(\Sigma(\mathbf{x},\mathbf{y})\)</span> for this can be viewed as</p>
+<div class="math">
+\[\begin{split}\Sigma (\mathbf{x},\mathbf{y})) = \begin{bmatrix}
+    {var} (\mathbf{x}) &amp; {cov} (\mathbf{x},\mathbf{y}) \\
+                                      &amp; {var} (\mathbf{y})
+\end{bmatrix}.\end{split}\]</div>
+<p>The covariance can be normalised to produce the Pearson correlation coefficient which is the statistic which the rotation correlation method seeks to maximise.</p>
+<div class="math">
+\[\rho(\mathbf{x},\mathbf{y}) = \frac{ {cov} (\mathbf{x},\mathbf{y})}{\sigma_{x}\sigma_{y}}.\]</div>
+<p>where <span class="math">\(\sigma_x\)</span> is the standard deviation of <span class="math">\(\mathbf{x}\)</span>.  The value of <span class="math">\(\rho\)</span> can be extracted from the covariance matrix.</p>
+<div class="math">
+\[\begin{split}\Sigma (X,Y) = \begin{bmatrix}
+    \sigma_x^2 &amp; \sigma_x \sigma_y \rho_{xy} \\
+                                      &amp; \sigma_y^2
+\end{bmatrix}.\end{split}\]</div>
+<p>Now consider the rotation correlation method which seeks to maximise the correlation between fast and slow traces.</p>
+<div class="math">
+\[(X\star Y)[n]\ {\stackrel {\mathrm {def} }{=}}\sum _{m=-\infty }^{\infty }X[m]\ Y[m+n].\]</div>
+<p>The correlation coefficient at lag <span class="math">\(n\)</span> can be normalised to recover the Pearson correlation coefficient</p>
+<div class="math">
+\[\rho(X,Y)[n] = \frac{(X\star Y)[n]}{\sigma_{X}\sigma_{Y}}.\]</div>
+<p>Where <span class="math">\(\sigma_{X} = \sqrt{{var} (X)}\)</span> is the standard deviation on trace <span class="math">\(X\)</span>.  The rotation correlation method seeks to find the rotation and lag that maximises :math:<cite>rho</cite>.</p>
+<p>The rotation exchanges energy between traces</p>
+<div class="math">
+\[(X,Y)_{\theta} = (X,Y)_{\theta} \begin{bmatrix}
+cos(\theta) &amp; -sin(\theta)
+sin(\theta) &amp; cos(\theta)
+\end{bmatrix}.\]</div>
+<p>The covariance matrix for test angle <span class="math">\(\theta\)</span> at lag <span class="math">\(n\)</span> is then.</p>
+<div class="math">
+\[\begin{split}\Sigma (X,Y)_{\theta} [n] = \begin{bmatrix}}
+{var} (X) &amp;  cov \\
+        &amp; {var} (Y)
+        \end{bmatrix}.\end{split}\]</div>
+<p>The lag can be easily converted to a meaningful delay time if the sampling interval <span class="math">\(\Delta\)</span> of the data is known</p>
+<div class="math">
+\[\delta t = n \Delta.\]</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">SplitWavePy</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Covariance</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">SplitWavePy Paper</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Jack Walpole.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.6.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/background.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
