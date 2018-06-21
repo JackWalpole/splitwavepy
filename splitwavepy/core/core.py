@@ -341,7 +341,9 @@ def gridcov(x, y, w0, w1, degs, slags):
 #         g[:,ii,0,1] = g[:,ii,1,0] = rho
 #     return g / n
     
-def gridcovfreq(x, y, ndegs=60, maxslag=50):
+
+    
+def gridcovfreq(x, y, ndegs=90, maxslag=50):
     """Returns grid of covariance matrices of shape (ndegs/2, 1+2*maxslag, 2, 2).
        Use covfreq_reshape to get this into a more user friendly shape.
        x and y are the windowed traces.  
@@ -354,12 +356,10 @@ def gridcovfreq(x, y, ndegs=60, maxslag=50):
     n = x.size
     g = np.empty((mlags, mdegs, 2, 2))
     # Fourier Transform
-    fx = np.fft.fft(x)
-    fy = np.fft.fft(y)
-    # force mean to 0
+    fx = np.fft.rfft(x)
+    fy = np.fft.rfft(y)
     fx[0] = 0
     fy[0] = 0
-    # precalculate
     sumsqrs = np.sum(np.abs(fx)**2 + np.abs(fy)**2)
     # now loop and calculate
     for ii in range(mdegs):
@@ -368,11 +368,12 @@ def gridcovfreq(x, y, ndegs=60, maxslag=50):
         # correlate
         cxy = fxr * fyr.conj()
         # inverse transform
-        icxy = np.fft.ifft(cxy).real
+        icxy = np.fft.irfft(cxy).real
         # get info
         sumxsqr = np.sum(np.abs(fxr)**2)
-        varx = sumxsqr/n
-        vary = (sumsqrs-sumxsqr)/n
+        # multiply by 2 because using real fft "rfft" (so symmetric negative freqs not calculated)
+        varx = 2*sumxsqr/n
+        vary = 2*(sumsqrs-sumxsqr)/n
         rho = np.roll(icxy, int(maxslag))[0:mlags]
         # basic covariance map
         g[:,ii,0,0] = varx
