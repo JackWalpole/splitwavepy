@@ -41,50 +41,65 @@
           <div class="body" role="main">
             
   <div class="section" id="covariance">
-<span id="background"></span><h1>Covariance<a class="headerlink" href="#covariance" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1>Covariance<a class="headerlink" href="#covariance" title="Permalink to this headline">¶</a></h1>
 <p>The covariance <span class="math">\({cov} (\mathbf{x},\mathbf{y})\)</span> of the energy measured on traces <span class="math">\((\mathbf{x},\mathbf{y})\)</span> representing the two orthogonal components in the plane of the shear wave is fundamental to the grid search methods for finding the best fitting inverse splitting operator.  These methods are the Silver and Chan method which seeks to miniminise the energy on the transverse component, and the rotation correlation method which seeks to maximise the correlation between fast and slow wavelets.</p>
 <p>The covariance between two traces <span class="math">\((\mathbf{x}, \mathbf{y})\)</span> each containing <span class="math">\(N\)</span> samples is</p>
 <div class="math">
 \[{cov} (\mathbf{x}, \mathbf{y})=\frac {1}{N} \sum _{m=0}^{N-1}(\mathbf{x}[m] -\mu _{x})(\mathbf{y}[m]-\mu _{y}),\]</div>
 <p>where <span class="math">\(\mu_{x}\)</span> is the mean of <span class="math">\(\mathbf{x}\)</span>.  Note that the covariance of a trace with itself is simply its variance</p>
 <div class="math">
-\[{cov} (\mathbf{x},\mathbf{x}) = {var} (\mathbf{x}) = \sigma_{x}^{2},\]</div>
-<p>where <span class="math">\(\sigma_x\)</span> is the standard deviation of <span class="math">\(\mathbf{x}\)</span>. The covariance matrix <span class="math">\(\Sigma(\mathbf{x},\mathbf{y})\)</span> for this can be viewed as</p>
+\[ \begin{align}\begin{aligned}{cov} (\mathbf{x},\mathbf{x}) = \sigma_{x}^{2},\\{cov} (\mathbf{x}, \mathbf{y}) = {cov} (\mathbf{y}, \mathbf{x}),\\{cov} (\mathbf{x}, \mathbf{y}) = \sigma_x \sigma_y \rho_{x,y}.\end{aligned}\end{align} \]</div>
+<p>Where <span class="math">\(\sigma_x\)</span> is the standard deviation of <span class="math">\(\mathbf{x}\)</span>, and <span class="math">\(\rho\)</span> is the normalised correlation coefficient, also known as Pearson’s R. The covariance matrix <span class="math">\(\mathbf{\Sigma}(\mathbf{x},\mathbf{y})\)</span> for this can be viewed as</p>
 <div class="math">
-\[\begin{split}\Sigma (\mathbf{x},\mathbf{y})) = \begin{bmatrix}
-    {var} (\mathbf{x}) &amp; {cov} (\mathbf{x},\mathbf{y}) \\
-                                      &amp; {var} (\mathbf{y})
-\end{bmatrix}.\end{split}\]</div>
-<p>The covariance can be normalised to produce the Pearson correlation coefficient which is the statistic which the rotation correlation method seeks to maximise.</p>
+\[\begin{split}\mathbf{\Sigma}(\mathbf{x},\mathbf{y}) = \begin{bmatrix}
+{cov} (\mathbf{x},\mathbf{x}) &amp; {cov} (\mathbf{x},\mathbf{y}) \\
+                                                          &amp; {cov} (\mathbf{y},\mathbf{y})
+                                                        \end{bmatrix}
+                                                                  = \begin{bmatrix}
+                        \sigma_x^2 &amp; \sigma_x \sigma_y \rho_{x,y} \\
+                                                          &amp; \sigma_y^2
+                                                        \end{bmatrix}.\end{split}\]</div>
+<p>Pearson’s R is the statistic that is maximised in the rotation correlation method.  It can be simply plucked from the covariance matrix.</p>
 <div class="math">
-\[ \begin{align}\begin{aligned}\rho(\mathbf{x},\mathbf{y}) = \frac{ {cov} (\mathbf{x},\mathbf{y})}{\sigma_{x}\sigma_{y}}.\\The value of :math:`\rho` can be extracted from the covariance matrix.\end{aligned}\end{align} \]</div>
+\[\rho_{x,y} = \frac{\Sigma_{x,y}}{\sqrt{\Sigma_{x,x} \Sigma_{y,y}}}\]</div>
 <div class="math">
-\[\begin{split}\Sigma (X,Y) = \begin{bmatrix}
-    \sigma_x^2 &amp; \sigma_x \sigma_y \rho_{xy} \\
-                                      &amp; \sigma_y^2
-\end{bmatrix}.\end{split}\]</div>
-<p>Now consider the rotation correlation method which seeks to maximise the correlation between fast and slow traces.</p>
+\[\rho_{x,y} = \frac{\Sigma_{x,y}}{(\Sigma_{x,x} \Sigma_{y,y})^{1/2}}\]</div>
+<p>If the mean of each trace is zero then the covariance matrix can be cheaply calculated.</p>
 <div class="math">
-\[(X\star Y)[n]\ {\stackrel {\mathrm {def} }{=}}\sum _{m=-\infty }^{\infty }X[m]\ Y[m+n].\]</div>
-<p>The correlation coefficient at lag <span class="math">\(n\)</span> can be normalised to recover the Pearson correlation coefficient</p>
-<div class="math">
-\[\rho(X,Y)[n] = \frac{(X\star Y)[n]}{\sigma_{X}\sigma_{Y}}.\]</div>
-<p>Where <span class="math">\(\sigma_{X} = \sqrt{{var} (X)}\)</span> is the standard deviation on trace <span class="math">\(X\)</span>.  The rotation correlation method seeks to find the rotation and lag that maximises :math:<cite>rho</cite>.</p>
+\[\begin{split}\mathbf{\Sigma}(\mathbf{x},\mathbf{y}) = \frac{1}{N}
+                \begin{bmatrix}
+\sum{x_i^2} &amp; \sum{x_i y_i} \\
+                  &amp; \sum{y_i^2}
+  \end{bmatrix}\end{split}\]</div>
+<p>The energy of a discrete-time signal is equal to <span class="math">\(\sum_{i=0}^{N-1}x_{i}^2\)</span>.
+If <span class="math">\(x\)</span> can be guaranteed to point in the <em>polarisation</em> direction, then <span class="math">\(y\)</span> will point in the <em>transverse</em> direction.  The Silver and Chan Method seeks to minimise the energy on the transverse component, provided <span class="math">\(x\)</span> and <span class="math">\(y\)</span> are suitably rotated then this statistic is simply the lower right entry of the covariance matrix.</p>
+<p>If the polarisation of the shear wave is not known then a guess can be made that this principal direction is the principal eigenvector of the covariance matrix.  This is the Silver and Chan eigenvalue method which seeks to minimise the small eigenvalue of the covariance matrix <span class="math">\(\lambda_2\)</span>, which is equivalent to <span class="math">\(\sigma_y^2\)</span> if the polarisation really does math the principal eigenvector.</p>
+<div class="section" id="grid-search">
+<h2>Grid Search<a class="headerlink" href="#grid-search" title="Permalink to this headline">¶</a></h2>
+<p>Now that we know which statistics from the covariance matrix are useful for measuring shear wave splitting we can consider the grid search.</p>
 <p>The rotation exchanges energy between traces</p>
 <div class="math">
 \[(X,Y)_{\theta} = (X,Y)_{\theta} \begin{bmatrix}
 cos(\theta) &amp; -sin(\theta)
 sin(\theta) &amp; cos(\theta)
 \end{bmatrix}.\]</div>
-<p>The covariance matrix for test angle <span class="math">\(\theta\)</span> at lag <span class="math">\(n\)</span> is then.</p>
-<div class="math">
-\[\begin{split}\Sigma (X,Y)_{\theta} [n] = \begin{bmatrix}}
-{var} (X) &amp;  cov \\
-        &amp; {var} (Y)
-        \end{bmatrix}.\end{split}\]</div>
+<p>Notice that the term in the upper right corner has similar form to a cross-correlation with zero lag (<span class="math">\(j=0\)</span>).</p>
 <p>The lag can be easily converted to a meaningful delay time if the sampling interval <span class="math">\(\Delta\)</span> of the data is known</p>
 <div class="math">
 \[\delta t = n \Delta.\]</div>
+<div class="math">
+\[(\mathbf{x} \star \mathbf{y})_j\ {\stackrel {\mathrm {def} }{=}}\sum _{m=-\infty }^{\infty }x_i y_{i+j}.\]</div>
+<p>Furthermore, if energy in the window is conserved for all lags, then the terms in the upper left and lower right of the covariance matrix are constant.</p>
+<div class="math">
+\[\begin{split}\mathbf{\Sigma}(\mathbf{x},\mathbf{y})_j = \frac{1}{N}
+                \begin{bmatrix}
+\sigma_x^2 &amp; (\mathbf{x} \star \mathbf{y})_j \\
+                  &amp; \sigma_y^2
+  \end{bmatrix}\end{split}\]</div>
+<p>As a consequence of the convolution theorem a computational speedup is achieved by calculating the cross-correlation in the frequency domain.</p>
+<div class="math">
+\[f \star g = \mathcal{F}^{-1} \left\]</div>
+</div>
 </div>
 
 
@@ -104,7 +119,10 @@ sin(\theta) &amp; cos(\theta)
 
 <h3>Navigation</h3>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Covariance</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Covariance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#grid-search">Grid Search</a></li>
+</ul>
+</li>
 </ul>
 
 <div class="relations">
@@ -137,7 +155,7 @@ sin(\theta) &amp; cos(\theta)
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
       
       |
-      <a href="_sources/background.rst.txt"
+      <a href="_sources/covariance.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 
