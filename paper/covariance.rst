@@ -78,13 +78,13 @@ Furthermore, if energy in the window is conserved for all lags, then the terms i
 
 .. math:: \mathbf{\Sigma}(\mathbf{x},\mathbf{y})_j = \frac{1}{N}
 								\begin{bmatrix}
-						\sigma_x^2 & (\mathbf{x} \star \mathbf{y})_j \\
-				  	  			  & \sigma_y^2
+						\sum{x_i^2}  & (\mathbf{x} \star \mathbf{y})_j \\
+				  	  			  & \sum{y_i^2} 
 			            		  \end{bmatrix} 
 									
 As a consequence of the convolution theorem a computational speedup is achieved by calculating the cross-correlation in the frequency domain.
 
-.. math:: f \star g = \mathcal{F}^{-1} \left
+.. math:: \mathbf{x} \star \mathbf{y} = \mathcal{F}^{-1} \{ \mathcal{F} \{ \mathbf{x} \}^* \mathcal{F} \{ \mathbf{y} \} \}
 
 .. {\mathcal{F}} \left f^* \right
 
