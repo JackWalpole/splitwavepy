@@ -370,11 +370,12 @@ def gridcovfreq(x, y, ndegs=90, maxslag=50):
         # inverse transform
         icxy = np.fft.irfft(cxy).real
         # get info
-        sumxsqr = np.sum(np.abs(fxr)**2)
+        sumxsqr = 2 * np.sum(np.abs(fxr)**2) / n
+        sumysqr = 2 * (sumsqrs-sumxsqr) / n
         covxy = np.roll(icxy, int(maxslag))[0:mlags]
         # basic covariance map
-        g[:,ii,0,0] = 2*sumxsqr
-        g[:,ii,1,1] = 2*(sumsqrs-sumxsqr)
+        g[:,ii,0,0] = sumxsqr
+        g[:,ii,1,1] = sumysqr
         g[:,ii,0,1] = g[:,ii,1,0] = covxy
     return g / n
 
