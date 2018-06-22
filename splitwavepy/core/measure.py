@@ -52,9 +52,9 @@ class Py(SplitWave):
         self._settings = settings # backup settings
         
         # Book Keeping
-        self._set_degs(**settings)
-        self._set_lags(**settings)
-        self._pol = settings['pol']
+        # self._set_degs(**settings)
+        # self._set_lags(**settings)
+        # self._pol = settings['pol']
         self._rcvcorr = settings['rcvcorr']
         self._srccorr = settings['srccorr']
         self._ndegs = settings['ndegs']
@@ -101,6 +101,10 @@ class Py(SplitWave):
         self.__ndegs  = int(ndegs)
         self._set_degs(ndegs=self.__ndegs)
         
+    @property
+    def _degs(self):
+        return np.linspace(0, 180, self._ndegs)
+        
     #_maxlag
     @property
     def _maxlag(self):
@@ -114,63 +118,70 @@ class Py(SplitWave):
         maxlag = maxslag * self._data._delta
         self.__maxslag = maxslag
         self.__maxlag = maxlag
-        slags = np.arange(maxslag+1)
-        self._set_lags(slags)
-    
-    #_degs
-    @property
-    def _degs(self):
-        return self.__degs
 
-    @_degs.setter
-    def _degs(self, degs):
-        if isinstance(degs, np.ndarray) and degs.ndim == 1:
-            self.__degs = degs
-            # self.__rads = np.radians(degs)
-        else: raise ValueError('degs not understood.')
-
-    def _set_degs(self, **kwargs):
-        """return numpy array of degs to explore"""
-        settings = {}
-        settings['mindeg'] = -90
-        settings['maxdeg'] = 90
-        settings['ndegs']  = 90
-        settings.update(kwargs)
-        self._degs = np.linspace(settings['mindeg'],
-                                 settings['maxdeg'],
-                                 settings['ndegs'],
-                                 endpoint=False)
         
-    #_lags
+    
     @property
     def _lags(self):
-        return self.__lags
+        return np.linspace(0, self._maxlag, self.__maxslag+1)
 
-    @_lags.setter
-    def _lags(self, lags):
-        if isinstance(lags, np.ndarray) and lags.ndim == 1:
-            self.__slags = np.unique(core.time2samps(lags, self._data._delta, mode='even')).astype(int)
-            self.__lags = self.__slags * self._data._delta
-        else: raise ValueError('lags not understood.')
-
-    def _set_lags(self, **kwargs):
-        """return numpy array of lags to explore"""
-        settings = {}
-        settings['minlag'] = 0
-        settings['maxlag'] = self._data.wwidth() / 4
-        settings['nlags']  = 40
-        settings.update(kwargs)
-        self._lags = np.linspace(settings['minlag'],
-                                 settings['maxlag'],
-                                 settings['nlags'],
-                                 endpoint = True)
+        
+        
+    #
+    # #_degs
+    # @property
+    # def _degs(self):
+    #     return self.__degs
+    #
+    # @_degs.setter
+    # def _degs(self, degs):
+    #     if isinstance(degs, np.ndarray) and degs.ndim == 1:
+    #         self.__degs = degs
+    #         # self.__rads = np.radians(degs)
+    #     else: raise ValueError('degs not understood.')
+    #
+    # def _set_degs(self, **kwargs):
+    #     """return numpy array of degs to explore"""
+    #     settings = {}
+    #     settings['mindeg'] = -90
+    #     settings['maxdeg'] = 90
+    #     settings['ndegs']  = 90
+    #     settings.update(kwargs)
+    #     self._degs = np.linspace(settings['mindeg'],
+    #                              settings['maxdeg'],
+    #                              settings['ndegs'],
+    #                              endpoint=False)
+        
+    #_lags
+    # @property
+    # def _lags(self):
+    #     return self.__lags
+    #
+    # @_lags.setter
+    # def _lags(self, lags):
+    #     if isinstance(lags, np.ndarray) and lags.ndim == 1:
+    #         self.__slags = np.unique(core.time2samps(lags, self._data._delta, mode='even')).astype(int)
+    #         self.__lags = self.__slags * self._data._delta
+    #     else: raise ValueError('lags not understood.')
+    #
+    # def _set_lags(self, **kwargs):
+    #     """return numpy array of lags to explore"""
+    #     settings = {}
+    #     settings['minlag'] = 0
+    #     settings['maxlag'] = self._data.wwidth() / 4
+    #     settings['nlags']  = 40
+    #     settings.update(kwargs)
+    #     self._lags = np.linspace(settings['minlag'],
+    #                              settings['maxlag'],
+    #                              settings['nlags'],
+    #                              endpoint = True)
                                  
 
                                  
     #_grid
     @property
     def _grid(self):
-        dd, ll = np.meshgrid(self._degs, self._lags, indexing='ij')
+        dd, ll = np.meshgrid(self._degs, self._lags)
         return dd, ll
                    
     #_rcvcorr    
@@ -272,7 +283,7 @@ class Py(SplitWave):
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
         cov = core.gridcov(x, y, w0, w1, self.__degs, self.__slags)
-        # cov = core.covfreq_reshape(cov)  
+        cov = core.covfreq_reshape(cov)  
         return cov
         
     def _gridcovfreq(self):       
