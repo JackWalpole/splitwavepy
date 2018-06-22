@@ -62,7 +62,7 @@ class Py(SplitWave):
             
         # Grid Search
         # self._covmap = self._gridcov()
-        self._covmapfreq = self._gridcovfreq()
+        self._covmap = self._gridcovfreq()
         # self.sc = self.silver_chan()
         # self.xc = self.correlation()
         # self.q = core.q(self.sc['fast'], self.sc['lag'], self.xc['fast'], self.xc['lag'])
@@ -91,56 +91,6 @@ class Py(SplitWave):
     def _data(self):
         return self.__data
 
-
-    
-    # _degs
-    @property
-    def _degs(self):
-        return self.__degs
-        
-    @_degs.setter
-    def _degs(self, degs):
-        if isinstance(degs, np.ndarray) and degs.ndim == 1:
-            self.__degs = degs
-            # self.__rads = np.radians(degs)
-        else: raise ValueError('degs not understood.')
-       
-    def _set_degs(self, **kwargs):
-        """return numpy array of degs to explore"""
-        settings = {}
-        settings['mindeg'] = -90
-        settings['maxdeg'] = 90
-        settings['ndegs']  = 90
-        settings.update(kwargs)
-        self._degs = np.linspace(settings['mindeg'],
-                                 settings['maxdeg'],
-                                 settings['ndegs'],
-                                 endpoint=False)
-        
-    #_lags
-    @property
-    def _lags(self):
-        return self.__lags
-        
-    @_lags.setter
-    def _lags(self, lags):
-        if isinstance(lags, np.ndarray) and lags.ndim == 1:
-            self.__slags = np.unique(core.time2samps(lags, self._data._delta, mode='even')).astype(int)
-            self.__lags = self.__slags * self._data._delta
-        else: raise ValueError('lags not understood.')
-    
-    def _set_lags(self, **kwargs):
-        """return numpy array of lags to explore"""
-        settings = {}
-        settings['minlag'] = 0
-        settings['maxlag'] = self._data.wwidth() / 4
-        settings['nlags']  = 40
-        settings.update(kwargs)
-        self._lags = np.linspace(settings['minlag'],
-                                 settings['maxlag'],
-                                 settings['nlags'],
-                                 endpoint = True)
-                                 
     #_ndegs
     @property
     def _ndegs(self):
@@ -163,6 +113,56 @@ class Py(SplitWave):
         maxlag = maxslag * self._data._delta
         self.__maxslag = maxslag
         self.__maxlag = maxlag
+    
+    #_degs
+    @property
+    def _degs(self):
+        return self.__degs
+
+    @_degs.setter
+    def _degs(self, degs):
+        if isinstance(degs, np.ndarray) and degs.ndim == 1:
+            self.__degs = degs
+            # self.__rads = np.radians(degs)
+        else: raise ValueError('degs not understood.')
+
+    def _set_degs(self, **kwargs):
+        """return numpy array of degs to explore"""
+        settings = {}
+        settings['mindeg'] = -90
+        settings['maxdeg'] = 90
+        settings['ndegs']  = 90
+        settings.update(kwargs)
+        self._degs = np.linspace(settings['mindeg'],
+                                 settings['maxdeg'],
+                                 settings['ndegs'],
+                                 endpoint=False)
+        
+    #_lags
+    @property
+    def _lags(self):
+        return self.__lags
+
+    @_lags.setter
+    def _lags(self, lags):
+        if isinstance(lags, np.ndarray) and lags.ndim == 1:
+            self.__slags = np.unique(core.time2samps(lags, self._data._delta, mode='even')).astype(int)
+            self.__lags = self.__slags * self._data._delta
+        else: raise ValueError('lags not understood.')
+
+    def _set_lags(self, **kwargs):
+        """return numpy array of lags to explore"""
+        settings = {}
+        settings['minlag'] = 0
+        settings['maxlag'] = self._data.wwidth() / 4
+        settings['nlags']  = 40
+        settings.update(kwargs)
+        self._lags = np.linspace(settings['minlag'],
+                                 settings['maxlag'],
+                                 settings['nlags'],
+                                 endpoint = True)
+                                 
+
                                  
     #_grid
     @property
