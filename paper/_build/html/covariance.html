@@ -97,17 +97,20 @@ sin(\theta) &amp; cos(\theta)
 <p>As a consequence of the convolution theorem a computational speedup is achieved by calculating the cross-correlation in the frequency domain.</p>
 <div class="math">
 \[ \begin{align}\begin{aligned}\mathbf{X} = \mathcal{F} \{ \mathbf{x} \}\\\mathbf{Y} = \mathcal{F} \{ \mathbf{y} \}\\(\mathbf{x} \star \mathbf{y})_j = (\mathcal{F}^{-1} \{ \mathbf{X} \mathbf{Y}^* \})_j\end{aligned}\end{align} \]</div>
-<p>By Parseval’s theorem the sum of squares in the time domain signal is equal to the sum of squares on its Fourier transformed frequency domain companion.</p>
+<p>By Parseval’s theorem the sum of squares in the time domain signal is closely related to the sum of squares on its Fourier transformed frequency domain companion.</p>
 <div class="math">
 \[\sum _{i=0}^{N-1}x_{i}^2 = {\frac {1}{N}} \sum _{i=0}^{N-1}|X_i|^{2}\]</div>
-<p>This leads to the efficient calculation of multiple covariance matrices at lag <span class="math">\(j\)</span> via</p>
+<p>This leads to an algorithm for the covariance matrix in the frequency domain</p>
 <div class="math">
 \[\begin{split}\mathbf{C}(\mathbf{x},\mathbf{y})_j = \frac{1}{N}
               \begin{bmatrix}
-              \frac {1}{N} \sum _{i=0}^{N-1}|X_i|^{2}  &amp;
+              \frac {1}{N} \sum |\mathbf{X}|^{2}  &amp;
               (\mathcal{F}^{-1} \{ \mathbf{X} \mathbf{Y}^* \})_j \\
-                &amp; \frac {1}{N} \sum _{i=0}^{N-1}|Y_i|^{2}
+                &amp; \frac {1}{N} \sum |\mathbf{Y}|^{2}
 \end{bmatrix}\end{split}\]</div>
+</div>
+<div class="section" id="practical-issues">
+<h2>Practical Issues<a class="headerlink" href="#practical-issues" title="Permalink to this headline">¶</a></h2>
 </div>
 </div>
 
@@ -130,6 +133,7 @@ sin(\theta) &amp; cos(\theta)
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Covariance</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#grid-search">Grid Search</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#practical-issues">Practical Issues</a></li>
 </ul>
 </li>
 </ul>

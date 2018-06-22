@@ -97,17 +97,17 @@ As a consequence of the convolution theorem a computational speedup is achieved 
 	
 	(\mathbf{x} \star \mathbf{y})_j = (\mathcal{F}^{-1} \{ \mathbf{X} \mathbf{Y}^* \})_j
 
-By Parseval's theorem the sum of squares in the time domain signal is equal to the sum of squares on its Fourier transformed frequency domain companion.
+By Parseval's theorem the sum of squares in the time domain signal is closely related to the sum of squares on its Fourier transformed frequency domain companion.
 
 .. math:: \sum _{i=0}^{N-1}x_{i}^2 = {\frac {1}{N}} \sum _{i=0}^{N-1}|X_i|^{2}
 
-This leads to the efficient calculation of multiple covariance matrices at lag :math:`j` via
+This leads to an algorithm for the covariance matrix in the frequency domain, this is only accurate if it can be guaranteed that the traces have zero mean.
 
 .. math:: \mathbf{C}(\mathbf{x},\mathbf{y})_j = \frac{1}{N}
 								\begin{bmatrix}
-								\frac {1}{N} \sum _{i=0}^{N-1}|X_i|^{2}  & 
+								\frac {1}{N} \sum |\mathbf{X}|^{2}  & 
 								(\mathcal{F}^{-1} \{ \mathbf{X} \mathbf{Y}^* \})_j \\
-				  	  			  & \frac {1}{N} \sum _{i=0}^{N-1}|Y_i|^{2}
+				  	  			  & \frac {1}{N} \sum |\mathbf{Y}|^{2}
 			            		  \end{bmatrix} 
 								  
 =====================
