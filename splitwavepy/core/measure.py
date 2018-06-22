@@ -46,15 +46,15 @@ class Py(SplitWave):
         # settings['bootstrap'] = True 
         settings['rcvcorr'] = None
         settings['srccorr'] = None
-        settings['ndegs'] = 60
+        settings['ndegs'] = 180
         settings['maxlag'] = None
         settings.update(kwargs) # update using kwargs
         self._settings = settings # backup settings
         
         # Book Keeping
-        # self._set_degs(**settings)
-        # self._set_lags(**settings)
-        # self._pol = settings['pol']
+        self._set_degs(**settings)
+        self._set_lags(**settings)
+        self._pol = settings['pol']
         self._rcvcorr = settings['rcvcorr']
         self._srccorr = settings['srccorr']
         self._ndegs = settings['ndegs']
@@ -99,6 +99,7 @@ class Py(SplitWave):
     @_ndegs.setter
     def _ndegs(self, ndegs):
         self.__ndegs  = int(ndegs)
+        self._set_degs(ndegs=self.__ndegs)
         
     #_maxlag
     @property
@@ -113,6 +114,8 @@ class Py(SplitWave):
         maxlag = maxslag * self._data._delta
         self.__maxslag = maxslag
         self.__maxlag = maxlag
+        slags = np.arange(maxslag+1)
+        self._set_lags(slags)
     
     #_degs
     @property
