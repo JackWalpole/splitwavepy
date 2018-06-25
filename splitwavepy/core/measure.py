@@ -46,6 +46,8 @@ class Py(SplitWave):
         # settings['bootstrap'] = True 
         settings['rcvcorr'] = None
         settings['srccorr'] = None
+        
+        # degs settings
         settings['ndegs'] = 180
         settings['maxlag'] = None
         settings.update(kwargs) # update using kwargs
@@ -63,7 +65,7 @@ class Py(SplitWave):
         # Grid Search
         # self._covmap = self._gridcov()
         self._covmap = self._gridcovfreq()
-        # self.sc = self.silver_chan()
+        self.sc = self.silver_chan()
         # self.xc = self.correlation()
         # self.q = core.q(self.sc['fast'], self.sc['lag'], self.xc['fast'], self.xc['lag'])
 
@@ -99,11 +101,10 @@ class Py(SplitWave):
     @_ndegs.setter
     def _ndegs(self, ndegs):
         self.__ndegs  = int(ndegs)
-        self._set_degs(ndegs=self.__ndegs)
         
     @property
     def _degs(self):
-        return np.linspace(0, 180, self._ndegs)
+        return np.linspace(0, 180, self._ndegs, endpoint=False)
         
     #_maxlag
     @property
@@ -119,27 +120,31 @@ class Py(SplitWave):
         self.__maxslag = maxslag
         self.__maxlag = maxlag
 
-        
+
+    @property
+    def _slags(self):
+        return np.arange(self.__maxslag + 1)
     
     @property
     def _lags(self):
-        return np.linspace(0, self._maxlag, self.__maxslag+1)
+        return self._slags * self._data._delta
 
         
         
-    #
-    # #_degs
+
+    #_degs
     # @property
     # def _degs(self):
-    #     return self.__degs
-    #
+    #     return np.linspace(0, 180, settings['ndegs'],
+    #                              endpoint=False)
+
     # @_degs.setter
     # def _degs(self, degs):
     #     if isinstance(degs, np.ndarray) and degs.ndim == 1:
     #         self.__degs = degs
     #         # self.__rads = np.radians(degs)
     #     else: raise ValueError('degs not understood.')
-    #
+
     # def _set_degs(self, **kwargs):
     #     """return numpy array of degs to explore"""
     #     settings = {}
