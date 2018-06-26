@@ -92,7 +92,7 @@ class Py(SplitWave):
         self._covmap = self._gridcovfreq()
         self.sc = self.silver_chan()
         self.xc = self.correlation()
-        # self.q = core.q(self.sc['fast'], self.sc['lag'], self.xc['fast'], self.xc['lag'])
+        self.q = core.q(self.sc.fast, self.sc.lag, self.xc.fast, self.xc.lag)
 
         # # Splitting Intensity
         # self.splintensity = self._splitting_intensity()
@@ -293,9 +293,9 @@ class Py(SplitWave):
         print('SCfast'.rjust(10), 'SCdfast'.rjust(9), 'SClag'.rjust(9), 'SCdlag'.rjust(9),
               'XCfast'.rjust(9), 'XCdfast'.rjust(9), 'XClag'.rjust(9), 'XCdlag'.rjust(9), 'Q'.rjust(9))
         print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.2f}{6:10.2f}{7:10.2f}{8:10.2f}'.format(
-               self.sc['fast'], self.sc['dfast'], self.sc['lag'], self.sc['dlag'], 
-               self.xc['fast'], self.xc['dfast'], self.xc['lag'], self.sc['dlag'], 
-               self.q)
+               self.sc.fast, self.sc.dfast, self.sc.lag, self.sc.dlag, 
+               self.xc.fast, self.xc.dfast, self.xc.lag, self.xc.dlag, 
+               self.q))
     
                 
     # Common methods
@@ -361,9 +361,7 @@ class Py(SplitWave):
         #     raise NotImplementedError('Not implemented.')
             #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
             
-        vals = lam1/lam2
-        
-        return Measure(self, vals)
+        return Measure(self, lam1/lam2)
         # sc = {}
         # sc['lam1'] = lam1
         # sc['lam2'] = lam2
@@ -378,13 +376,16 @@ class Py(SplitWave):
         # self.__silver_chan = sc
         
     def correlation(self):
-        xc = {}
-        xc['rho'] = np.abs(core.covmap2rho(self._covmap))
-        xc['maxidx'] = core.max_idx(xc['rho'])
-        dd, ll = self._grid
-        xc['fast'] = dd[xc['maxidx']]
-        xc['lag']  = ll[xc['maxidx']]
-        return xc        
+        
+        rho = np.abs(core.covmap2rho(self._covmap))
+        
+        # xc = {}
+        # xc['rho'] = np.abs(core.covmap2rho(self._covmap))
+        # xc['maxidx'] = core.max_idx(xc['rho'])
+        # dd, ll = self._grid
+        # xc['fast'] = dd[xc['maxidx']]
+        # xc['lag']  = ll[xc['maxidx']]
+        return Measure(self, rho)       
 
 
                     
@@ -683,10 +684,10 @@ class Py(SplitWave):
         
     # spit out the answer
         
-    def report(self, **kwargs):
-        """Prints fast, lag, dfast, dlag to screen/stdout."""
-        print('fast'.rjust(10), 'dfast'.rjust(9), 'lag'.rjust(9), 'dlag'.rjust(9))
-        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}'.format(self.fast, self.dfast, self.lag, self.dlag))
+    # def report(self, **kwargs):
+    #     """Prints fast, lag, dfast, dlag to screen/stdout."""
+    #     print('fast'.rjust(10), 'dfast'.rjust(9), 'lag'.rjust(9), 'dlag'.rjust(9))
+    #     print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}'.format(self.fast, self.dfast, self.lag, self.dlag))
             
     
     # Plotting
@@ -876,15 +877,23 @@ class Measure(Py):
     
     @property
     def fast(self):
-        dd, ll = self._py.grid
+        dd, ll = self.py._grid
         return dd[self.maxloc]
     
     @property
     def lag(self):
-        dd, ll = self._py.grid
+        dd, ll = self.py._grid
         return ll[self.maxloc]
         
     # error estimation
+    
+    @property
+    def dfast(self):
+        return 0
+        
+    @property
+    def dlag(self):
+        return 0
 
     # data views
     
@@ -935,3 +944,71 @@ class Measure(Py):
         return fastdata_corr
         
     # plotting
+    def psurf(self, **kwargs):
+        fig, ax = plt.subplots(1)
+        self._psurf(ax, **kwargs)
+        plt.show()
+    
+    
+    def _psurf(self, ax, **kwargs):
+        """
+        Plot an error surface.
+    
+        **kwargs
+        - cmap = 'magma'
+        - vals = (M.lam1-M.lam2) / M.lam2
+        """
+    
+        if 'cmap' not in kwargs:
+            kwargs['cmap'] = 'magma'
+            
+        ll, dd = self.py._grid
+    
+            
+        # error surface
+        cax = ax.contourf(ll, dd, self.vals, 26, cmap=kwargs['cmap'])
+        cbar = plt.colorbar(cax)
+        ax.set_ylabel(r'Fast Direction ($^\circ$)')
+        ax.set_xlabel('Delay Time (' + self.py._data.units + ')')
+        
+        # confidence region
+        # if 'conf95' in kwargs and kwargs['conf95'] == True:
+        #     ax.contour(self.lagmap, self.degmap, self.errsurf, levels=[self.conf95level],
+        #             colors='r', alpha=.5, linewidths=3)
+            
+        # marker
+        if 'marker' in kwargs and kwargs['marker'] == True:
+            ax.errorbar(self.lag, self.fast, xerr=self.dlag, yerr=self.dfast)
+
+        ax.set_xlim([ll[0,0], ll[-1,0]])
+        ax.set_ylim([dd[0,0], dd[0,-1]])
+    
+        # optional title
+        if 'title' in kwargs:
+            ax.set_title(kwargs['title']) 
+            
+        # add info in text box
+        if 'info' in kwargs and kwargs['info'] == True:
+            textstr = '$\phi=%.1f\pm%.1f$\n$\delta t=%.2f\pm%.2f$'%\
+                        (self.fast, self.dfast, self.lag, self.dlag)
+            # place a text box in upper left in axes coords
+            props = dict(boxstyle='round', facecolor='white', alpha=0.5)
+            ax.text(0.6, 0.95, textstr, transform=ax.transAxes, fontsize=12,
+                    verticalalignment='top', bbox=props)
+        
+        if 'ppm' in kwargs and kwargs['ppm'] is True:
+            sublags = self.lags[0:-1:int(self.lags.size/6)]
+            subdegs = self.degs[0:-1:int(self.degs.size/6)]
+            sublags = sublags + (self.lags[-1]-sublags[-1]) / 2
+            subdegs = subdegs + (self.degs[-1]-subdegs[-1]) / 2
+            x, y = self.SplitWave_corr()._chopdata()   
+            lagtot = self.lags[-1] - self.lags[0]
+            degtot = self.degs[-1] - self.degs[0]
+            boost = 10 * lagtot / np.max((x**2 + y**2)**.5)      
+            for fast in subdegs:
+                for lag in sublags:
+                    x, y = self.unsplit(fast, lag)._chopdata()
+                    ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
+
+                    
+        return ax
