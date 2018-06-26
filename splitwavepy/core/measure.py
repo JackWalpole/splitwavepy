@@ -66,7 +66,7 @@ class Py(SplitWave):
         # self._covmap = self._gridcov()
         self._covmap = self._gridcovfreq()
         self.sc = self.silver_chan()
-        # self.xc = self.correlation()
+        self.xc = self.correlation()
         # self.q = core.q(self.sc['fast'], self.sc['lag'], self.xc['fast'], self.xc['lag'])
 
         # # Splitting Intensity
@@ -366,14 +366,22 @@ class Py(SplitWave):
                 
     # data views
     
-    def data_corr(self):        
+    def data_corr(self, method='sc'):
+        
+        if method == 'sc':
+            fast = self.sc['fast']
+            lag = self.sc['lag']
+        elif method == 'xc':
+            fast = self.xc['fast']
+            lag = self.xc['lag']
+              
         # copy data     
-        data_corr = self.copy()
+        data_corr = self._data.copy()
         # rcv side correction     
         if self._rcvcorr is not None:
             data_corr = data_corr.unsplit(*self._rcvcorr)    
         # target layer correction
-        data_corr = data_corr.unsplit(self.fast, self.lag)  
+        data_corr = data_corr.unsplit(fast, lag)  
         # src side correction
         if self._srccorr is not None:
             data_corr = data_corr.unsplit(*self._srccorr)
@@ -381,23 +389,23 @@ class Py(SplitWave):
 
     def srcpoldata(self):
         srcpoldata = self._data.rotateto(self.srcpol())
-        srcpoldata.set_labels(['srcpol', 'trans', 'ray'])
+        srcpoldata._set_labels(['srcpol', 'trans'])
         return srcpoldata
         
     def srcpoldata_corr(self):
         srcpoldata_corr = self.data_corr().rotateto(self.srcpol())      
-        srcpoldata_corr.set_labels(['srcpol', 'trans', 'ray'])
+        srcpoldata_corr._set_labels(['srcpol', 'trans'])
         return srcpoldata_corr
         
-    def fastdata(self):
+    def fastdata(self, fast):
         """Plot fast/slow data."""
-        fastdata = self.rotateto(self.fast)
-        fastdata.set_labels(['fast', 'slow', 'ray'])
+        fastdata = self._data.rotateto(fast)
+        fastdata._set_labels(['fast', 'slow'])
         return fastdata
 
-    def fastdata_corr(self):
-        fastdata_corr = self.data_corr().rotateto(self.fast)
-        fastdata_corr.set_labels(['fast', 'slow', 'ray'])
+    def fastdata_corr(self, fast):
+        fastdata_corr = self.data_corr().rotateto(fast)
+        fastdata_corr._set_labels(['fast', 'slow'])
         return fastdata_corr
             
     # F-test utilities

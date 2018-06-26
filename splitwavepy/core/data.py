@@ -129,7 +129,7 @@ class SplitWave:
         
         .. warning:: shortens trace length by *lag*.
         """
-        self.split(fast, -lag)
+        return self.split(fast, -lag)
        
     def rotateto(self, degrees):
         """
