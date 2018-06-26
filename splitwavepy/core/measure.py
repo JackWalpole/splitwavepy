@@ -29,7 +29,32 @@ class Py(SplitWave):
     """
     Measure shearwave splitting on a SplitWave object.
     
-    Usage:
+    Usage: Py(SplitWave, **options)
+    
+    Calculates the covariance matrix of unsplit data to search for splitting
+    parameters that best remove the splitting.
+    
+    Splitting is characterised as either:
+    
+    -  the ratio of the energy in the polarisation direction
+    to the energy in the transverse direction (Silver and Chan, 1991).
+    
+    - the correlation of the fast and slow wavelets (e.g. Ando, XXXX).
+    
+    
+    
+    Uses the Fourier transform to do the grid search by default, unless the 
+    
+    **options
+    ---------
+    
+    maxlag  
+    ndegs
+    
+    Methods:
+    
+    plot
+    
     
     
     """
@@ -261,6 +286,17 @@ class Py(SplitWave):
     #     xc['lag']  = ll[ml]
     #     self.__correlation = xc
     
+    
+    # Visible methods
+    
+    def report(self, **kwargs):
+        print('SCfast'.rjust(10), 'SCdfast'.rjust(9), 'SClag'.rjust(9), 'SCdlag'.rjust(9),
+              'XCfast'.rjust(9), 'XCdfast'.rjust(9), 'XClag'.rjust(9), 'XCdlag'.rjust(9), 'Q'.rjust(9))
+        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.2f}{6:10.2f}{7:10.2f}{8:10.2f}'.format(
+               self.sc['fast'], self.sc['dfast'], self.sc['lag'], self.sc['dlag'], 
+               self.xc['fast'], self.xc['dfast'], self.xc['lag'], self.sc['dlag'], 
+               self.q)
+    
                 
     # Common methods
             
@@ -324,14 +360,18 @@ class Py(SplitWave):
         # else:
         #     raise NotImplementedError('Not implemented.')
             #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
-        sc = {}
-        sc['lam1'] = lam1
-        sc['lam2'] = lam2
-        sc['maxidx'] = core.max_idx(lam1/lam2)
-        dd, ll = self._grid
-        sc['fast'] = dd[sc['maxidx']]
-        sc['lag']  = ll[sc['maxidx']]
-        return sc
+            
+        vals = lam1/lam2
+        
+        return Measure(self, vals)
+        # sc = {}
+        # sc['lam1'] = lam1
+        # sc['lam2'] = lam2
+        # sc['maxidx'] = core.max_idx(lam1/lam2)
+        # dd, ll = self._grid
+        # sc['fast'] = dd[sc['maxidx']]
+        # sc['lag']  = ll[sc['maxidx']]
+ 
         # sc['srcpol'] = self._covmap[ml]
         # sc['dfast']
         # sc['dlag']
@@ -364,49 +404,7 @@ class Py(SplitWave):
         d = self.srcpoldata_corr()._chop()
         return core.snrRH(d.x, d.y)
                 
-    # data views
-    
-    def data_corr(self, method='sc'):
-        
-        if method == 'sc':
-            fast = self.sc['fast']
-            lag = self.sc['lag']
-        elif method == 'xc':
-            fast = self.xc['fast']
-            lag = self.xc['lag']
-              
-        # copy data     
-        data_corr = self._data.copy()
-        # rcv side correction     
-        if self._rcvcorr is not None:
-            data_corr = data_corr.unsplit(*self._rcvcorr)    
-        # target layer correction
-        data_corr = data_corr.unsplit(fast, lag)  
-        # src side correction
-        if self._srccorr is not None:
-            data_corr = data_corr.unsplit(*self._srccorr)
-        return data_corr
 
-    def srcpoldata(self):
-        srcpoldata = self._data.rotateto(self.srcpol())
-        srcpoldata._set_labels(['srcpol', 'trans'])
-        return srcpoldata
-        
-    def srcpoldata_corr(self):
-        srcpoldata_corr = self.data_corr().rotateto(self.srcpol())      
-        srcpoldata_corr._set_labels(['srcpol', 'trans'])
-        return srcpoldata_corr
-        
-    def fastdata(self, fast):
-        """Plot fast/slow data."""
-        fastdata = self._data.rotateto(fast)
-        fastdata._set_labels(['fast', 'slow'])
-        return fastdata
-
-    def fastdata_corr(self, fast):
-        fastdata_corr = self.data_corr().rotateto(fast)
-        fastdata_corr._set_labels(['fast', 'slow'])
-        return fastdata_corr
             
     # F-test utilities
     
@@ -861,4 +859,79 @@ class Py(SplitWave):
         return True
         
 
+class Measure(Py):        
+    
+    def __init__(self, py, vals, **kwargs):
         
+        self.py = py
+        self.vals = vals
+    
+    @property
+    def maxloc(self):
+        return core.max_idx(self.vals)
+        
+    @property
+    def minloc(self):
+        return core.min_idx(self.vals)
+    
+    @property
+    def fast(self):
+        dd, ll = self._py.grid
+        return dd[self.maxloc]
+    
+    @property
+    def lag(self):
+        dd, ll = self._py.grid
+        return ll[self.maxloc]
+        
+    # error estimation
+
+    # data views
+    
+    @property
+    def data(self):
+        return self.py._data.copy()
+        
+    @property
+    def data_corr(self):      
+        data_corr = self.data
+        # rcv side correction     
+        if self._rcvcorr is not None:
+            data_corr = data_corr.unsplit(*self._rcvcorr)    
+        # target layer correction
+        data_corr = data_corr.unsplit(self.fast, self.lag)  
+        # src side correction
+        if self._srccorr is not None:
+            data_corr = data_corr.unsplit(*self._srccorr)
+        return data_corr
+        
+    @property
+    def srcpol(self):
+        return self.data_corr._estimate_pol()
+
+    @property
+    def srcpoldata(self):
+        srcpoldata = self.data.rotateto(self.srcpol)
+        srcpoldata._set_labels(['pol', 'trans'])
+        return srcpoldata
+    
+    @property
+    def srcpoldata_corr(self):
+        srcpoldata_corr = self.data_corr().rotateto(self.srcpol)      
+        srcpoldata_corr._set_labels(['pol', 'trans'])
+        return srcpoldata_corr
+    
+    @property
+    def fastdata(self, fast):
+        """Plot fast/slow data."""
+        fastdata = self.data.rotateto(fast)
+        fastdata._set_labels(['fast', 'slow'])
+        return fastdata
+    
+    @property
+    def fastdata_corr(self, fast):
+        fastdata_corr = self.data_corr().rotateto(fast)
+        fastdata_corr._set_labels(['fast', 'slow'])
+        return fastdata_corr
+        
+    # plotting
