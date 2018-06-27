@@ -144,7 +144,10 @@ class Py(SplitWave):
         maxlag = maxslag * self._data._delta
         self.__nslags = maxslag + 1
         self.__maxlag = maxlag
-
+        
+    @property
+    def _nlags(self):
+        return self.__nslags
 
     @property
     def _slags(self):
