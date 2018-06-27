@@ -343,21 +343,21 @@ def gridcov(x, y, w0, w1, degs, slags):
     
 
     
-def gridcovfreq(x, y, ndegs=90, maxslag=50):
-    """Returns grid of covariance matrices of shape (ndegs/2, 1+2*maxslag, 2, 2).
+def gridcovfreq(x, y, ndegs=90, nslags=50):
+    """Returns grid of covariance matrices of shape (ndegs/2, (2*nslags)-1, 2, 2).
        Use covfreq_reshape to get this into a more user friendly shape.
        x and y are the windowed traces.  
        Probably best to use a reasonably long, tapered, window as shifts
        are performed implicitly in the Frequency domain (so wrap around?).
     """
     mdegs = int(ndegs/2)
-    mlags = int(maxslag*2) + 1
+    mlags = int(nslags*2) - 1
     degs = np.linspace(0, 90, mdegs, endpoint=False)
     n = x.size
     g = np.empty((mlags, mdegs, 2, 2))
     # Fourier Transform
-    fx = np.fft.rfft(x)
-    fy = np.fft.rfft(y)
+    fx = np.fft.fft(x)
+    fy = np.fft.fft(y)
     fx[0] = 0
     fy[0] = 0
     sumsqrs = np.sum(np.abs(fx)**2 + np.abs(fy)**2)
@@ -368,11 +368,11 @@ def gridcovfreq(x, y, ndegs=90, maxslag=50):
         # correlate
         cxy = fxr * fyr.conj()
         # inverse transform
-        icxy = np.fft.irfft(cxy).real
+        icxy = np.fft.ifft(cxy).real
         # get info
-        sumxsqr = 2 * np.sum(np.abs(fxr)**2) / n
-        sumysqr = 2 * (sumsqrs-sumxsqr) / n
-        covxy = np.roll(icxy, int(maxslag))[0:mlags]
+        sumxsqr = np.sum(np.abs(fxr)**2) / n
+        sumysqr = (sumsqrs-sumxsqr) / n
+        covxy = np.roll(icxy, int(nslags)-1)[0:mlags]
         # basic covariance map
         g[:,ii,0,0] = sumxsqr
         g[:,ii,1,1] = sumysqr
@@ -380,12 +380,14 @@ def gridcovfreq(x, y, ndegs=90, maxslag=50):
     return g / n
 
 def covfreq_reshape(cov):
-    """Reshape a covariance map output using the Fourier method to match the standard."""
+    """Reshape a covariance map to match the standard."""
     shp = cov.shape
     mid = int((shp[0]-1)/2)
-    neg = np.flip(cov[:mid+1,:,:,:], 0)
-    pos = cov[mid:,:,:,:]
-    return np.concatenate((neg, pos), axis=1)    
+    pos = cov[:mid+1,:,:,:]
+    pos = np.flip(pos, 0)
+    neg = cov[mid:,:,:,:]
+    return np.concatenate((pos, neg), axis=1)
+    
 
 # def slagchop_srccorr(x, y, w0, w1, slag, srcfast, srcslag):
 #     x, y = rot2(x, y, srcfast)
@@ -418,20 +420,20 @@ def covfreq_reshape(cov):
 #         ii += 1
 #     return gridcov
 
-def covmap2eig(c):
-    eigvals, eigvecs = np.linalg.eigh(c[:, :])
+def covmap2eig(cov):
+    eigvals, eigvecs = np.linalg.eigh(cov[:, :])
     return eigvals, eigvecs
 
-def covmap2eigvals(c):
-    eigvals = np.linalg.eigvalsh(c[:, :])
+def covmap2eigvals(cov):
+    eigvals = np.linalg.eigvalsh(cov[:, :])
     lam2 = eigvals[:, :, 0]
     lam1 = eigvals[:, :, 1]
     return lam1, lam2
     
-def covmap2rho(c):
-    stdx = np.sqrt(c[:, :, 0, 0])
-    stdy = np.sqrt(c[:, :, 1, 1])
-    rho = c[:, :, 0, 1] / (stdx * stdy)
+def covmap2rho(cov):
+    stdx = np.sqrt(cov[:, :, 0, 0])
+    stdy = np.sqrt(cov[:, :, 1, 1])
+    rho = cov[:, :, 0, 1] / (stdx * stdy)
     return rho
     
 

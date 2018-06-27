@@ -142,13 +142,13 @@ class Py(SplitWave):
             maxlag = self._data.wwidth() / 4
         maxslag = core.time2samps(maxlag, self._data._delta)
         maxlag = maxslag * self._data._delta
-        self.__maxslag = maxslag
+        self.__nslags = maxslag + 1
         self.__maxlag = maxlag
 
 
     @property
     def _slags(self):
-        return np.arange(self.__maxslag + 1)
+        return np.arange(self.__nslags)
     
     @property
     def _lags(self):
@@ -211,8 +211,9 @@ class Py(SplitWave):
     #_grid
     @property
     def _grid(self):
-        dd, ll = np.meshgrid(self._degs, self._lags)
-        return dd, ll
+        # dd, ll = np.meshgrid(self._degs, self._lags)
+        # return dd, ll
+        return np.meshgrid(self._lags, self._degs, indexing='ij')
                    
     #_rcvcorr    
     @property
@@ -349,7 +350,7 @@ class Py(SplitWave):
             # srcphi, srclag = self.__srccorr
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
-        cov = core.gridcovfreq(x, y, ndegs=self.__ndegs, maxslag=self.__maxslag)
+        cov = core.gridcovfreq(x, y, ndegs=self.__ndegs, nslags=self.__nslags)
         cov = core.covfreq_reshape(cov) 
         return cov
     
