@@ -373,16 +373,17 @@ def gridcovfreq(x, y, ndegs=90, nslags=50):
     sumyy = np.sum(y*y)
     sumxy = np.sum(x*y)
     ncov0 = [[sumxx, sumxy], [sumxy, sumyy]]
-    # g = np.empty((mlags, mdegs, 2, 2))
-    g = np.empty((n, mdegs, 2, 2))
+    g = np.empty((mlags, mdegs, 2, 2))
+    # g = np.empty((n, mdegs, 2, 2))
     # Fourier Transform
     fx = np.fft.fft(x)
     fy = np.fft.fft(y)
+    fxy = np.vstack((fx, fy))
     # now loop and calculate
     for ii in range(mdegs):
         # rotate
         rot = _rot(degs[ii])
-        fxyr = np.dot(rot, np.vstack((fx, fy)))
+        fxyr = np.dot(rot, fxy)
         fxr = fxyr[0]
         fyr = fxyr[1]
         # correlate
@@ -391,10 +392,10 @@ def gridcovfreq(x, y, ndegs=90, nslags=50):
         icxy = np.fft.ifft(cxy).real
         # fill g (the grid of covariance matrices)
         g[:,ii] = np.dot(rot, np.dot(ncov0, rot.T))
-        covxy = icxy
+        # covxy = icxy
         # covxy = np.fft.fftshift(icxy)
         # covxy = icxy[0:mlags]
-        # covxy = np.roll(icxy, nslags-1)[0:mlags]
+        covxy = np.roll(icxy, nslags-1)[0:mlags]
         # fill in cross-covariance between x and y
         g[:,ii,0,1] = g[:,ii,1,0] = covxy
     return g / n    
@@ -448,17 +449,27 @@ def cov_reshape(cov):
     neg = cov[mid:,:,:,:]
     return np.concatenate((pos, neg), axis=1)
     
-def cov_rotate(cov, deg):
+# def cov_rotate(cov, deg):
+#     """Rotate covariance matrices to deg."""
+#     shp = cov.shape
+#     outcov = np.empty(shp)
+#     degs = np.linspace(0, 90, shp[1], endpoint=False)
+#     for ii in range(shp[1]):
+#         rot = _rot(deg - degs[ii])
+#         temp = np.dot(cov[:,ii,:,:], rot.T)
+#         temp = np.moveaxis(temp, 0, -1)
+#         temp = np.dot(rot, temp)
+#         outcov[:, ii] = np.moveaxis(temp, -1, 0)
+    # return outcov
+
+def cov_rotate(cov, deg):    
     """Rotate covariance matrices to deg."""
     shp = cov.shape
     outcov = np.empty(shp)
     degs = np.linspace(0, 90, shp[1], endpoint=False)
     for ii in range(shp[1]):
         rot = _rot(deg - degs[ii])
-        temp = np.dot(cov[:,ii,:,:], rot.T)
-        temp = np.moveaxis(temp, 0, -1)
-        temp = np.dot(rot, temp)
-        outcov[:, ii] = np.moveaxis(temp, -1, 0)
+        outcov[:, ii] = np.matmul(rot, np.matmul(cov[:,ii], rot.T))
     return outcov
     
 # def cov_rot_to_deg(cov, deg):

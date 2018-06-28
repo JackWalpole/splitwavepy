@@ -354,7 +354,7 @@ class Py(SplitWave):
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
         
         cov = core.gridcovfreq(x, y, ndegs=self.__ndegs, nslags=self.__nslags)
-        cov = core.covfreq_reshape(cov) 
+        cov = core.cov_reshape(cov)
         return cov
     
     def silver_chan(self, **kwargs):
