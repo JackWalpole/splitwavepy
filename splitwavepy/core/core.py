@@ -311,49 +311,7 @@ def gridcov(x, y, w0, w1, degs, slags):
             g[jj, ii, 1, 1] = npsum(dy * dy)
     return g / n    
 
-    
-# def gridcovfreq(x, y, ndegs=90, nslags=50):
-#     """Returns grid of covariance matrices of shape (ndegs/2, (2*nslags)-1, 2, 2).
-#        Use covfreq_reshape to get this into a more user friendly shape.
-#        x and y are the windowed traces.
-#        Probably best to use a reasonably long, tapered, window as shifts
-#        are performed implicitly in the Frequency domain (so wrap around?).
-#     """
-#     mdegs = int(ndegs/2)
-#     mlags = int(nslags*2) - 1
-#     degs = np.linspace(0, 90, mdegs, endpoint=False)
-#     n = x.size
-#     # g = np.empty((mlags, mdegs, 2, 2))
-#     g = np.empty((n, mdegs, 2, 2))
-#     # Fourier Transform
-#     # x = x - np.mean(x)
-#     # y = y - np.mean(y)
-#     fx = np.fft.fft(x)
-#     fy = np.fft.fft(y)
-#     fx[0] = 0
-#     fy[0] = 0
-#     sumsqrs = np.sum(np.abs(fx)**2 + np.abs(fy)**2)
-#     # now loop and calculate
-#     for ii in range(mdegs):
-#         # rotate
-#         fxr, fyr = rotate(fx, fy, degs[ii])
-#         # correlate
-#         cxy = fxr * fyr.conj()
-#         # inverse transform
-#         icxy = np.fft.ifft(cxy).real
-#         # get info
-#         sumxsqr = np.sum(np.abs(fxr)**2)
-#         sumysqr = np.sum(np.abs(fyr)**2)
-#         # sumysqr = (sumsqrs-sumxsqr)
-#         covxy = icxy
-#         # covxy = np.fft.fftshift(icxy)
-#         # covxy = icxy[0:mlags]
-#         # covxy = np.roll(icxy, nslags-1)[0:mlags]
-#         # basic covariance map
-#         g[:,ii,0,0] = sumxsqr / n
-#         g[:,ii,1,1] = sumysqr / n
-#         g[:,ii,0,1] = g[:,ii,1,0] = covxy
-#     return g / n
+
 
 def gridcovfreq(x, y, ndegs=90, nslags=50):
     """Returns grid of covariance matrices of shape (ndegs/2, (2*nslags)-1, 2, 2).
@@ -374,7 +332,6 @@ def gridcovfreq(x, y, ndegs=90, nslags=50):
     sumxy = np.sum(x*y)
     ncov0 = [[sumxx, sumxy], [sumxy, sumyy]]
     g = np.empty((mlags, mdegs, 2, 2))
-    # g = np.empty((n, mdegs, 2, 2))
     # Fourier Transform
     fx = np.fft.fft(x)
     fy = np.fft.fft(y)
@@ -392,53 +349,11 @@ def gridcovfreq(x, y, ndegs=90, nslags=50):
         icxy = np.fft.ifft(cxy).real
         # fill g (the grid of covariance matrices)
         g[:,ii] = np.dot(rot, np.dot(ncov0, rot.T))
-        # covxy = icxy
-        # covxy = np.fft.fftshift(icxy)
-        # covxy = icxy[0:mlags]
         covxy = np.roll(icxy, nslags-1)[0:mlags]
         # fill in cross-covariance between x and y
         g[:,ii,0,1] = g[:,ii,1,0] = covxy
     return g / n    
 
-#
-# def gridcovfreq(x, y, ndegs=90, nslags=50):
-#     """Returns grid of covariance matrices of shape (ndegs/2, (2*nslags)-1, 2, 2).
-#        Use covfreq_reshape to get this into a more user friendly shape.
-#        x and y are the windowed traces.
-#        Probably best to use a reasonably long, tapered, window as shifts
-#        are performed implicitly in the Frequency domain (so wrap around?).
-#     """
-#     mdegs = int(ndegs/2)
-#     mlags = int(nslags*2) - 1
-#     degs = np.linspace(0, 90, mdegs, endpoint=False)
-#     n = x.size
-#     g = np.empty((mlags, mdegs, 2, 2))
-#     # Fourier Transform
-#     # x = x - np.mean(x)
-#     # y = y - np.mean(y)
-#     fx = np.fft.fft(x)
-#     fy = np.fft.fft(y)
-#     fx[0] = 0
-#     fy[0] = 0
-#     sumsqrs = np.sum(np.abs(fx)**2 + np.abs(fy)**2)
-#     # now loop and calculate
-#     for ii in range(mdegs):
-#         # rotate
-#         fxr, fyr = rotate(fx, fy, degs[ii])
-#         # correlate
-#         cxy = fxr * fyr.conj()
-#         # inverse transform
-#         icxy = np.fft.ifft(cxy).real
-#         # get info
-#         sumxsqr = np.sum(np.abs(fxr)**2) / n
-#         sumysqr = (sumsqrs-sumxsqr) / n
-#         icxy[0] = 2
-#         covxy = np.roll(icxy, nslags-1)[0:mlags]
-#         # basic covariance map
-#         g[:,ii,0,0] = sumxsqr
-#         g[:,ii,1,1] = sumysqr
-#         g[:,ii,0,1] = g[:,ii,1,0] = covxy
-#     return g / n
 
 def cov_reshape(cov):
     """Reshape a covariance map to match the standard."""
@@ -448,19 +363,7 @@ def cov_reshape(cov):
     pos = np.flip(pos, 0)
     neg = cov[mid:,:,:,:]
     return np.concatenate((pos, neg), axis=1)
-    
-# def cov_rotate(cov, deg):
-#     """Rotate covariance matrices to deg."""
-#     shp = cov.shape
-#     outcov = np.empty(shp)
-#     degs = np.linspace(0, 90, shp[1], endpoint=False)
-#     for ii in range(shp[1]):
-#         rot = _rot(deg - degs[ii])
-#         temp = np.dot(cov[:,ii,:,:], rot.T)
-#         temp = np.moveaxis(temp, 0, -1)
-#         temp = np.dot(rot, temp)
-#         outcov[:, ii] = np.moveaxis(temp, -1, 0)
-    # return outcov
+
 
 def cov_rotate(cov, deg):    
     """Rotate covariance matrices to deg."""
@@ -471,19 +374,7 @@ def cov_rotate(cov, deg):
         rot = _rot(deg - degs[ii])
         outcov[:, ii] = np.matmul(rot, np.matmul(cov[:,ii], rot.T))
     return outcov
-    
-# def cov_rot_to_deg(cov, deg):
-#     """Rotate covariance matrix to 0."""
-#     shp = cov.shape
-#     outcov = np.empty(shp)
-#     degs = np.linspace(0, 90, shp[1], endpoint=False)
-#     for ii in range(shp[1]):
-#         ang = math.radians(degs[ii] + deg)
-#         cang = math.cos(ang)
-#         sang = math.sin(ang)
-#         rot = [[cang, -sang], [sang, cang]]
-#         outcov[:, ii] = np.dot(rot, cov[:, ii])
-#     return outcov
+
 
 # def slagchop_srccorr(x, y, w0, w1, slag, srcfast, srcslag):
 #     x, y = rot2(x, y, srcfast)

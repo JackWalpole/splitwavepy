@@ -881,12 +881,12 @@ class Measure(Py):
     
     @property
     def fast(self):
-        dd, ll = self.py._grid
+        ll, dd = self.py._grid
         return dd[self.maxloc]
     
     @property
     def lag(self):
-        dd, ll = self.py._grid
+        ll, dd = self.py._grid
         return ll[self.maxloc]
         
     # error estimation
