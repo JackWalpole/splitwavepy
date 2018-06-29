@@ -138,7 +138,7 @@ class Py(SplitWave):
         return self.__maxlag
         
     @_maxlag.setter
-    def _maxlag(self, maxlag=None):
+    def _maxlag(self, maxlag):
         if maxlag is None:
             maxlag = self._data.wwidth() / 4
         maxslag = core.time2samps(maxlag, self._data._delta)
