@@ -73,6 +73,7 @@ class Py(SplitWave):
         settings['srccorr'] = None
         
         # degs settings
+        settings['pol'] = None
         settings['ndegs'] = 180
         settings['maxlag'] = None
         settings.update(kwargs) # update using kwargs
@@ -81,7 +82,7 @@ class Py(SplitWave):
         # Book Keeping
         # self._set_degs(**settings)
         # self._set_lags(**settings)
-        # self._pol = settings['pol']
+        self._pol = settings['pol']
         self._rcvcorr = settings['rcvcorr']
         self._srccorr = settings['srccorr']
         self._ndegs = settings['ndegs']
@@ -101,11 +102,11 @@ class Py(SplitWave):
         # self.name = 'Untitled'
         # if 'name' in kwargs: self.name = kwargs['name']
             
-        #
-        #
-        # # Implement Settings
+        # print(self.sc.srcpol)
+
+        # Implement Settings
         # if 'bootstrap' == True : m.bootstrap(**kwargs)
-        # if 'report'    == True : m.report(**kwargs)
+        if settings['report'] == True : self.report(**kwargs)
         # if 'plot'      == True : m.plot(**kwargs)
 
     #===================
@@ -158,6 +159,18 @@ class Py(SplitWave):
         return self._slags * self._data._delta
 
         
+    @property
+    def _pol(self):
+        return self.__pol
+
+    @_pol.setter
+    def _pol(self, pol):
+        self.__pol = pol
+        
+    # @_pol.setter
+    # def _pol(self, pol=None):
+    #     if pol is None: self.__pol = self._guesspol()
+    #     else: self.__pol = float(pol)
         
 
     #_degs
@@ -214,8 +227,6 @@ class Py(SplitWave):
     #_grid
     @property
     def _grid(self):
-        # dd, ll = np.meshgrid(self._degs, self._lags)
-        # return dd, ll
         return np.meshgrid(self._lags, self._degs, indexing='ij')
                    
     #_rcvcorr    
@@ -250,7 +261,23 @@ class Py(SplitWave):
             slag = core.time2samps(lag, self._data._delta, 'even')
             self.__rcvslag = (deg, slag)
             self.__srccorr = (deg, slag * self._data._delta)
-        else: raise TypeError('srccorr not understood.')      
+        else: raise TypeError('srccorr not understood.')
+        
+    @property
+    def splitting_intensity(self, **kwargs):
+        """
+        Calculate the splitting intensity as defined by Chevrot (2000).
+        """        
+        
+        # settings      
+        if self._pol is None: pol = self.sc.srcpol
+        else: pol = self._pol 
+        
+        copy = self._data.rotateto(pol)
+        copy.__x = np.gradient(copy.x)
+        rdiff, trans = copy._chopxy()
+        s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
+        return s      
 
     # @property
     # def silver_chan(self):
@@ -295,14 +322,18 @@ class Py(SplitWave):
     
     def report(self, **kwargs):
         print('SCfast'.rjust(10), 'SCdfast'.rjust(9), 'SClag'.rjust(9), 'SCdlag'.rjust(9),
-              'XCfast'.rjust(9), 'XCdfast'.rjust(9), 'XClag'.rjust(9), 'XCdlag'.rjust(9), 'Q'.rjust(9))
-        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.2f}{6:10.2f}{7:10.2f}{8:10.2f}'.format(
+              'XCfast'.rjust(9), 'XCdfast'.rjust(9), 'XClag'.rjust(9), 'XCdlag'.rjust(9), 
+              'Q'.rjust(9), 'SI'.rjust(9))
+        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.2f}{6:10.2f}{7:10.2f}{8:10.2f}{9:10.2f}'.format(
                self.sc.fast, self.sc.dfast, self.sc.lag, self.sc.dlag, 
                self.xc.fast, self.xc.dfast, self.xc.lag, self.xc.dlag, 
-               self.q))
+               self.q, self.splitting_intensity))
     
                 
     # Common methods
+    
+    def _guesspol(self):
+        return self.sc.srcpol
             
     def _gridcov(self):       
         """
@@ -459,21 +490,7 @@ class Py(SplitWave):
         # return
         return fdfast, fdlag 
         
-    # splitting intensity
-    def splitting_intensity(self, pol=None, **kwargs):
-        """
-        Calculate the splitting intensity as defined by Chevrot (2000).
-        """        
-        
-        # settings
-        
-        if 'pol' is None:
-            raise ValueError('pol must be specified')            
-        copy = self._data.rotateto(pol)
-        copy.x = np.gradient(copy.x)
-        rdiff, trans = copy._chopdata()
-        s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
-        return s
+
         
     # bootstrap utilities
     # to do: implement block bootstrapping for time series data.
@@ -909,13 +926,13 @@ class Measure(Py):
     def data_corr(self):      
         data_corr = self.data
         # rcv side correction     
-        if self._rcvcorr is not None:
-            data_corr = data_corr.unsplit(*self._rcvcorr)    
+        if self.py._rcvcorr is not None:
+            data_corr = data_corr.unsplit(*self.py._rcvcorr)    
         # target layer correction
         data_corr = data_corr.unsplit(self.fast, self.lag)  
         # src side correction
-        if self._srccorr is not None:
-            data_corr = data_corr.unsplit(*self._srccorr)
+        if self.py._srccorr is not None:
+            data_corr = data_corr.unsplit(*self.py._srccorr)
         return data_corr
         
     @property
