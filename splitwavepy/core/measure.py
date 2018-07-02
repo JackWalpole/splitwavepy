@@ -389,14 +389,17 @@ class Py(SplitWave):
         return cov
     
     def silver_chan(self, **kwargs):
-        # if self._pol is None:
-        # use eigen analysis
-        lam1, lam2 = core.covmap2eigvals(self._covmap)
-        # else:
-        #     raise NotImplementedError('Not implemented.')
-            #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
+        
+        if self._pol is None:
+            # use eigen analysis
+            lam1, lam2 = core.covmap2eigvals(self._covmap)
+            vals = lam1 / lam2
+        else:
+            covrot = core.cov_rotate(self._covmap, self._pol)
+            sig1, sig2 = covrot[:,:,0,0], covrot[:,:,1,1]
+            vals = sig1 / sig2
             
-        return Measure(self, lam1/lam2)
+        return Measure(self, vals)
         # sc = {}
         # sc['lam1'] = lam1
         # sc['lam2'] = lam2
