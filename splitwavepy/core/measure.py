@@ -19,6 +19,7 @@ from .data import SplitWave
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+from scipy import stats
 
 
 # import os.path
@@ -398,8 +399,20 @@ class Py(SplitWave):
             covrot = core.cov_rotate(self._covmap, self._pol)
             sig1, sig2 = covrot[:,:,0,0], covrot[:,:,1,1]
             vals = sig1 / sig2
+        
+        # Make Measurement and add info    
+        m = Measure(self, vals)
+        m.lam1 = lam1
+        m.lam2 = lam2
+        
+        # error estimation
+        n = m.ndf
+        k = 2
+        stat = (n - k)/k * (lam2/lam2.min() - 1) 
+        m.f_cdf = stats.f.cdf(stat, k, n)
+        
             
-        return Measure(self, vals)
+        return m
         # sc = {}
         # sc['lam1'] = lam1
         # sc['lam2'] = lam2
@@ -884,7 +897,7 @@ class Py(SplitWave):
         return True
         
 
-class Measure(Py):        
+class Measure():        
     
     def __init__(self, py, vals, **kwargs):
         
@@ -910,6 +923,11 @@ class Measure(Py):
         return ll[self.maxloc]
         
     # error estimation
+    
+    @property
+    def ndf(self):
+        x, y = self.srcpoldata_corr._chopxy()
+        return core.ndf(y)
     
     @property
     def dfast(self):
@@ -950,7 +968,7 @@ class Measure(Py):
     
     @property
     def srcpoldata_corr(self):
-        srcpoldata_corr = self.data_corr().rotateto(self.srcpol)      
+        srcpoldata_corr = self.data_corr.rotateto(self.srcpol)      
         srcpoldata_corr._set_labels(['pol', 'trans'])
         return srcpoldata_corr
     

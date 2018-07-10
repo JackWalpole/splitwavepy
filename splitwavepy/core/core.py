@@ -203,6 +203,9 @@ def pearson(x, y, **kwargs):
     norm = math.sqrt(np.sum(x**2) * np.sum(y**2))
     xc = np.correlate(x, y)/norm
     return xc
+    
+def fisher_r(rho):
+    return np.arctanh(rho)
 
 def crossconv(obsx, obsy, prex, prey):
     """
