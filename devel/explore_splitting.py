@@ -81,16 +81,16 @@ def _ppm(self, ax, **kwargs):
     t = data._chopt()
             
     # plot data
-    # ax.plot(self._chop().y,self._chop().x)
+    lines = ax.plot(y, x)
     
     # multi-colored
-    norm = plt.Normalize(t.min(), t.max())
-    points = np.array([y, x]).T.reshape(-1, 1, 2)
-    segments = np.concatenate([points[:-1], points[1:]], axis=1)
-    lc = LineCollection(segments, cmap='plasma', norm=norm, alpha=0.7)
-    lc.set_array(t)
-    lc.set_linewidth(2)
-    line = ax.add_collection(lc)
+    # norm = plt.Normalize(t.min(), t.max())
+    # points = np.array([y, x]).T.reshape(-1, 1, 2)
+    # segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    # lc = LineCollection(segments, cmap='plasma', norm=norm, alpha=0.7)
+    # lc.set_array(t)
+    # lc.set_linewidth(2)
+    # line = ax.add_collection(lc)
     # plt.colorbar(line)
 
     # set limit
@@ -108,7 +108,8 @@ def _ppm(self, ax, **kwargs):
     # turn off tick annotation
     ax.axes.xaxis.set_ticklabels([])
     ax.axes.yaxis.set_ticklabels([])
-    return
+    
+    return lines[0]
 
 def _psurf(self, ax, **kwargs):
     """
@@ -186,8 +187,9 @@ class Explorer:
         
         self.py = Py
 
-        self.fig = plt.figure(figsize=(12, 3), **kwargs)     
-        gs = gridspec.GridSpec(1, 3, width_ratios=[3, 1, 2], **kwargs) 
+        self.fig = plt.figure(figsize=(18, 3), **kwargs)     
+        gs = gridspec.GridSpec(1, 4, width_ratios=[5, 1, 2, 2], **kwargs) 
+        
     
         # trace
         self.ax0 = plt.subplot(gs[0])
@@ -197,9 +199,14 @@ class Explorer:
         self.ax1 = plt.subplot(gs[1])
         self.ppm = _ppm(Py._data, self.ax1, **kwargs)
     
-        # surface
+        # surface silver and chan
         self.ax2 = plt.subplot(gs[2])
-        _psurf(self.py, self.ax2, vals=Py.sc.vals, **kwargs)   
+        _psurf(self.py, self.ax2, vals=Py.sc.vals, **kwargs)  
+        
+        # surface cross-correlation
+        self.ax3 = plt.subplot(gs[3])
+        _psurf(self.py, self.ax3, vals=Py.xc.vals, **kwargs) 
+         
         #
         # # optional pick window
         # if settings['pick'] == True:
@@ -221,10 +228,12 @@ class Explorer:
 
     def on_hover(self, event):
         lag, fast = event.xdata, event.ydata
-        if event.inaxes == self.ax2:
+        if (event.inaxes == self.ax2) | (event.inaxes == self.ax3):
             d = self.py._data.unsplit(fast, lag)
             self.linex.set_data(d._t, d.x)
             self.liney.set_data(d._t, d.y)
+            chopxy = d._chopxy()
+            self.ppm.set_data(chopxy[1], chopxy[0])
             # linex, liney = _ptr(d, self.ax0)
             plt.draw()
             # print(event.xdata, event.ydata)

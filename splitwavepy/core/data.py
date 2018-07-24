@@ -121,6 +121,7 @@ class SplitWave:
         orient, _ = self.cmpangs()
         copy = self.rotateto(0)
         copy.__x, copy.__y = core.split(copy.x, copy.y, fast, slag)
+        copy.__t0 = copy.__t0 + abs(slag/2 * self._delta)
         return copy.rotateto(orient)
            
     def unsplit(self, fast, lag):
