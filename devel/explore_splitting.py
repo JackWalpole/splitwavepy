@@ -6,44 +6,44 @@ from matplotlib import gridspec
 from matplotlib.collections import LineCollection
 import numpy as np
 
-def plot(self, **kwargs):
-    """
-    Plot trace data and particle motion
-    """
-    
-    settings = {}
-    settings['pick'] = False
-    settings.update(**kwargs)
-
-    fig = plt.figure(figsize=(12, 3), **kwargs)     
-    gs = gridspec.GridSpec(1, 3, width_ratios=[3, 1, 2], **kwargs) 
-    
-    # trace
-    ax0 = plt.subplot(gs[0])
-    _ptr(self._data, ax0, **kwargs)
-    
-    # particle  motion
-    ax1 = plt.subplot(gs[1])
-    _ppm(self._data, ax1, **kwargs)
-    
-    # surface
-    ax2 = plt.subplot(gs[2])
-    _psurf(self, ax2, vals=self.sc.vals, **kwargs)   
-    #
-    # # optional pick window
-    # if settings['pick'] == True:
-    #     windowpicker = WindowPicker(self, fig, ax0)
-    #     windowpicker.connect()
-    
-    # explore
-    explorer = Explorer(self, fig, ax0, ax1, ax2)
-    explorer.connect()
-    
-                             
-    # neaten
-    plt.tight_layout()
-    
-    plt.show()
+# def plot(self, **kwargs):
+#     """
+#     Plot trace data and particle motion
+#     """
+#
+#     settings = {}
+#     settings['pick'] = False
+#     settings.update(**kwargs)
+#
+#     fig = plt.figure(figsize=(12, 3), **kwargs)
+#     gs = gridspec.GridSpec(1, 3, width_ratios=[3, 1, 2], **kwargs)
+#
+#     # trace
+#     ax0 = plt.subplot(gs[0])
+#     linex, liney = _ptr(self._data, ax0, **kwargs)
+#
+#     # particle  motion
+#     ax1 = plt.subplot(gs[1])
+#     _ppm(self._data, ax1, **kwargs)
+#
+#     # surface
+#     ax2 = plt.subplot(gs[2])
+#     _psurf(self, ax2, vals=self.sc.vals, **kwargs)
+#     #
+#     # # optional pick window
+#     # if settings['pick'] == True:
+#     #     windowpicker = WindowPicker(self, fig, ax0)
+#     #     windowpicker.connect()
+#
+#     # explore
+#     explorer = Explorer(self, fig, ax0, ax1, ax2)
+#     explorer.connect()
+#
+#
+#     # neaten
+#     plt.tight_layout()
+#
+#     plt.show()
         
 
         
@@ -53,8 +53,8 @@ def _ptr(self, ax, **kwargs):
 
     # plot data
     t = self._t
-    ax.plot( t, self.x, label=self._labels[0])
-    ax.plot( t, self.y, label=self._labels[1])
+    linex = ax.plot( t, self.x, label=self._labels[0])
+    liney = ax.plot( t, self.y, label=self._labels[1])
     lim = np.abs(self._xy).max() * 1.1
     ax.set_ylim([-lim, lim])
     ax.set_xlabel('Time (' + self.units +')')
@@ -70,7 +70,7 @@ def _ptr(self, ax, **kwargs):
         if type(kwargs['marker']) is not list: kwargs['marker'] = [ kwargs['marker'] ]
         [ ax.axvline(float(mark), linewidth=1, color='b') for mark in kwargs['marker'] ]
         
-    return
+    return linex[0], liney[0]
 
 def _ppm(self, ax, **kwargs):
     """Plot particle motion on *ax* matplotlib axis object.
@@ -177,12 +177,44 @@ def _psurf(self, ax, **kwargs):
 
 class Explorer:
     
-    def __init__(self, m, fig, ax0, ax1, ax2):
-        self.m = m
-        self.fig = fig
-        self.ax0 = ax0
-        self.ax1 = ax1
-        self.ax2 = ax2
+    def __init__(self, Py, **kwargs):
+        # self.m = m
+        # self.fig = fig
+        # self.ax0 = ax0
+        # self.ax1 = ax1
+        # self.ax2 = ax2
+        
+        self.py = Py
+
+        self.fig = plt.figure(figsize=(12, 3), **kwargs)     
+        gs = gridspec.GridSpec(1, 3, width_ratios=[3, 1, 2], **kwargs) 
+    
+        # trace
+        self.ax0 = plt.subplot(gs[0])
+        self.linex, self.liney = _ptr(Py._data, self.ax0, **kwargs)
+    
+        # particle  motion
+        self.ax1 = plt.subplot(gs[1])
+        self.ppm = _ppm(Py._data, self.ax1, **kwargs)
+    
+        # surface
+        self.ax2 = plt.subplot(gs[2])
+        _psurf(self.py, self.ax2, vals=Py.sc.vals, **kwargs)   
+        #
+        # # optional pick window
+        # if settings['pick'] == True:
+        #     windowpicker = WindowPicker(self, fig, ax0)
+        #     windowpicker.connect()
+
+        # explore
+        # explorer = Explorer(self, fig, ax0, ax1, ax2)
+        self.connect()
+
+                         
+        # neaten
+        plt.tight_layout()
+
+        plt.show()
         
     def connect(self):
         self.on_hover = self.fig.canvas.mpl_connect('motion_notify_event', self.on_hover)
@@ -190,14 +222,14 @@ class Explorer:
     def on_hover(self, event):
         lag, fast = event.xdata, event.ydata
         if event.inaxes == self.ax2:
-            d = self.m._data.unsplit(fast, lag)
-            _ptr(d, self.ax0)
+            d = self.py._data.unsplit(fast, lag)
+            self.linex.set_data(d._t, d.x)
+            self.liney.set_data(d._t, d.y)
+            # linex, liney = _ptr(d, self.ax0)
             plt.draw()
-            print(event.xdata, event.ydata)
+            # print(event.xdata, event.ydata)
    
 if __name__ == "__main__":
     
     a = sw.SplitWave(split=(30,1.2), noise=0.03).Py()
-    # x = a._data.x
-    # y = a._data.y
-    plot(a)
+    explore = Explorer(a)
