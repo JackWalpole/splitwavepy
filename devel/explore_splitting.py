@@ -70,7 +70,7 @@ def _ptr(self, ax, **kwargs):
         if type(kwargs['marker']) is not list: kwargs['marker'] = [ kwargs['marker'] ]
         [ ax.axvline(float(mark), linewidth=1, color='b') for mark in kwargs['marker'] ]
         
-    return linex[0], liney[0]
+    return linex[0], liney[0], w1, w2
 
 def _ppm(self, ax, **kwargs):
     """Plot particle motion on *ax* matplotlib axis object.
@@ -173,7 +173,7 @@ def _psurf(self, ax, **kwargs):
                 x, y = self.unsplit(fast, lag)._chopdata()
                 ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
     
-    return ax
+    return cax
     
 
 class Explorer:
@@ -193,7 +193,8 @@ class Explorer:
     
         # trace
         self.ax0 = plt.subplot(gs[0])
-        self.linex, self.liney = _ptr(Py._data, self.ax0, **kwargs)
+        self.linex, self.liney, self.w1, self.w2 = _ptr(Py._data, self.ax0, **kwargs)
+        _, self.ydat = self.w1.get_data()
     
         # particle  motion
         self.ax1 = plt.subplot(gs[1])
@@ -201,11 +202,11 @@ class Explorer:
     
         # surface silver and chan
         self.ax2 = plt.subplot(gs[2])
-        _psurf(self.py, self.ax2, vals=Py.sc.vals, **kwargs)  
+        self.sc_surf = _psurf(self.py, self.ax2, vals=Py.sc.vals, **kwargs)  
         
         # surface cross-correlation
         self.ax3 = plt.subplot(gs[3])
-        _psurf(self.py, self.ax3, vals=Py.xc.vals, **kwargs) 
+        self.xc_surf = _psurf(self.py, self.ax3, vals=Py.xc.vals, **kwargs) 
          
         #
         # # optional pick window
@@ -225,8 +226,10 @@ class Explorer:
         
     def connect(self):
         self.on_hover = self.fig.canvas.mpl_connect('motion_notify_event', self.on_hover)
+        self.on_click = self.fig.canvas.mpl_connect('button_press_event', self.on_click)
 
     def on_hover(self, event):
+        """hover over surface"""
         lag, fast = event.xdata, event.ydata
         if (event.inaxes == self.ax2) | (event.inaxes == self.ax3):
             d = self.py._data.unsplit(fast, lag)
@@ -234,9 +237,50 @@ class Explorer:
             self.liney.set_data(d._t, d.y)
             chopxy = d._chopxy()
             self.ppm.set_data(chopxy[1], chopxy[0])
-            # linex, liney = _ptr(d, self.ax0)
+        plt.draw()        
+            
+    def on_click(self, event, **kwargs):
+        """click trace window"""
+        x = event.xdata
+        if event.inaxes == self.ax0:
+            # left click
+            if event.button == 1:
+                self.w1.set_data([x, x], self.ydat)
+            # right click
+            elif event.button == 3:
+                self.w2.set_data([x, x], self.ydat)
+            else: return
+            
+            x1, _ = self.w1.get_data()
+            x2, _ = self.w2.get_data()
+            wbeg, wend = sorted((x1[0], x2[0]))
+            d = self.py._data.copy()
+            d.set_window(wbeg, wend)
+
+            # update particle motion
+            chopxy = d._chopxy()
+            self.ppm.set_data(chopxy[1], chopxy[0])
+            
+            
+            # update surfaces
+            e = d.Py()
+            for coll in self.sc_surf.collections: 
+                self.ax2.collections.remove(coll)
+            self.sc_surf = self.ax2.contourf(*e._grid, e.sc.lam2)
+            # for coll in self.xc_surf.collections:
+            #     plt.gca().collections.remove(coll)
+            # self.xc_surf = plt.contourf(ll,dd, e.xc.vals)
+            # self.ax2.clear()
+            # _psurf(self.py, self.ax2, vals=e.sc.vals, **kwargs)
+            
+            
+            
             plt.draw()
-            # print(event.xdata, event.ydata)
+        #
+        #     # if reached here process the click
+        #     wbeg, wend = sorted((self.x1, self.x2))
+        #
+        # self.SplitWave.set_window(wbeg, wend)
    
 if __name__ == "__main__":
     
