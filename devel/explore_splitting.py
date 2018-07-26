@@ -130,7 +130,7 @@ def _psurf(self, ax, **kwargs):
         
     # error surface
     cax = ax.contourf(laggrid, deggrid, kwargs['vals'], 26, cmap=kwargs['cmap'])
-    cbar = plt.colorbar(cax)
+    # cbar = plt.colorbar(cax)
     ax.set_ylabel(r'Fast Direction ($^\circ$)')
     ax.set_xlabel('Delay Time (' + self._data.units + ')')
     
@@ -267,11 +267,10 @@ class Explorer:
             for coll in self.sc_surf.collections: 
                 self.ax2.collections.remove(coll)
             self.sc_surf = self.ax2.contourf(*e._grid, e.sc.vals, 26, cmap='magma')
-            # for coll in self.xc_surf.collections:
-            #     plt.gca().collections.remove(coll)
-            # self.xc_surf = plt.contourf(ll,dd, e.xc.vals)
-            # self.ax2.clear()
-            # _psurf(self.py, self.ax2, vals=e.sc.vals, **kwargs)
+            for coll in self.xc_surf.collections:
+                self.ax3.collections.remove(coll)
+            self.xc_surf = plt.contourf(*e._grid, e.xc.vals, 26, cmap='magma')
+
             
             
             
@@ -284,5 +283,5 @@ class Explorer:
    
 if __name__ == "__main__":
     
-    a = sw.SplitWave(split=(30,1.2), noise=0.03).Py(max_lag=4)
+    a = sw.SplitWave(split=(30,1.2), noise=0.03).Py(maxlag=4)
     explore = Explorer(a)

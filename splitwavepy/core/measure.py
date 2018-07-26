@@ -68,7 +68,7 @@ class Py(SplitWave):
         # Settings
         settings = {}
         settings['plot'] = False
-        settings['report'] = True
+        settings['report'] = False
         # settings['bootstrap'] = True 
         settings['rcvcorr'] = None
         settings['srccorr'] = None
