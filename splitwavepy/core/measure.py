@@ -372,7 +372,6 @@ class Py(SplitWave):
         # ensure data rotated to zero
         data = self._data.rotateto(0)
         x, y = data.x, data.y
-        # w0, w1 = data._w0(), data._w1()
                 
         # receiver correction
         if self._rcvcorr is not None:
@@ -384,6 +383,10 @@ class Py(SplitWave):
             raise NotImplementedError('Not implemented.')
             # srcphi, srclag = self.__srccorr
             # return core.gridcov_srcorr(x, y, w0, w1, degs, slags, srcphi, srclag)
+            
+        # chop to window
+        w0, w1 = data._w0(), data._w1()
+        x, y = core.chop(x, w0, w1), core.chop(y, w0, w1)
         
         cov = core.gridcovfreq(x, y, ndegs=self.__ndegs, nslags=self.__nslags)
         cov = core.cov_reshape(cov)

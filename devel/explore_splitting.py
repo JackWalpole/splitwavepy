@@ -263,10 +263,10 @@ class Explorer:
             
             
             # update surfaces
-            e = d.Py()
+            e = d.Py(report=False)
             for coll in self.sc_surf.collections: 
                 self.ax2.collections.remove(coll)
-            self.sc_surf = self.ax2.contourf(*e._grid, e.sc.lam2)
+            self.sc_surf = self.ax2.contourf(*e._grid, e.sc.vals, 26, cmap='magma')
             # for coll in self.xc_surf.collections:
             #     plt.gca().collections.remove(coll)
             # self.xc_surf = plt.contourf(ll,dd, e.xc.vals)
@@ -284,5 +284,5 @@ class Explorer:
    
 if __name__ == "__main__":
     
-    a = sw.SplitWave(split=(30,1.2), noise=0.03).Py()
+    a = sw.SplitWave(split=(30,1.2), noise=0.03).Py(max_lag=4)
     explore = Explorer(a)

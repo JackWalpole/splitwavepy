@@ -115,9 +115,14 @@ def unsplit(x, y, degrees, samps):
     """Apply inverse splitting and rotate back"""
     return split(x, y, degrees, -samps)
     
-def chop(x, y, s0, s1):
-    """Chop two 1-d numpy arrays from s0 to s1"""
-    return x[s0:s1], y[s0:s1]
+def chop(x, s0, s1):
+    """Chop 1-d numpy arrays from s0 to s1"""
+    return x[s0:s1]
+    
+def taper(x, alpha=0.9):
+    """Taper data in x using a Tukey window, also known as a tapered cosine window."""
+    return x * signal.tukey(x.size, alpha=alpha)
+
 
 # def chop(*args,**kwargs):
 #     """Chop trace, or traces, using window"""
