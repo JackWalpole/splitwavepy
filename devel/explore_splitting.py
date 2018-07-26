@@ -254,16 +254,20 @@ class Explorer:
             x1, _ = self.w1.get_data()
             x2, _ = self.w2.get_data()
             wbeg, wend = sorted((x1[0], x2[0]))
-            d = self.py._data.copy()
+            d = self.py._data
+            
+            print(d.window.width)
+            
             d.set_window(wbeg, wend)
 
             # update particle motion
             chopxy = d._chopxy()
             self.ppm.set_data(chopxy[1], chopxy[0])
             
+            print(d.window.width)
             
             # update surfaces
-            e = d.Py(report=False)
+            e = d.Py(**kwargs)
             for coll in self.sc_surf.collections: 
                 self.ax2.collections.remove(coll)
             self.sc_surf = self.ax2.contourf(*e._grid, e.sc.vals, 26, cmap='magma')

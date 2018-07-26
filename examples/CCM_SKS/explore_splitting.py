@@ -44,6 +44,16 @@ def _ppm(self, ax, **kwargs):
     # plot data
     lines = ax.plot(y, x)
     
+    # multi-colored
+    # norm = plt.Normalize(t.min(), t.max())
+    # points = np.array([y, x]).T.reshape(-1, 1, 2)
+    # segments = np.concatenate([points[:-1], points[1:]], axis=1)
+    # lc = LineCollection(segments, cmap='plasma', norm=norm, alpha=0.7)
+    # lc.set_array(t)
+    # lc.set_linewidth(2)
+    # line = ax.add_collection(lc)
+    # plt.colorbar(line)
+
     # set limit
     lim = np.abs(self._xy).max() * 1.1
     if 'lims' not in kwargs: kwargs['lims'] = [-lim, lim] 
@@ -130,7 +140,11 @@ def _psurf(self, ax, **kwargs):
 class Explorer:
     
     def __init__(self, Py, **kwargs):
-
+        # self.m = m
+        # self.fig = fig
+        # self.ax0 = ax0
+        # self.ax1 = ax1
+        # self.ax2 = ax2
         
         self.py = Py
 
@@ -201,16 +215,16 @@ class Explorer:
             x1, _ = self.w1.get_data()
             x2, _ = self.w2.get_data()
             wbeg, wend = sorted((x1[0], x2[0]))
-            d = self.py._data.copy()
+            d = self.py._data    
             d.set_window(wbeg, wend)
 
             # update particle motion
             chopxy = d._chopxy()
             self.ppm.set_data(chopxy[1], chopxy[0])
-            
+
             
             # update surfaces
-            e = d.Py(report=False)
+            e = d.Py(**kwargs)
             for coll in self.sc_surf.collections: 
                 self.ax2.collections.remove(coll)
             self.sc_surf = self.ax2.contourf(*e._grid, e.sc.vals, 26, cmap='magma')
@@ -222,11 +236,6 @@ class Explorer:
             
             
             plt.draw()
-        #
-        #     # if reached here process the click
-        #     wbeg, wend = sorted((self.x1, self.x2))
-        #
-        # self.SplitWave.set_window(wbeg, wend)
    
 if __name__ == "__main__":
     
