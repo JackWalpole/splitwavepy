@@ -363,7 +363,7 @@ class Py(SplitWave):
         cov = core.covfreq_reshape(cov)  
         return cov
         
-    def _gridcovfreq(self):       
+    def _gridcovfreq(self, **kwargs):       
         """
         Fast shear wave splitting using Fourier transform.
         rcvcorr = receiver correction parameters in tuple (fast,lag) 
@@ -388,6 +388,12 @@ class Py(SplitWave):
         w0, w1 = data._w0(), data._w1()
         x, y = core.chop(x, w0, w1), core.chop(y, w0, w1)
         
+        # taper because samples wrap around inside window and therefore
+        # prudent to reduce the potential influence of samples near edge of window.
+        if 'taper' not in kwargs: kwargs['taper'] = 0.8
+        x = core.taper(x, alpha=kwargs['taper'])
+        y = core.taper(y, alpha=kwargs['taper']) 
+        
         cov = core.gridcovfreq(x, y, ndegs=self.__ndegs, nslags=self.__nslags)
         cov = core.cov_reshape(cov)
         return cov
@@ -400,8 +406,8 @@ class Py(SplitWave):
             vals = lam1 / lam2
         else:
             covrot = core.cov_rotate(self._covmap, self._pol)
-            sig1, sig2 = covrot[:,:,0,0], covrot[:,:,1,1]
-            vals = sig1 / sig2
+            lam1, lam2 = covrot[:,:,0,0], covrot[:,:,1,1]
+            vals = lam1 / lam2
         
         # Make Measurement and add info    
         m = Measure(self, vals)
@@ -735,7 +741,7 @@ class Py(SplitWave):
     def plot(self, **kwargs):
         # error surface
         if 'vals' not in kwargs:
-           kwargs['vals'] = self.sc['lam1'] / self.sc['lam2']
+           kwargs['vals'] = self.sc.vals
            kwargs['title'] = r'$\lambda_1 / \lambda_2$'
         
         self._plot(**kwargs)

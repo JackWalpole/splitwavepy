@@ -373,16 +373,25 @@ def cov_reshape(cov):
     return np.concatenate((pos, neg), axis=1)
 
 
+# def cov_rotate(cov, deg):
+#     """Rotate covariance matrices to deg."""
+#     shp = cov.shape
+#     outcov = np.empty(shp)
+#     degs = np.linspace(0, 90, shp[1], endpoint=False)
+#     for ii in range(shp[1]):
+#         rot = _rot(deg - degs[ii])
+#         outcov[:, ii] = np.matmul(rot, np.matmul(cov[:,ii], rot.T))
+#     return outcov
+
 def cov_rotate(cov, deg):    
     """Rotate covariance matrices to deg."""
     shp = cov.shape
     outcov = np.empty(shp)
-    degs = np.linspace(0, 90, shp[1], endpoint=False)
+    degs = np.linspace(0, 180, shp[1], endpoint=False)
     for ii in range(shp[1]):
         rot = _rot(deg - degs[ii])
         outcov[:, ii] = np.matmul(rot, np.matmul(cov[:,ii], rot.T))
     return outcov
-
 
 # def slagchop_srccorr(x, y, w0, w1, slag, srcfast, srcslag):
 #     x, y = rot2(x, y, srcfast)
