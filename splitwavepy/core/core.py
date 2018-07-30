@@ -75,11 +75,12 @@ def rotate(x, y, degrees):
     """row 0 is x-axis and row 1 is y-axis,
        rotates from x to y axis
        e.g. N to E if row 0 is N cmp and row1 is E cmp"""
-    ang = math.radians(degrees)
-    cang = math.cos(ang)
-    sang = math.sin(ang)
-    rot = np.array([[ cang, sang],
-                    [-sang, cang]])
+    # ang = math.radians(degrees)
+    # cang = math.cos(ang)
+    # sang = math.sin(ang)
+    # rot = np.array([[ cang, sang],
+    #                 [-sang, cang]])
+    rot = _rot(degrees)
     xy = np.dot(rot, np.vstack((x, y)))
     return xy[0], xy[1]
     
@@ -320,7 +321,6 @@ def gridcov(x, y, w0, w1, degs, slags):
     return g / n    
 
 
-
 def gridcovfreq(x, y, ndegs=90, nslags=50):
     """Returns grid of covariance matrices of shape (ndegs/2, (2*nslags)-1, 2, 2).
        Use covfreq_reshape to get this into a more user friendly shape.
@@ -367,9 +367,14 @@ def cov_reshape(cov):
     """Reshape a covariance map to match the standard."""
     shp = cov.shape
     mid = int((shp[0]-1)/2)
+    # divide the covariance map into positive and negative lag parts
     pos = cov[:mid+1,:,:,:]
     pos = np.flip(pos, 0)
     neg = cov[mid:,:,:,:]
+    # negative lag parts will be shifted to the "top"
+    # rotate by 90 to keep the orientation of the these appropriate
+    rot = _rot(90)
+    neg = np.matmul(rot, np.matmul(neg[:,:], rot.T))
     return np.concatenate((pos, neg), axis=1)
 
 
@@ -384,11 +389,13 @@ def cov_reshape(cov):
 #     return outcov
 
 def cov_rotate(cov, deg):    
-    """Rotate covariance matrices to deg."""
+    """Rotate covariance matrices to deg.    
+    Assumes cov is reshaped to have degs between 0 and 180 and lags between 0 and maxlag."""
     shp = cov.shape
     outcov = np.empty(shp)
     degs = np.linspace(0, 180, shp[1], endpoint=False)
     for ii in range(shp[1]):
+        # back off degs[ii] and apply deg rotation.
         rot = _rot(deg - degs[ii])
         outcov[:, ii] = np.matmul(rot, np.matmul(cov[:,ii], rot.T))
     return outcov
