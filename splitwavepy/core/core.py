@@ -502,6 +502,8 @@ def val_at_alpha(data, alpha):
     xval = get_x_at_cum(tot*alpha)
     return get_val_at_x(xval)
     
+
+    
 # Bootstrapping
     
 def resample_noise(y):

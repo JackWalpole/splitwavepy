@@ -420,6 +420,9 @@ class Py(SplitWave):
         stat = (n - k)/k * (lam2/lam2.min() - 1) 
         m.f_cdf = stats.f.cdf(stat, k, n)
         
+        
+        
+        
             
         return m
         # sc = {}
