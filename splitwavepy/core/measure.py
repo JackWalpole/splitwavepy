@@ -477,7 +477,48 @@ class Py(SplitWave):
         x, y = self.srcpoldata_corr()._chopdata()
         return core.ndf(y)
     
-    def get_errors(self, surftype=None):
+    # def get_errors(self, surftype=None):
+    #     """
+    #     Return dfast and dtlag.
+    #
+    #     These errors correspond to one sigma in the parameter estimate.
+    #
+    #     Calculated by taking a quarter of the width of 95% confidence region (found using F-test).
+    #     """
+    #
+    #     # search interval steps
+    #     lag_step = self.lags[1] - self.lags[0]
+    #     fast_step = self.degs[1] - self.degs[0]
+    #
+    #     # Find nodes where we fall within the 95% confidence region
+    #
+    #     if surftype == 'max':
+    #         confbool = self.errsurf >= self.conf95level
+    #     elif surftype == 'min':
+    #         confbool = self.errsurf <= self.conf95level
+    #     else:
+    #         raise ValueError('surftype must be \'min\' or \'max\'')
+    #
+    #     # tlag error
+    #     lagbool = confbool.any(axis=1)
+    #     # last true value - first true value
+    #     truth = np.where(lagbool)[0]
+    #     fdlag = (truth[-1] - truth[0] + 1) * lag_step * 0.25
+    #
+    #     # fast error
+    #     fastbool = confbool.any(axis=0)
+    #     # trickier to handle due to cyclicity of angles
+    #     # search for the longest continuous line of False values
+    #     cyclic = np.hstack((fastbool, fastbool))
+    #     lengthFalse = np.diff(np.where(cyclic)).max() - 1
+    #     # shortest line that contains ALL true values is then:
+    #     lengthTrue = fastbool.size - lengthFalse
+    #     fdfast = lengthTrue * fast_step * 0.25
+    #
+    #     # return
+    #     return fdfast, fdlag
+        
+    def contour_halfwidth(self, surf, critval, surftype=None):
         """
         Return dfast and dtlag.
 
@@ -517,8 +558,6 @@ class Py(SplitWave):
 
         # return
         return fdfast, fdlag 
-        
-
         
     # bootstrap utilities
     # to do: implement block bootstrapping for time series data.
