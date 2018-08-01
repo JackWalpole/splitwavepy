@@ -420,8 +420,9 @@ class Py(SplitWave):
         stat = (n - k)/k * (lam2/lam2.min() - 1) 
         m.f_cdf = stats.f.cdf(stat, k, n)
         
-        
-        
+        # calculate width of 1 sigma errors
+        critval = 0.683
+        m.dfast, m.dlag = self._contour_halfwidth(m.f_cdf, critval, surftype='min')
         
             
         return m
@@ -518,25 +519,26 @@ class Py(SplitWave):
     #     # return
     #     return fdfast, fdlag
         
-    def contour_halfwidth(self, surf, critval, surftype=None):
+    def _contour_halfwidth(self, surf, critval, surftype=None):
         """
-        Return dfast and dtlag.
-
-        These errors correspond to one sigma in the parameter estimate.
-
-        Calculated by taking a quarter of the width of 95% confidence region (found using F-test).
+        Return half width of contour (dfast, dlag) for surface *surf* at value *critval*.
+        
+        Some common critical values:
+        1 sigma = 0.683
+        2 sigma = 0.954
+        3 sigma = 0.997
         """
 
         # search interval steps
-        lag_step = self.lags[1] - self.lags[0]
-        fast_step = self.degs[1] - self.degs[0]
+        lag_step = self._lags[1] - self._lags[0]
+        fast_step = self._degs[1] - self._degs[0]
 
         # Find nodes where we fall within the 95% confidence region
         
         if surftype == 'max':
-            confbool = self.errsurf >= self.conf95level
+            confbool = surf >= critval
         elif surftype == 'min':
-            confbool = self.errsurf <= self.conf95level
+            confbool = surf <= critval
         else:
             raise ValueError('surftype must be \'min\' or \'max\'')
 
@@ -544,7 +546,7 @@ class Py(SplitWave):
         lagbool = confbool.any(axis=1)
         # last true value - first true value
         truth = np.where(lagbool)[0]
-        fdlag = (truth[-1] - truth[0] + 1) * lag_step * 0.25
+        fdlag = (truth[-1] - truth[0] + 1) * lag_step * 0.5
 
         # fast error
         fastbool = confbool.any(axis=0)
@@ -554,7 +556,7 @@ class Py(SplitWave):
         lengthFalse = np.diff(np.where(cyclic)).max() - 1
         # shortest line that contains ALL true values is then:
         lengthTrue = fastbool.size - lengthFalse
-        fdfast = lengthTrue * fast_step * 0.25
+        fdfast = lengthTrue * fast_step * 0.5
 
         # return
         return fdfast, fdlag 
@@ -980,13 +982,13 @@ class Measure():
         x, y = self.srcpoldata_corr._chopxy()
         return core.ndf(y)
     
-    @property
-    def dfast(self):
-        return 0
-        
-    @property
-    def dlag(self):
-        return 0
+    # @property
+    # def dfast(self):
+    #     return 0
+    #
+    # @property
+    # def dlag(self):
+    #     return 0
 
     # data views
     
