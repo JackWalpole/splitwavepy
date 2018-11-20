@@ -238,6 +238,20 @@ def crossconvmf(obsx, obsy, prex, prey):
 #     s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
 #     return s
 
+# Covariance
+
+def cov2d(x, y):
+    """Slightly faster than numpy.cov probably because we know we are dealing with 2-D.
+    Gives same result as nump.cov(x, y, bias=True)"""
+    c = np.empty((2,2))
+    n = x.size
+    dx = x - np.mean(x)
+    dy = y - np.mean(y)
+    c[0][0] = np.sum(dx*dx)
+    c[1][1] = np.sum(dy*dy)
+    c[0][1] = c[1][0] = np.sum(dx*dy)
+    return c / n
+
 # Grid covariance
 
 def slagchop(x, y, w0, w1, slag):
