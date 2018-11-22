@@ -460,6 +460,11 @@ def covmap2rho(cov):
     stdy = np.sqrt(cov[:, :, 1, 1])
     rho = cov[:, :, 0, 1] / (stdx * stdy)
     return rho
+
+def covmap2var(cov, pol):    
+    covrot = core.cov_rotate(cov, pol)
+    lam1, lam2 = covrot[:,:,0,0], covrot[:,:,1,1]
+    return lam1, lam2
     
 
 # Errors
