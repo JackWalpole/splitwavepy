@@ -149,12 +149,13 @@ class SplitWave:
         """
         Rotate traces so that cmp1 lines up with column1 of matrix of vectors
         """
+        # generate copy
+        copy = self.copy()
         # define the new vecs
         oldvecs = self._vecs
-        self._vecs = vecs
-        rot = np.dot(self._vecs.T, oldvecs)
+        copy._vecs = vecs
         # rotate data
-        copy = self.copy()
+        rot = np.dot(vecs.T, oldvecs)
         xy = np.dot(rot, self._xy)
         copy.__x, copy.__y = xy[0], xy[1]
         copy._set_labels()
