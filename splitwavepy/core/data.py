@@ -180,7 +180,7 @@ class SplitWave:
         copy._t0 = self.wbeg()
         return copy
 
-    def taper(self, alpha=0.9):
+    def taper(self, alpha=0.2):
         """
         Taper data using a Tukey window.
         alpha is the percentage of window not touched.
@@ -189,6 +189,8 @@ class SplitWave:
         copy.__x = core.taper(copy.x, alpha=alpha)
         copy.__y = core.taper(copy.y, alpha=alpha)
         return copy
+        
+
         
         
     # Utility 
@@ -237,7 +239,19 @@ class SplitWave:
         t1 = self._w1()
         return self.x[t0:t1], self.y[t0:t1]
         # return np.vstack((self.x[t0:t1], self.y[t0:t1]))
+
+
+    def _wrap_unsplit(self, fast, lag, **kwargs):
+        """
+        Window and unsplit data with wraparound in window.
         
+        Apply splitting parameters to data for bootstrapping,
+        keeps data in window with wraparound.
+        """
+        copy = self.rotateto(fast).chop().taper(**kwargs)
+        shift = core.time2samps(lag, self._delta)
+        copy.__x = np.roll(copy.x, shift)
+        return copy        
 
         
     # polarisation

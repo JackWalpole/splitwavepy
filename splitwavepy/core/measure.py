@@ -117,7 +117,7 @@ class Py(SplitWave):
 
     # _data
     @property
-    def _data(self):
+    def data(self):
         return self.__data
 
     #_ndegs
@@ -141,9 +141,9 @@ class Py(SplitWave):
     @_maxlag.setter
     def _maxlag(self, maxlag):
         if maxlag is None:
-            maxlag = self._data.wwidth() / 4
-        maxslag = core.time2samps(maxlag, self._data._delta)
-        maxlag = maxslag * self._data._delta
+            maxlag = self.data.wwidth() / 4
+        maxslag = core.time2samps(maxlag, self.data._delta)
+        maxlag = maxslag * self.data._delta
         self.__nslags = maxslag + 1
         self.__maxlag = maxlag
         
@@ -157,7 +157,7 @@ class Py(SplitWave):
     
     @property
     def _lags(self):
-        return self._slags * self._data._delta
+        return self._slags * self.data._delta
 
         
     @property
@@ -207,15 +207,15 @@ class Py(SplitWave):
     # @_lags.setter
     # def _lags(self, lags):
     #     if isinstance(lags, np.ndarray) and lags.ndim == 1:
-    #         self.__slags = np.unique(core.time2samps(lags, self._data._delta, mode='even')).astype(int)
-    #         self.__lags = self.__slags * self._data._delta
+    #         self.__slags = np.unique(core.time2samps(lags, self.data._delta, mode='even')).astype(int)
+    #         self.__lags = self.__slags * self.data._delta
     #     else: raise ValueError('lags not understood.')
     #
     # def _set_lags(self, **kwargs):
     #     """return numpy array of lags to explore"""
     #     settings = {}
     #     settings['minlag'] = 0
-    #     settings['maxlag'] = self._data.wwidth() / 4
+    #     settings['maxlag'] = self.data.wwidth() / 4
     #     settings['nlags']  = 40
     #     settings.update(kwargs)
     #     self._lags = np.linspace(settings['minlag'],
@@ -242,9 +242,9 @@ class Py(SplitWave):
             self.__rcvcorr = None
         elif isinstance(rcvcorr, tuple) and len(rcvcorr) == 2: 
             deg, lag = rcvcorr
-            slag = core.time2samps(lag, self._data._delta, 'even')
+            slag = core.time2samps(lag, self.data._delta, 'even')
             self.__rcvslag = (deg, slag)
-            self.__rcvcorr = (deg, slag * self._data._delta)
+            self.__rcvcorr = (deg, slag * self.data._delta)
         else: raise TypeError('rcvcorr not understood.')
                 
     #_srccorr
@@ -259,9 +259,9 @@ class Py(SplitWave):
             self.__srccorr = None
         elif isinstance(srccorr, tuple) and len(srccorr) == 2: 
             deg, lag = srccorr
-            slag = core.time2samps(lag, self._data._delta, 'even')
+            slag = core.time2samps(lag, self.data._delta, 'even')
             self.__rcvslag = (deg, slag)
-            self.__srccorr = (deg, slag * self._data._delta)
+            self.__srccorr = (deg, slag * self.data._delta)
         else: raise TypeError('srccorr not understood.')
         
     @property
@@ -274,7 +274,7 @@ class Py(SplitWave):
         if self._pol is None: pol = self.sc.srcpol
         else: pol = self._pol 
         
-        copy = self._data.rotateto(pol)
+        copy = self.data.rotateto(pol)
         copy.__x = np.gradient(copy.x)
         rdiff, trans = copy._chopxy()
         s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
@@ -344,7 +344,7 @@ class Py(SplitWave):
         """
         
         # ensure data rotated to zero
-        data = self._data.rotateto(0)
+        data = self.data.rotateto(0)
         x, y = data.x, data.y
         w0, w1 = data._w0(), data._w1()
                 
@@ -370,7 +370,7 @@ class Py(SplitWave):
         """
         
         # ensure data rotated to zero
-        data = self._data.rotateto(0)
+        data = self.data.rotateto(0)
         x, y = data.x, data.y
                 
         # receiver correction
@@ -397,6 +397,58 @@ class Py(SplitWave):
         cov = core.gridcovfreq(x, y, ndegs=self.__ndegs, nslags=self.__nslags)
         cov = core.cov_reshape(cov)
         return cov
+        
+    def _bootstrap_kdes(self, fast, lag, n=2000, **kwargs):
+        """Estimate distributions for pearson's r, the lam1/lam2 ratio
+        (and, if pol is not set, the source polarisation) for the data corrected
+        using the parameters *fast* and *lag*.
+        
+        The distributions are estimated using bootstrapping."""
+        
+        if self._rcvcorr is not None:
+            raise NotImplementedError('Not yet implemented.')
+            
+        if self._srccorr is not None:
+            raise NotImplementedError('Not yet implemented.')
+            
+        # prepare data by backing off the splitting parameters
+        # uses wrap in window to replicate behaviour of Fourier domain.
+        bsindata = self.data._wrap_unsplit(fast, lag, **kwargs)
+        x, y = bsindata.x, bsindata.y
+        
+        # calculate bootstrap covariance matrices
+        bscov = np.empty((n, 2, 2))
+        for ii in range(n):
+            bsx, bsy = core.bootstrap_resamp(x, y)
+            bscov[ii] = core.cov2d(bsx, bsy)
+        
+        # calculate rho kde
+        stdx = np.sqrt(bscov[:, 0, 0])
+        stdy = np.sqrt(bscov[:, 1, 1])
+        rho = bscov[:, 0, 1] / (stdx * stdy)
+        r_kde = core.kde(np.abs(rho))
+                
+        if self._pol is None:
+            # rotate to zero
+            rot = core._rot(-fast)
+            bscov = np.matmul(rot, np.matmul(bscov, rot.T))
+            # use eigenvector method.
+            evals, evecs = np.linalg.eigh(bscov)
+            rat = evals[:,1]/evals[:,0]
+            spol = (np.rad2deg(np.arctan2(evecs[:,1,1], evecs[:,0,1]))+3690)%180-90
+            rat_kde = core.kde(rat)
+            spol_kde = core.kde(spol)
+            return r_kde, rat_kde, spol_kde
+        else:
+            # rotate to pol
+            rot = core._rot(pol-fast)
+            bscov = np.matmul(rot, np.matmul(bscov, rot.T))
+            # use transverse min method
+            rat = bscov[:,0,0]/bscov[:,1,1]
+            rat_kde = core.kde(rat)
+            return r_kde, rat_kde
+        
+        
     
     def silver_chan(self, **kwargs):
         
@@ -459,8 +511,8 @@ class Py(SplitWave):
     
     def srcpol(self):
         # recover source polarisation
-        if self._data._pol is not None:
-            return self._data._pol
+        if self.data._pol is not None:
+            return self.data._pol
         else:
             return self.data_corr()._estimate_pol()
         
@@ -994,7 +1046,7 @@ class Measure():
     
     @property
     def data(self):
-        return self.py._data.copy()
+        return self.py.data.copy()
         
     @property
     def data_corr(self):      
@@ -1064,7 +1116,7 @@ class Measure():
         cax = ax.contourf(ll, dd, self.vals, 26, cmap=kwargs['cmap'])
         cbar = plt.colorbar(cax)
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
-        ax.set_xlabel('Delay Time (' + self.py._data.units + ')')
+        ax.set_xlabel('Delay Time (' + self.py.data.units + ')')
         
         # confidence region
         # if 'conf95' in kwargs and kwargs['conf95'] == True:
