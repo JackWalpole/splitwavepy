@@ -381,6 +381,7 @@ class SplitWave:
     
     @_pol.setter
     def _pol(self, pol):
+        # what is the logic behind this?
         if pol is None:
             self.__pol = pol
         else:
