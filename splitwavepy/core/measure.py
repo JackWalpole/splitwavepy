@@ -65,22 +65,23 @@ class Py(SplitWave):
         # The SplitWave (Data) object
         self.__data = SplitWave.rotateto(0)
 
-        # Settings
+        # Default Settings (These can be overidden using keywords)
         settings = {}
         settings['plot'] = False
         settings['report'] = False
         # settings['bootstrap'] = True 
         settings['rcvcorr'] = None
         settings['srccorr'] = None
+        settings['taper'] = 0.2
         
         # degs settings
         settings['pol'] = None
         settings['ndegs'] = 180
         settings['maxlag'] = None
-        settings.update(kwargs) # update using kwargs
+        settings.update(kwargs) # override defaults using kwargs
         self._settings = settings # backup settings
         
-        # Book Keeping
+        # Implement setting
         # self._set_degs(**settings)
         # self._set_lags(**settings)
         self._pol = settings['pol']
@@ -88,6 +89,7 @@ class Py(SplitWave):
         self._srccorr = settings['srccorr']
         self._ndegs = settings['ndegs']
         self._maxlag =  settings['maxlag']
+        self._taper = settings['taper']
             
         # Grid Search
         # self._covmap = self._gridcov()
@@ -390,9 +392,9 @@ class Py(SplitWave):
         
         # taper because samples wrap around inside window and therefore
         # prudent to reduce the potential influence of samples near edge of window.
-        if 'taper' not in kwargs: kwargs['taper'] = 0.8
-        x = core.taper(x, alpha=kwargs['taper'])
-        y = core.taper(y, alpha=kwargs['taper']) 
+        # if 'taper' not in kwargs: kwargs['taper'] = 0.8
+        x = core.taper(x, alpha=self._taper)
+        y = core.taper(y, alpha=self._taper) 
         
         cov = core.gridcovfreq(x, y, ndegs=self.__ndegs, nslags=self.__nslags)
         cov = core.cov_reshape(cov)
@@ -401,9 +403,21 @@ class Py(SplitWave):
     def _bootstrap_kdes(self, fast, lag, n=2000, **kwargs):
         """Estimate distributions for pearson's r, the lam1/lam2 ratio
         (and, if pol is not set, the source polarisation) for the data corrected
-        using the parameters *fast* and *lag*.
+        using the parameters *fast* and *lag*. The distributions are estimated using bootstrapping.
         
-        The distributions are estimated using bootstrapping."""
+        args (required):
+        
+        (splitting parameters to correct data by)
+        
+        fast -- the fast direction
+        lag  -- the delay time
+        
+        kwargs (optional):
+        
+        n    -- the number of bootstrap iterations (default=2000)
+        pol -- if pol is specified uses transverse minimisation method
+               and makes no attempt to calculate spol.
+        """
         
         if self._rcvcorr is not None:
             raise NotImplementedError('Not yet implemented.')
@@ -412,8 +426,8 @@ class Py(SplitWave):
             raise NotImplementedError('Not yet implemented.')
             
         # prepare data by backing off the splitting parameters
-        # uses wrap in window to replicate behaviour of Fourier domain.
-        bsindata = self.data._wrap_unsplit(fast, lag, **kwargs)
+        # uses wraparound in time window to replicate behaviour in frequency domain.
+        bsindata = self.data._wrap_unsplit(fast, lag, taper=self._taper, **kwargs)
         x, y = bsindata.x, bsindata.y
         
         # calculate bootstrap covariance matrices
@@ -427,26 +441,30 @@ class Py(SplitWave):
         stdy = np.sqrt(bscov[:, 1, 1])
         rho = bscov[:, 0, 1] / (stdx * stdy)
         r_kde = core.kde(np.abs(rho))
-                
+            
+
         if self._pol is None:
+            # Use eigenvalue method
             # rotate to zero
             rot = core._rot(-fast)
-            bscov = np.matmul(rot, np.matmul(bscov, rot.T))
+            bscov = np.matmul(rot, np.matmul(bscov, rot.T))            
             # use eigenvector method.
             evals, evecs = np.linalg.eigh(bscov)
             rat = evals[:,1]/evals[:,0]
             spol = (np.rad2deg(np.arctan2(evecs[:,1,1], evecs[:,0,1]))+3690)%180-90
             rat_kde = core.kde(rat)
             spol_kde = core.kde(spol)
-            return r_kde, rat_kde, spol_kde
+            # all done
+            return r_kde, rat_kde, spol_kde         
         else:
+            # Use transverse energy method
             # rotate to pol
             rot = core._rot(pol-fast)
             bscov = np.matmul(rot, np.matmul(bscov, rot.T))
-            # use transverse min method
             rat = bscov[:,0,0]/bscov[:,1,1]
             rat_kde = core.kde(rat)
             return r_kde, rat_kde
+
         
         
     

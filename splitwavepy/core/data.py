@@ -181,14 +181,14 @@ class SplitWave:
         copy._t0 = self.wbeg()
         return copy
 
-    def taper(self, alpha=0.2):
+    def taper(self, taper=0.2, **kwargs):
         """
         Taper data using a Tukey window.
         alpha is the percentage of window not touched.
         """
         copy = self.copy()
-        copy.__x = core.taper(copy.x, alpha=alpha)
-        copy.__y = core.taper(copy.y, alpha=alpha)
+        copy.__x = core.taper(copy.x, alpha=taper)
+        copy.__y = core.taper(copy.y, alpha=taper)
         return copy
         
 
