@@ -69,7 +69,7 @@ class Py(SplitWave):
         settings = {}
         settings['plot'] = False
         settings['report'] = False
-        # settings['bootstrap'] = True 
+        settings['bootstrap'] = True 
         settings['rcvcorr'] = None
         settings['srccorr'] = None
         settings['taper'] = 0.2
@@ -90,6 +90,7 @@ class Py(SplitWave):
         self._ndegs = settings['ndegs']
         self._maxlag =  settings['maxlag']
         self._taper = settings['taper']
+        self._bootstrap = settings['bootstrap']
             
         # Grid Search
         # self._covmap = self._gridcov()
@@ -484,6 +485,11 @@ class Py(SplitWave):
         m.lam1 = lam1
         m.lam2 = lam2
         
+        if self._bootstrap:
+            _, m.kde, m.spol_kde = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
+            m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
+            m.pdf = m.likelihood / np.sum(m.likelihood)
+        
         # error estimation
         n = m.ndf
         k = 2
@@ -509,9 +515,15 @@ class Py(SplitWave):
         # sc['dlag']
         # self.__silver_chan = sc
         
-    def correlation(self):
+    def correlation(self, **kwargs):
         
-        rho = np.abs(core.covmap2rho(self._covmap))
+        vals = np.abs(core.covmap2rho(self._covmap))
+        m = Measure(self, vals)
+        
+        if self._bootstrap:
+            m.kde, _, _ = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
+            m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
+            m.pdf = m.likelihood / np.sum(m.likelihood)
         
         # xc = {}
         # xc['rho'] = np.abs(core.covmap2rho(self._covmap))
@@ -519,7 +531,7 @@ class Py(SplitWave):
         # dd, ll = self._grid
         # xc['fast'] = dd[xc['maxidx']]
         # xc['lag']  = ll[xc['maxidx']]
-        return Measure(self, rho)       
+        return m      
 
 
                     
