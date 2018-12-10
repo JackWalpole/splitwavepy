@@ -490,16 +490,17 @@ class Py(SplitWave):
             m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
             m.loglike = m.kde.logpdf(vals.flatten()).reshape((vals.shape))
             m.pdf = m.likelihood / np.sum(m.likelihood)
-        
-        # error estimation
-        n = m.ndf
-        k = 2
-        stat = (n - k)/k * (lam2/lam2.min() - 1) 
-        m.f_cdf = stats.f.cdf(stat, k, n)
-        
-        # calculate width of 1 sigma errors
-        critval = 0.683
-        m.dfast, m.dlag = self._contour_halfwidth(m.f_cdf, critval, surftype='min')
+            
+        #
+        # # error estimation
+        # n = m.ndf
+        # k = 2
+        # stat = (n - k)/k * (lam2/lam2.min() - 1)
+        # m.f_cdf = stats.f.cdf(stat, k, n)
+        #
+        # # calculate width of 1 sigma errors
+        # critval = 0.683
+        # m.dfast, m.dlag = self._contour_halfwidth(m.f_cdf, critval, surftype='min')
         
             
         return m
@@ -900,7 +901,7 @@ class Py(SplitWave):
         corr = self.srcpoldata_corr()._chop()
                 
         # get axis scaling
-        lim = np.abs(corr.data()).max() * 1.1
+        lim = np.abs(corr.data).max() * 1.1
         ylim = [-lim, lim]
         
         # long window data
@@ -1175,6 +1176,7 @@ class Measure():
             ax.text(0.6, 0.95, textstr, transform=ax.transAxes, fontsize=12,
                     verticalalignment='top', bbox=props)
         
+        # plot particle motions on surface
         if 'ppm' in kwargs and kwargs['ppm'] is True:
             sublags = self.lags[0:-1:int(self.lags.size/6)]
             subdegs = self.degs[0:-1:int(self.degs.size/6)]
@@ -1188,6 +1190,64 @@ class Measure():
                 for lag in sublags:
                     x, y = self.unsplit(fast, lag)._chopdata()
                     ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
-
-                    
+                                        
         return ax
+        
+    def _plot(self, **kwargs):
+    
+        # if 'vals' not in kwargs:
+        #     raise Exception('vals must be specified')
+        
+        # if kwargs['vals'] == 'pdf':
+        #     kwargs['vals'] = self.estimate_pdf()
+        #     kwargs['title'] = r'Probability Density'
+      
+        # setup figure and subplots
+        fig = plt.figure(figsize=(12,6)) 
+    
+        gs = gridspec.GridSpec(3, 3,
+                           width_ratios=[2,1,3]
+                           )
+        ax0 = plt.subplot(gs[0,0:2])                     
+        ax1 = plt.subplot(gs[1,0])
+        ax2 = plt.subplot(gs[1,1])
+        ax3 = plt.subplot(gs[2,0])
+        ax4 = plt.subplot(gs[2,1])
+        ax5 = plt.subplot(gs[:,2])
+
+        orig = self.srcpoldata.chop()
+        corr = self.srcpoldata_corr.chop()
+            
+        # get axis scaling
+        lim = np.abs(corr.data).max() * 1.1
+        ylim = [-lim, lim]
+    
+        # long window data
+        self.data._ptr(ax0, ylim=ylim, **kwargs)
+
+        # original
+        orig._ptr(ax1, ylim=ylim, **kwargs)
+        orig._ppm(ax2, lims=ylim, **kwargs)
+    
+        # corrected
+        corr._ptr(ax3, ylim=ylim, **kwargs)
+        corr._ppm(ax4, lims=ylim, **kwargs)
+    
+        # add marker and info box by default
+        if 'marker' not in kwargs: kwargs['marker'] = True
+        if 'info' not in kwargs: kwargs['info'] = True
+        if 'conf95' not in kwargs: kwargs['conf95'] = True
+        self._psurf(ax5,**kwargs)
+    
+        # title
+        if 'name' in kwargs:
+            plt.suptitle(kwargs['name'])
+                
+        # neaten
+        plt.tight_layout()
+    
+        # save or show
+        if 'file' in kwargs:
+            plt.savefig(kwargs['file'])
+        else:
+            plt.show()

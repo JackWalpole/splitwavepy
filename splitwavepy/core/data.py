@@ -156,7 +156,7 @@ class SplitWave:
         copy._vecs = vecs
         # rotate data
         rot = np.dot(vecs.T, oldvecs)
-        xy = np.dot(rot, self._xy)
+        xy = np.dot(rot, self.data)
         copy.__x, copy.__y = xy[0], xy[1]
         copy._set_labels()
         return copy
@@ -313,7 +313,7 @@ class SplitWave:
 
         
     def eigen(self, **kwargs):
-        self.eigvals, self.eigvecs = core.eigcov(self._xy)
+        self.eigvals, self.eigvecs = core.eigcov(self.data)
         
     def power(self):
         return self.x**2, self.y**2
@@ -360,8 +360,13 @@ class SplitWave:
         return self.__y
     
     # xy
+    # @property
+    # def _xy(self):
+    #     return np.vstack((self.x, self.y))
+        
+    # data
     @property
-    def _xy(self):
+    def data(self):
         return np.vstack((self.x, self.y))
         
     # delta
@@ -567,7 +572,7 @@ class SplitWave:
         t = self._t
         ax.plot( t, self.x, label=self._labels[0])
         ax.plot( t, self.y, label=self._labels[1])
-        lim = np.abs(self._xy).max() * 1.1
+        lim = np.abs(self.data).max() * 1.1
         ax.set_ylim([-lim, lim])
         ax.set_xlabel('Time (' + self.units +')')
         ax.legend(framealpha=0.5)
@@ -606,7 +611,7 @@ class SplitWave:
         # plt.colorbar(line)
     
         # set limit
-        lim = np.abs(self._xy).max() * 1.1
+        lim = np.abs(self.data).max() * 1.1
         if 'lims' not in kwargs: kwargs['lims'] = [-lim, lim] 
         ax.set_aspect('equal')
         ax.set_xlim(kwargs['lims'])
