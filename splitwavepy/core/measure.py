@@ -488,6 +488,7 @@ class Py(SplitWave):
         if self._bootstrap:
             _, m.kde, m.spol_kde = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
             m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
+            m.loglike = m.kde.logpdf(vals.flatten()).reshape((vals.shape))
             m.pdf = m.likelihood / np.sum(m.likelihood)
         
         # error estimation
@@ -523,6 +524,7 @@ class Py(SplitWave):
         if self._bootstrap:
             m.kde, _, _ = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
             m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
+            m.loglike = m.kde.logpdf(vals.flatten()).reshape((vals.shape))
             m.pdf = m.likelihood / np.sum(m.likelihood)
         
         # xc = {}
