@@ -93,7 +93,7 @@ def _psurf(self, ax, **kwargs):
     cax = ax.contourf(laggrid, deggrid, kwargs['vals'], 26, cmap=kwargs['cmap'])
     # cbar = plt.colorbar(cax)
     ax.set_ylabel(r'Fast Direction ($^\circ$)')
-    ax.set_xlabel('Delay Time (' + self._data.units + ')')
+    ax.set_xlabel('Delay Time (' + self.data.units + ')')
     
     # confidence region
     # if 'conf95' in kwargs and kwargs['conf95'] == True:
@@ -154,12 +154,12 @@ class Explorer:
     
         # trace
         self.ax0 = plt.subplot(gs[0])
-        self.linex, self.liney, self.w1, self.w2 = _ptr(Py._data, self.ax0, **kwargs)
+        self.linex, self.liney, self.w1, self.w2 = _ptr(Py.data, self.ax0, **kwargs)
         _, self.ydat = self.w1.get_data()
     
         # particle  motion
         self.ax1 = plt.subplot(gs[1])
-        self.ppm = _ppm(Py._data, self.ax1, **kwargs)
+        self.ppm = _ppm(Py.data, self.ax1, **kwargs)
     
         # surface silver and chan
         self.ax2 = plt.subplot(gs[2])
@@ -193,7 +193,7 @@ class Explorer:
         """hover over surface"""
         lag, fast = event.xdata, event.ydata
         if (event.inaxes == self.ax2) | (event.inaxes == self.ax3):
-            d = self.py._data.unsplit(fast, lag)
+            d = self.py.data.unsplit(fast, lag)
             self.linex.set_data(d._t, d.x)
             self.liney.set_data(d._t, d.y)
             chopxy = d._chopxy()
@@ -215,7 +215,7 @@ class Explorer:
             x1, _ = self.w1.get_data()
             x2, _ = self.w2.get_data()
             wbeg, wend = sorted((x1[0], x2[0]))
-            d = self.py._data    
+            d = self.py.data    
             d.set_window(wbeg, wend)
 
             # update particle motion
