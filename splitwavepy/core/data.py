@@ -248,11 +248,15 @@ class SplitWave:
         
         Apply splitting parameters to data for bootstrapping,
         keeps data in window with wraparound.
+        
+        Data are returned in the fast/slow frame.
         """
         copy = self.rotateto(fast).chop().taper(**kwargs)
         shift = core.time2samps(lag, self._delta)
         copy.__x = np.roll(copy.x, shift)
-        return copy        
+        return copy
+        
+   
 
         
     # polarisation

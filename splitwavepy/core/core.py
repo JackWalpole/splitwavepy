@@ -414,6 +414,7 @@ def cov_rotate(cov, deg):
         outcov[:, ii] = np.matmul(rot, np.matmul(cov[:,ii], rot.T))
     return outcov
 
+
 # def slagchop_srccorr(x, y, w0, w1, slag, srcfast, srcslag):
 #     x, y = rot2(x, y, srcfast)
 #     x, y = lag(x, y, srcslag)
@@ -455,14 +456,15 @@ def covmap2eigvals(cov):
     lam1 = eigvals[:, :, 1]
     return lam1, lam2
     
-def covmap2rho(cov):
+def covmap2rho(cov, fisher=True):
     stdx = np.sqrt(cov[:, :, 0, 0])
     stdy = np.sqrt(cov[:, :, 1, 1])
     rho = cov[:, :, 0, 1] / (stdx * stdy)
+    if fisher: return np.arctanh(rho)
     return rho
 
 def covmap2var(cov, pol):    
-    covrot = core.cov_rotate(cov, pol)
+    covrot = cov_rotate(cov, pol)
     lam1, lam2 = covrot[:,:,0,0], covrot[:,:,1,1]
     return lam1, lam2
     
@@ -549,9 +551,49 @@ def bootstrap_resamp(x, y):
     idx = np.random.choice(x.size, x.size)
     return x[idx], y[idx]    
     
+def bootcov(x, y, n=2000):
+    """Resample x, y data and return n bootstrap covariance matrices.""" 
+    bscov = np.empty((n, 2, 2))
+    for ii in range(n):
+        bsx, bsy = bootstrap_resamp(x, y)
+        bscov[ii] = cov2d(bsx, bsy)    
+    return bscov     
+
+def bscov2rho(bscov, fisher=True):
+    """Return bootstrap rho values from bootstrap covariance matrices.
+    Assumes bscov is rotated to fast/slow directions."""
+    stdx = np.sqrt(bscov[:, 0, 0])
+    stdy = np.sqrt(bscov[:, 1, 1])
+    rho = np.abs(bscov[:, 0, 1] / (stdx * stdy))
+    if fisher: return np.arctanh(rho)
+    return rho
+
+def bscov2eigrat(bscov, pol=None, fast=None):
+    """Return bootstrap eigenvalue ratio from bootstrap covariance matrices.
+    If pol is provided use transverse minimisation method."""
+    if pol is None:
+        # use eigenvector method.
+        evals, evecs = np.linalg.eigh(bscov)
+        rat = evals[:,1]/evals[:,0]       
+    else:
+        # use transverse min method
+        # raise NotImplementedError('Need to do proper rotation of covariance matrix.')
+        rot = core._rot(pol-fast)
+        bscov = np.matmul(rot, np.matmul(bscov, rot.T))
+        rat = bscov[:,0,0]/bscov[:,1,1]
+    return rat
+    
 def kde(vals):
+    """Return stats.gaussian_kde object from set of values."""
     # instantiate and fit the KDE model
     return stats.gaussian_kde(vals)
+    
+def norm(vals):
+    """Return stats.norm object from set of values.
+    Assumes these values are normally distributed."""
+    mean = np.mean(vals)
+    std = np.std(vals)
+    return stats.norm(loc=mean, scale=std)
 
 # Null Criterion
 

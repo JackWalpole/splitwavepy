@@ -401,24 +401,7 @@ class Py(SplitWave):
         cov = core.cov_reshape(cov)
         return cov
         
-    def _bootstrap_kdes(self, fast, lag, n=2000, **kwargs):
-        """Estimate distributions for pearson's r, the lam1/lam2 ratio
-        (and, if pol is not set, the source polarisation) for the data corrected
-        using the parameters *fast* and *lag*. The distributions are estimated using bootstrapping.
-        
-        args (required):
-        
-        (splitting parameters to correct data by)
-        
-        fast -- the fast direction
-        lag  -- the delay time
-        
-        kwargs (optional):
-        
-        n    -- the number of bootstrap iterations (default=2000)
-        pol -- if pol is specified uses transverse minimisation method
-               and makes no attempt to calculate spol.
-        """
+    def _bootcov(self, fast, lag, **kwargs):
         
         if self._rcvcorr is not None:
             raise NotImplementedError('Not yet implemented.')
@@ -430,41 +413,73 @@ class Py(SplitWave):
         # uses wraparound in time window to replicate behaviour in frequency domain.
         bsindata = self.data._wrap_unsplit(fast, lag, taper=self._taper, **kwargs)
         x, y = bsindata.x, bsindata.y
+        return core.bootcov(x, y, **kwargs)
         
-        # calculate bootstrap covariance matrices
-        bscov = np.empty((n, 2, 2))
-        for ii in range(n):
-            bsx, bsy = core.bootstrap_resamp(x, y)
-            bscov[ii] = core.cov2d(bsx, bsy)
         
-        # calculate rho kde
-        stdx = np.sqrt(bscov[:, 0, 0])
-        stdy = np.sqrt(bscov[:, 1, 1])
-        rho = bscov[:, 0, 1] / (stdx * stdy)
-        r_kde = core.kde(np.abs(rho))
-            
-
-        if self._pol is None:
-            # Use eigenvalue method
-            # rotate to zero
-            rot = core._rot(-fast)
-            bscov = np.matmul(rot, np.matmul(bscov, rot.T))            
-            # use eigenvector method.
-            evals, evecs = np.linalg.eigh(bscov)
-            rat = evals[:,1]/evals[:,0]
-            spol = (np.rad2deg(np.arctan2(evecs[:,1,1], evecs[:,0,1]))+3690)%180-90
-            rat_kde = core.kde(rat)
-            spol_kde = core.kde(spol)
-            # all done
-            return r_kde, rat_kde, spol_kde         
-        else:
-            # Use transverse energy method
-            # rotate to pol
-            rot = core._rot(pol-fast)
-            bscov = np.matmul(rot, np.matmul(bscov, rot.T))
-            rat = bscov[:,0,0]/bscov[:,1,1]
-            rat_kde = core.kde(rat)
-            return r_kde, rat_kde
+    # def _bootstrap_kdes(self, fast, lag, n=2000, **kwargs):
+    #     """Estimate distributions for pearson's r, the lam1/lam2 ratio
+    #     (and, if pol is not set, the source polarisation) for the data corrected
+    #     using the parameters *fast* and *lag*. The distributions are estimated using bootstrapping.
+    #
+    #     args (required):
+    #
+    #     (splitting parameters to correct data by)
+    #
+    #     fast -- the fast direction
+    #     lag  -- the delay time
+    #
+    #     kwargs (optional):
+    #
+    #     n    -- the number of bootstrap iterations (default=2000)
+    #     pol -- if pol is specified uses transverse minimisation method
+    #            and makes no attempt to calculate spol.
+    #     """
+    #
+    #     if self._rcvcorr is not None:
+    #         raise NotImplementedError('Not yet implemented.')
+    #
+    #     if self._srccorr is not None:
+    #         raise NotImplementedError('Not yet implemented.')
+    #
+    #     # prepare data by backing off the splitting parameters
+    #     # uses wraparound in time window to replicate behaviour in frequency domain.
+    #     bsindata = self.data._wrap_unsplit(fast, lag, taper=self._taper, **kwargs)
+    #     x, y = bsindata.x, bsindata.y
+    #
+    #     # calculate bootstrap covariance matrices
+    #     bscov = np.empty((n, 2, 2))
+    #     for ii in range(n):
+    #         bsx, bsy = core.bootstrap_resamp(x, y)
+    #         bscov[ii] = core.cov2d(bsx, bsy)
+    #
+    #     # calculate rho kde
+    #     stdx = np.sqrt(bscov[:, 0, 0])
+    #     stdy = np.sqrt(bscov[:, 1, 1])
+    #     rho = bscov[:, 0, 1] / (stdx * stdy)
+    #     r_kde = core.kde(np.abs(rho))
+    #
+    #
+    #     if self._pol is None:
+    #         # Use eigenvalue method
+    #         # rotate to zero
+    #         rot = core._rot(-fast)
+    #         bscov = np.matmul(rot, np.matmul(bscov, rot.T))
+    #         # use eigenvector method.
+    #         evals, evecs = np.linalg.eigh(bscov)
+    #         rat = evals[:,1]/evals[:,0]
+    #         spol = (np.rad2deg(np.arctan2(evecs[:,1,1], evecs[:,0,1]))+3690)%180-90
+    #         rat_kde = core.kde(rat)
+    #         spol_kde = core.kde(spol)
+    #         # all done
+    #         return r_kde, rat_kde, spol_kde
+    #     else:
+    #         # Use transverse energy method
+    #         # rotate to pol
+    #         rot = core._rot(pol-fast)
+    #         bscov = np.matmul(rot, np.matmul(bscov, rot.T))
+    #         rat = bscov[:,0,0]/bscov[:,1,1]
+    #         rat_kde = core.kde(rat)
+    #         return r_kde, rat_kde
 
         
         
@@ -486,10 +501,16 @@ class Py(SplitWave):
         m.lam2 = lam2
         
         if self._bootstrap:
-            _, m.kde, m.spol_kde = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
-            m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
-            m.loglike = m.kde.logpdf(vals.flatten()).reshape((vals.shape))
+            bscov = self._bootcov(m.fast, m.lag, **kwargs)
+            vals = bscov2eigrat(bscov, **kwargs)
+            norm = core.norm(vals)
+            m.likelihood = norm.pdf(vals)
             m.pdf = m.likelihood / np.sum(m.likelihood)
+            
+            # _, m.kde, m.spol_kde = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
+            # m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
+            # m.loglike = m.kde.logpdf(vals.flatten()).reshape((vals.shape))
+            # m.pdf = m.likelihood / np.sum(m.likelihood)
             
         #
         # # error estimation
@@ -522,10 +543,17 @@ class Py(SplitWave):
         vals = np.abs(core.covmap2rho(self._covmap))
         m = Measure(self, vals)
         
+        # if self._bootstrap:
+        #     m.kde, _, _ = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
+        #     m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
+        #     m.loglike = m.kde.logpdf(vals.flatten()).reshape((vals.shape))
+        #     m.pdf = m.likelihood / np.sum(m.likelihood)
+            
         if self._bootstrap:
-            m.kde, _, _ = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
-            m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
-            m.loglike = m.kde.logpdf(vals.flatten()).reshape((vals.shape))
+            bscov = self._bootcov(m.fast, m.lag, **kwargs)
+            vals = bscov2rho(bscov, **kwargs)
+            norm = core.norm(vals)
+            m.likelihood = norm.pdf(vals)
             m.pdf = m.likelihood / np.sum(m.likelihood)
         
         # xc = {}
