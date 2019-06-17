@@ -502,7 +502,7 @@ class Py(SplitWave):
         
         if self._bootstrap:
             bscov = self._bootcov(m.fast, m.lag, **kwargs)
-            vals = bscov2eigrat(bscov, **kwargs)
+            vals = core.bscov2eigrat(bscov, **kwargs)
             norm = core.norm(vals)
             m.likelihood = norm.pdf(vals)
             m.pdf = m.likelihood / np.sum(m.likelihood)
@@ -538,7 +538,7 @@ class Py(SplitWave):
         # sc['dlag']
         # self.__silver_chan = sc
         
-    def correlation(self, **kwargs):
+    def correlation(self, fisher=True, **kwargs):
         
         vals = np.abs(core.covmap2rho(self._covmap))
         m = Measure(self, vals)
@@ -551,7 +551,7 @@ class Py(SplitWave):
             
         if self._bootstrap:
             bscov = self._bootcov(m.fast, m.lag, **kwargs)
-            vals = bscov2rho(bscov, **kwargs)
+            vals = core.bscov2rho(bscov, **kwargs)
             norm = core.norm(vals)
             m.likelihood = norm.pdf(vals)
             m.pdf = m.likelihood / np.sum(m.likelihood)
