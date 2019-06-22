@@ -502,10 +502,11 @@ class Py(SplitWave):
         
         if self._bootstrap:
             bscov = self._bootcov(m.fast, m.lag, **kwargs)
-            vals = core.bscov2eigrat(bscov, **kwargs)
-            norm = core.norm(vals)
-            m.likelihood = norm.pdf(vals)
-            m.pdf = m.likelihood / np.sum(m.likelihood)
+            bsvals = core.bscov2eigrat(bscov, **kwargs)
+            norm = core.norm(bsvals)
+            
+        m.likelihood = norm.pdf(vals)
+        m.pdf = m.likelihood / np.sum(m.likelihood)
             
             # _, m.kde, m.spol_kde = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
             # m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
@@ -538,9 +539,10 @@ class Py(SplitWave):
         # sc['dlag']
         # self.__silver_chan = sc
         
-    def correlation(self, fisher=True, **kwargs):
+    def correlation(self, **kwargs):
         
         vals = np.abs(core.covmap2rho(self._covmap))
+        fvals = np.arctanh(vals)
         m = Measure(self, vals)
         
         # if self._bootstrap:
@@ -551,10 +553,12 @@ class Py(SplitWave):
             
         if self._bootstrap:
             bscov = self._bootcov(m.fast, m.lag, **kwargs)
-            vals = core.bscov2rho(bscov, **kwargs)
-            norm = core.norm(vals)
-            m.likelihood = norm.pdf(vals)
-            m.pdf = m.likelihood / np.sum(m.likelihood)
+            bsvals = core.bscov2rho(bscov, **kwargs)
+            
+        fbsvals = np.arctanh(bsvals)
+        norm = core.norm(fbsvals)
+        m.likelihood = norm.pdf(fvals)
+        m.pdf = m.likelihood / np.sum(m.likelihood)
         
         # xc = {}
         # xc['rho'] = np.abs(core.covmap2rho(self._covmap))

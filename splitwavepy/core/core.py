@@ -456,11 +456,10 @@ def covmap2eigvals(cov):
     lam1 = eigvals[:, :, 1]
     return lam1, lam2
     
-def covmap2rho(cov, fisher=True):
+def covmap2rho(cov):
     stdx = np.sqrt(cov[:, :, 0, 0])
     stdy = np.sqrt(cov[:, :, 1, 1])
     rho = cov[:, :, 0, 1] / (stdx * stdy)
-    if fisher: return np.arctanh(rho)
     return rho
 
 def covmap2var(cov, pol):    
@@ -559,13 +558,12 @@ def bootcov(x, y, n=2000):
         bscov[ii] = cov2d(bsx, bsy)    
     return bscov     
 
-def bscov2rho(bscov, fisher=True):
+def bscov2rho(bscov):
     """Return bootstrap rho values from bootstrap covariance matrices.
     Assumes bscov is rotated to fast/slow directions."""
     stdx = np.sqrt(bscov[:, 0, 0])
     stdy = np.sqrt(bscov[:, 1, 1])
     rho = np.abs(bscov[:, 0, 1] / (stdx * stdy))
-    if fisher: return np.arctanh(rho)
     return rho
 
 def bscov2eigrat(bscov, pol=None, fast=None):
