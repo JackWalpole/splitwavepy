@@ -522,7 +522,46 @@ def val_at_alpha(data, alpha):
     xval = get_x_at_cum(tot*alpha)
     return get_val_at_x(xval)
     
+def contour_halfwidth(surf, critval, surftype=None):
+    """
+    Return half width of contour in samples dx, dy for surface *surf* at value *critval*.
+    
+    Multiply the answer by the time step (dx) and phi step (dy) on your grid to convert.
+    
+    Some common critical values:
+    1 sigma = 0.683
+    2 sigma = 0.954
+    3 sigma = 0.997
+    95% = 0.05
+    """
+    # Find nodes where we fall within the 95% confidence region
+    
+    if surftype == 'max':
+        confbool = surf >= critval
+    elif surftype == 'min':
+        confbool = surf <= critval
+    else:
+        raise ValueError('surftype must be \'min\' or \'max\'')
 
+    # tlag error
+    lagbool = confbool.any(axis=1)
+    # last true value - first true value
+    truth = np.where(lagbool)[0]
+    fdlag = (truth[-1] - truth[0] + 1) * 0.5
+
+    # fast error
+    fastbool = confbool.any(axis=0)
+    # trickier to handle due to cyclicity of angles
+    # search for the longest continuous line of False values
+    cyclic = np.hstack((fastbool, fastbool))
+    lengthFalse = np.diff(np.where(cyclic)).max() - 1
+    # shortest line that contains ALL true values is then:
+    lengthTrue = fastbool.size - lengthFalse
+    fdfast = lengthTrue  * 0.5
+
+    # return
+    return fdfast, fdlag 
+        
     
 # Bootstrapping
     
