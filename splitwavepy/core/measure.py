@@ -8,7 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core, io
-from .data import SplitWave
+from .data import Data
 # from .bootstrap import Bootstrap
 
 # from ..core import core, core3d, io
@@ -25,7 +25,7 @@ from scipy import stats
 # import os.path
 
 
-class Split(SplitWave):
+class Split(Data):
     
     """
     Measure shearwave splitting on a SplitWave object.

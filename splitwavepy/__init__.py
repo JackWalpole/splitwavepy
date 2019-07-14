@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .core.data import SplitWave
+from .core.data import Data
 # from .core.measure import Py
 # from .core.pair import Pair
 # from .core.trio import Trio
@@ -14,7 +14,7 @@ from .core.data import SplitWave
 # from .core import core, geom
 # from .core.window import Window
 
-__all__ = ["SplitWave"]
+__all__ = ["Data"]
 
 
 # make a commandline tool?
