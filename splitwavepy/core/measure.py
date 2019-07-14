@@ -25,12 +25,12 @@ from scipy import stats
 # import os.path
 
 
-class Py(SplitWave):
+class Split(SplitWave):
     
     """
     Measure shearwave splitting on a SplitWave object.
     
-    Usage: Py(SplitWave, **options)
+    Usage: Split(SplitWave, **options)
     
     Calculates the covariance matrix of unsplit data to search for splitting
     parameters that best remove the splitting.
@@ -879,7 +879,7 @@ class Py(SplitWave):
 
     def save(self, filename):
         """
-        Save Pyment for future referral
+        Save Measurement for future referral
         """
         io.save(self, filename)
         
@@ -1168,7 +1168,7 @@ class Measure():
     
         **kwargs
         - cmap = 'magma'
-        - vals = (M.lam1-M.lam2) / M.lam2
+        - vals = (M.lam1-M.lam2) / M.lam2Split
         """
     
         if 'cmap' not in kwargs:

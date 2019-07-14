@@ -164,7 +164,7 @@ def _psurf(self, ax, **kwargs):
         subdegs = self.degs[0:-1:int(self.degs.size/6)]
         sublags = sublags + (self.lags[-1]-sublags[-1]) / 2
         subdegs = subdegs + (self.degs[-1]-subdegs[-1]) / 2
-        x, y = self.SplitWave_corr()._chopdata()   
+        x, y = self.Data_corr()._chopdata()   
         lagtot = self.lags[-1] - self.lags[0]
         degtot = self.degs[-1] - self.degs[0]
         boost = 10 * lagtot / np.max((x**2 + y**2)**.5)      
@@ -178,14 +178,14 @@ def _psurf(self, ax, **kwargs):
 
 class Explorer:
     
-    def __init__(self, Py, **kwargs):
+    def __init__(self, Split, **kwargs):
         # self.m = m
         # self.fig = fig
         # self.ax0 = ax0
         # self.ax1 = ax1
         # self.ax2 = ax2
         
-        self.py = Py
+        self.py = Split
 
         self.fig = plt.figure(figsize=(18, 3), **kwargs)     
         gs = gridspec.GridSpec(1, 4, width_ratios=[5, 1, 2, 2], **kwargs) 
@@ -193,20 +193,20 @@ class Explorer:
     
         # trace
         self.ax0 = plt.subplot(gs[0])
-        self.linex, self.liney, self.w1, self.w2 = _ptr(Py.data, self.ax0, **kwargs)
+        self.linex, self.liney, self.w1, self.w2 = _ptr(Split.data, self.ax0, **kwargs)
         _, self.ydat = self.w1.get_data()
     
         # particle  motion
         self.ax1 = plt.subplot(gs[1])
-        self.ppm = _ppm(Py.data, self.ax1, **kwargs)
+        self.ppm = _ppm(Split.data, self.ax1, **kwargs)
     
         # surface silver and chan
         self.ax2 = plt.subplot(gs[2])
-        self.sc_surf = _psurf(self.py, self.ax2, vals=Py.sc.vals, **kwargs)  
+        self.sc_surf = _psurf(self.py, self.ax2, vals=Split.sc.vals, **kwargs)  
         
         # surface cross-correlation
         self.ax3 = plt.subplot(gs[3])
-        self.xc_surf = _psurf(self.py, self.ax3, vals=Py.xc.vals, **kwargs) 
+        self.xc_surf = _psurf(self.py, self.ax3, vals=Split.xc.vals, **kwargs) 
          
         #
         # # optional pick window
@@ -267,7 +267,7 @@ class Explorer:
             print(d._window.width)
             
             # update surfaces
-            e = d.Py(**kwargs)
+            e = d.Split(**kwargs)
             for coll in self.sc_surf.collections: 
                 self.ax2.collections.remove(coll)
             self.sc_surf = self.ax2.contourf(*e._grid, e.sc.vals, 26, cmap='magma')
@@ -283,9 +283,9 @@ class Explorer:
         #     # if reached here process the click
         #     wbeg, wend = sorted((self.x1, self.x2))
         #
-        # self.SplitWave.set_window(wbeg, wend)
+        # self.Data.set_window(wbeg, wend)
    
 if __name__ == "__main__":
     
-    a = sw.SplitWave(split=(30,1.2), noise=0.03).Py(maxlag=4)
+    a = sw.Data(split=(30,1.2), noise=0.03).Split(maxlag=4)
     explore = Explorer(a)
