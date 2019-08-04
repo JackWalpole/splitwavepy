@@ -33,7 +33,7 @@ class Data:
     Split()                    measure splitting on data.
     
     
-    _split(fast, lag)        return duplicate of data with spliting operators applied
+    _split(fast, lag)        return duplicate of data with splitting operators applied
     _unsplit(fast, lag)      return duplicate of data with
     
     
@@ -43,7 +43,6 @@ class Data:
     These actions can be chained:
     >>> Data().Split()
     
-    Hence the name: "DataSplit"
     
     -------
     

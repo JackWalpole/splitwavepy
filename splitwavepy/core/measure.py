@@ -30,7 +30,7 @@ class Split(Data):
     """
     Measure shearwave splitting on a SplitWave object.
     
-    Usage: Split(SplitWave, **options)
+    Usage: Split(Data, **options)
     
     Calculates the covariance matrix of unsplit data to search for splitting
     parameters that best remove the splitting.

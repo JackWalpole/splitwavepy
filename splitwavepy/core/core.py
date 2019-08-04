@@ -125,6 +125,21 @@ def taper(x, alpha=0.2):
     return x * signal.windows.tukey(x.size, alpha=alpha)
 
 
+def polar_density(lags):
+    """Factor to multiply data at each lag by to convert from rectangular to polar density.
+    For example, at lag 0 there are 180 node points that each contain the exact same value, 
+    at greater lags the 180 nodal points are increasingly different, the correction scales by
+    the amount of area in a circle each node takes up.  This is perhaps a better prior to use
+    when converting the likelihood maps to pdfs."""    
+    # step size
+    dx = lags[1] - lags[0]
+    n = lags.size
+    # calculate area of circles halfway between nodes
+    sq = 0.5 * np.pi * (dx * (np.arange(n)+0.5))**2
+    # calculate area of each ring (input first area)
+    area = np.insert(np.ediff1d(sq), 0, sq[0])
+    return area
+
 # def chop(*args,**kwargs):
 #     """Chop trace, or traces, using window"""
 #
