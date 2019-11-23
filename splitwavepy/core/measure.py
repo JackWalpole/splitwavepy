@@ -73,6 +73,7 @@ class Meas(Data):
         settings['rcvcorr'] = None
         settings['srccorr'] = None
         settings['taper'] = 0.2
+        settings['fft'] = True
         
         # degs settings
         settings['pol'] = None
@@ -94,10 +95,13 @@ class Meas(Data):
             
         # Grid Search
         # self._covmap = self._gridcov()
-        self._covmap = self._gridcovfreq()
+        if settings['fft']: self._covmap = self._gridcovfreq()
+        else : self._covmap = self.gridcov() # logic here to reduce number of lag steps
+        
+        
         self.sc = self.silver_chan()
-        self.xc = self.correlation()
-        self.q = core.q(self.sc.fast, self.sc.lag, self.xc.fast, self.xc.lag)
+        # self.xc = self.correlation()
+        # self.q = core.q(self.sc.fast, self.sc.lag, self.xc.fast, self.xc.lag)
 
         # # Splitting Intensity
         # self.splintensity = self._splitting_intensity()
@@ -496,7 +500,7 @@ class Meas(Data):
             vals = lam1 / lam2
         
         # Make Measurement and add info    
-        m = Measure(self, vals)
+        m = Method(self, vals)
         m.lam1 = lam1
         m.lam2 = lam2
         
@@ -543,7 +547,7 @@ class Meas(Data):
         
         vals = np.abs(core.covmap2rho(self._covmap))
         fvals = np.arctanh(vals)
-        m = Measure(self, vals)
+        m = Meas(self, vals)
         
         # if self._bootstrap:
         #     m.kde, _, _ = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
@@ -929,8 +933,8 @@ class Meas(Data):
         ax4 = plt.subplot(gs[2,1])
         ax5 = plt.subplot(gs[:,2])
 
-        orig = self.srcpoldata()._chop()
-        corr = self.srcpoldata_corr()._chop()
+        orig = self.sc.srcpoldata.chop()
+        corr = self.sc.srcpoldata_corr.chop()
                 
         # get axis scaling
         lim = np.abs(corr.data).max() * 1.1
@@ -1067,12 +1071,16 @@ class Meas(Data):
         return True
         
 
-class Measure():        
+class Method():        
     
-    def __init__(self, py, vals, **kwargs):
+    def __init__(self, meas, method, **kwargs):
         
-        self.py = py
-        self.vals = vals
+        self.meas = meas
+        self.method = method
+    
+    
+    if self.method == 'SilverChan':
+        self.vals = meas.lam2
     
     @property
     def maxloc(self):
@@ -1084,12 +1092,12 @@ class Measure():
     
     @property
     def fast(self):
-        ll, dd = self.py._grid
+        ll, dd = self.meas._grid
         return dd[self.maxloc]
     
     @property
     def lag(self):
-        ll, dd = self.py._grid
+        ll, dd = self.meas._grid
         return ll[self.maxloc]
         
     # error estimation

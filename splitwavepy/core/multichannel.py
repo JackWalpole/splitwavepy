@@ -29,7 +29,7 @@ class Multi:
         example
         --------
       
-        >>> S = Stack(listQ)           # initiate a Stack of EigenM objects
+        >>> S = Multi(listQ)           # initiate a Stack of EigenM objects
         >>> l1l2stk = S.stack()           # Lam1 / Lam2 stack
         >>> WSstk = S.wolfe_silver()      # Stack using Wolfe and Silver method
         >>> RHstk = S.restivo_helffrich() # Stack using Restivo and Helffrich method

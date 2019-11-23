@@ -342,8 +342,7 @@ class Data:
         
     def Meas(self, **kwargs):
         """Grid search for best one-layer splitting parameters: """
-        
-        from .measure import Split
+        from .measure import Meas
         return Meas(self, **kwargs)
         
 
