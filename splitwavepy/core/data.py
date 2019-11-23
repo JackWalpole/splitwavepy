@@ -30,7 +30,7 @@ class Data:
     
     plot()                  plot data.
     set_window()            pick a window (or specify start and end using arguments).
-    Split()                    measure splitting on data.
+    Meas()                    measure splitting on data.
     
     
     _split(fast, lag)        return duplicate of data with splitting operators applied
@@ -38,10 +38,10 @@ class Data:
     
     
     To measure shear wave splitting
-    >>> Measurement = Data.Split(**options)
+    >>> Measurement = Data.Meas(**options)
     
     These actions can be chained:
-    >>> Data().Split()
+    >>> Data().Meas()
     
     
     -------
@@ -49,7 +49,7 @@ class Data:
     Methods
     -------
     
-    Split() 
+    Meas() 
     plot()
     set_window() 
     split(fast, lag)
@@ -340,11 +340,11 @@ class Data:
         def getang(c) : return np.rad2deg(np.arctan2(c[1], c[0]))
         return getang(cmp1), getang(cmp2)
         
-    def Split(self, **kwargs):
+    def Meas(self, **kwargs):
         """Grid search for best one-layer splitting parameters: """
         
         from .measure import Split
-        return Split(self, **kwargs)
+        return Meas(self, **kwargs)
         
 
         

@@ -25,12 +25,12 @@ from scipy import stats
 # import os.path
 
 
-class Split(Data):
+class Meas(Data):
     
     """
     Measure shearwave splitting on a SplitWave object.
     
-    Usage: Split(Data, **options)
+    Usage: Meas(Data, **options)
     
     Calculates the covariance matrix of unsplit data to search for splitting
     parameters that best remove the splitting.
