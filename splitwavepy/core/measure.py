@@ -28,7 +28,7 @@ from scipy import stats
 class Meas(Data):
     
     """
-    Measure shearwave splitting on a SplitWave object.
+    Measure shearwave splitting on a Data object.
     
     Usage: Meas(Data, **options)
     
@@ -60,10 +60,10 @@ class Meas(Data):
     
     """
     
-    def __init__(self, SplitWave, **kwargs):
+    def __init__(self, Data, **kwargs):
         
-        # The SplitWave (Data) object
-        self.__data = SplitWave.rotateto(0)
+        # The Data object
+        self.__data = Data.rotateto(0)
 
         # Default Settings (These can be overidden using keywords)
         settings = {}
@@ -166,7 +166,8 @@ class Meas(Data):
     def _lags(self):
         return self._slags * self.data._delta
 
-        
+
+
     @property
     def _pol(self):
         return self.__pol
@@ -324,6 +325,49 @@ class Meas(Data):
     #     xc['fast'] = dd[ml]
     #     xc['lag']  = ll[ml]
     #     self.__correlation = xc
+    
+        
+    # interrogate the covmap
+        
+    # eigenvalues
+    @property
+    def _eigvals(self):
+        return core.covmap2eigvals(self._covmap)
+
+    @property
+    def lam1(self):
+        return self._eigvals[0]
+    
+    @property
+    def lam2(self):
+        return self._eigvals[1]
+    
+    @property
+    def lamrat(self):
+        lam1, lam2 = self._eigvals
+        return lam1/lam2
+        
+    # fixed polarisation
+    @property
+    def _polenergy(self):
+      covrot = core.cov_rotate(self._covmap, self._pol)
+      rad, trans = covrot[:,:,0,0], covrot[:,:,1,1]
+      return rad, trans
+      
+     @property
+     def radenergy(self):
+         return self._polenergy[0]
+     
+     @property     
+     def transenergy(self):
+         return self.polenergy[1]
+         
+     @property
+     def energyrat(self):
+         return radenergy/polenergy
+         
+    
+        
     
     
     # Visible methods
@@ -491,26 +535,21 @@ class Meas(Data):
     def silver_chan(self, **kwargs):
         
         if self._pol is None:
-            # use eigen analysis
-            lam1, lam2 = core.covmap2eigvals(self._covmap)
-            vals = lam1 / lam2
+            vals = self.lam2
         else:
-            covrot = core.cov_rotate(self._covmap, self._pol)
-            lam1, lam2 = covrot[:,:,0,0], covrot[:,:,1,1]
-            vals = lam1 / lam2
+            vals = self.transenergy
+
+        return Method(self, vals=vals, ftest=True)
+
+
         
-        # Make Measurement and add info    
-        m = Method(self, vals)
-        m.lam1 = lam1
-        m.lam2 = lam2
-        
-        if self._bootstrap:
-            bscov = self._bootcov(m.fast, m.lag, **kwargs)
-            bsvals = core.bscov2eigrat(bscov, **kwargs)
-            norm = core.norm(bsvals)
-            
-        m.likelihood = norm.pdf(vals)
-        m.pdf = m.likelihood / np.sum(m.likelihood)
+        # if self._bootstrap:
+        #     bscov = self._bootcov(m.fast, m.lag, **kwargs)
+        #     bsvals = core.bscov2eigrat(bscov, **kwargs)
+        #     norm = core.norm(bsvals)
+        #
+        # m.likelihood = norm.pdf(vals)
+        # m.pdf = m.likelihood / np.sum(m.likelihood)
             
             # _, m.kde, m.spol_kde = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
             # m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
@@ -529,7 +568,7 @@ class Meas(Data):
         # m.dfast, m.dlag = self._contour_halfwidth(m.f_cdf, critval, surftype='min')
         
             
-        return m
+        # return m
         # sc = {}
         # sc['lam1'] = lam1
         # sc['lam2'] = lam2
@@ -547,30 +586,31 @@ class Meas(Data):
         
         vals = np.abs(core.covmap2rho(self._covmap))
         fvals = np.arctanh(vals)
-        m = Meas(self, vals)
+        return Method(self, vals=fvals)
         
+        #
+        # # if self._bootstrap:
+        # #     m.kde, _, _ = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
+        # #     m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
+        # #     m.loglike = m.kde.logpdf(vals.flatten()).reshape((vals.shape))
+        # #     m.pdf = m.likelihood / np.sum(m.likelihood)
+        #
         # if self._bootstrap:
-        #     m.kde, _, _ = self._bootstrap_kdes(m.fast, m.lag, **kwargs)
-        #     m.likelihood = m.kde.pdf(vals.flatten()).reshape((vals.shape))
-        #     m.loglike = m.kde.logpdf(vals.flatten()).reshape((vals.shape))
-        #     m.pdf = m.likelihood / np.sum(m.likelihood)
-            
-        if self._bootstrap:
-            bscov = self._bootcov(m.fast, m.lag, **kwargs)
-            bsvals = core.bscov2rho(bscov, **kwargs)
-            
-        fbsvals = np.arctanh(bsvals)
-        norm = core.norm(fbsvals)
-        m.likelihood = norm.pdf(fvals)
-        m.pdf = m.likelihood / np.sum(m.likelihood)
-        
-        # xc = {}
-        # xc['rho'] = np.abs(core.covmap2rho(self._covmap))
-        # xc['maxidx'] = core.max_idx(xc['rho'])
-        # dd, ll = self._grid
-        # xc['fast'] = dd[xc['maxidx']]
-        # xc['lag']  = ll[xc['maxidx']]
-        return m      
+        #     bscov = self._bootcov(m.fast, m.lag, **kwargs)
+        #     bsvals = core.bscov2rho(bscov, **kwargs)
+        #
+        # fbsvals = np.arctanh(bsvals)
+        # norm = core.norm(fbsvals)
+        # m.likelihood = norm.pdf(fvals)
+        # m.pdf = m.likelihood / np.sum(m.likelihood)
+        #
+        # # xc = {}
+        # # xc['rho'] = np.abs(core.covmap2rho(self._covmap))
+        # # xc['maxidx'] = core.max_idx(xc['rho'])
+        # # dd, ll = self._grid
+        # # xc['fast'] = dd[xc['maxidx']]
+        # # xc['lag']  = ll[xc['maxidx']]
+        # return m
 
 
                     
@@ -1071,16 +1111,25 @@ class Meas(Data):
         return True
         
 
-class Method():        
+class Method(Meas):        
     
-    def __init__(self, meas, method, **kwargs):
+    def __init__(self, meas, **kwargs):
         
         self.meas = meas
-        self.method = method
-    
-    
-    if self.method == 'SilverChan':
-        self.vals = meas.lam2
+
+        
+        # Default Settings (These can be overidden using keywords)
+        settings = {}
+        settings['vals'] = self.meas.lamrat
+        settings['ftest'] = False
+        settings['bootstrap'] = True 
+        settings['alpha'] = 0.05
+        
+
+    @property
+    def errsurf(self):
+        
+
     
     @property
     def maxloc(self):
@@ -1119,7 +1168,11 @@ class Method():
     
     @property
     def data(self):
-        return self.py.data.copy()
+        return self.meas.data
+        
+    @property
+    def srcpol(self):
+        return self.data_corr._estimate_pol()
         
     @property
     def data_corr(self):      
@@ -1134,9 +1187,7 @@ class Method():
             data_corr = data_corr.unsplit(*self.py._srccorr)
         return data_corr
         
-    @property
-    def srcpol(self):
-        return self.data_corr._estimate_pol()
+
 
     @property
     def srcpoldata(self):
