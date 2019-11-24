@@ -332,42 +332,57 @@ class Meas(Data):
     # eigenvalues
     @property
     def _eigvals(self):
+        """Silver and Chan's eigenvalues."""
         return core.covmap2eigvals(self._covmap)
 
     @property
     def lam1(self):
+        """Big eigenvalue."""
         return self._eigvals[0]
     
     @property
     def lam2(self):
+        """Small eigenvalue."""
         return self._eigvals[1]
     
     @property
     def lamrat(self):
+        """Ratio of Big/Small eigenvalues."""
         lam1, lam2 = self._eigvals
         return lam1/lam2
         
     # fixed polarisation
     @property
     def _polenergy(self):
+      """Radial and Transverse energy, using self._pol."""
       covrot = core.cov_rotate(self._covmap, self._pol)
       rad, trans = covrot[:,:,0,0], covrot[:,:,1,1]
       return rad, trans
       
-     @property
-     def radenergy(self):
+     @property     # radial energy
+     def rad1(self):
+         """Radial energy."""
          return self._polenergy[0]
      
-     @property     
-     def transenergy(self):
+     @property     # transverse energy
+     def rad2(self):
+         """Transverse energy."""
          return self.polenergy[1]
          
      @property
-     def energyrat(self):
-         return radenergy/polenergy
+     def radrat(self):
+         rad1, rad2 = self._polenergy
+         return rad1/rad2
          
+    @property
+    def rho(self): 
+        """Pearson correlation coefficient."""
+        return np.abs(core.covmap2rho(self._covmap))
     
-        
+    @property
+    def zrho(self):
+        """Fisher transform rho."""
+        return np.arctanh(self.rho)
     
     
     # Visible methods
@@ -1126,9 +1141,6 @@ class Method(Meas):
         settings['alpha'] = 0.05
         
 
-    @property
-    def errsurf(self):
-        
 
     
     @property
@@ -1342,3 +1354,35 @@ class Method(Meas):
             plt.savefig(kwargs['file'])
         else:
             plt.show()
+            
+class Pdf(Method):
+    
+    def __init__(self, meth, vals, **kwargs):
+        
+        self.meth = meth
+        self.vals = vals
+     
+        # Default Settings (These can be overidden using keywords)
+        settings = {}
+        settings['vals'] = self.meth.meas.lamrat
+        settings['ftest'] = False
+        settings['bootstrap'] = True 
+        settings['alpha'] = 0.05
+        
+        
+        # supported vals
+        if self.vals not in [ self.lamrat, self.lam1, self.lam2, self.rad1, self.rad2, self.radrat]
+        # workout what function to use
+        
+        @property
+        def bootcov(self, **kwargs):
+            return self.meth.meas._bootcov()
+            
+        @property
+        def norm(self):
+            return 
+            
+        @property
+        def ftest(self, **kwargs):
+        
+    
