@@ -523,9 +523,22 @@ def ftest(lam2, ndf, alpha=0.05):
     
     lam2min = lam2.min()
     k = 2 # two parameters, phi and dt.
-    F = stats.f.ppf(1-alpha,k,ndf)
+    F = stats.f.ppf(1-alpha, k, ndf)
     lam2alpha = lam2min * ( 1 + (k/(ndf-k)) * F)
     return lam2alpha    
+    
+def fsurf(vals, ndf):
+    """
+    Returns F value at each point.
+    """    
+    # check ndf is big enough
+    if ndf < 3:
+        raise Exception('Number of degrees of freedom is less than 3.  \
+        This likely indicates a problem which would lead to a spurious measurement.  \
+        Check window length.  Check data are demeaned.  Check frequency content.')
+    k = 2   
+    r = ((ndf - k)/k) * ((vals / vals.min()) - 1)
+    return stats.f.cdf(r, k, ndf)
     
 def val_at_alpha(data, alpha):
     """ Find value of function at the alpha level """
@@ -619,6 +632,8 @@ def bscov2rho(bscov):
     stdy = np.sqrt(bscov[:, 1, 1])
     rho = np.abs(bscov[:, 0, 1] / (stdx * stdy))
     return rho
+    
+
 
 def bscov2eigrat(bscov, pol=None, fast=None):
     """Return bootstrap eigenvalue ratio from bootstrap covariance matrices.
@@ -634,6 +649,15 @@ def bscov2eigrat(bscov, pol=None, fast=None):
         bscov = np.matmul(rot, np.matmul(bscov, rot.T))
         rat = bscov[:,0,0]/bscov[:,1,1]
     return rat
+    
+def bscov2lamrat(bscov):
+    evals, evecs = np.linalg.eigh(bscov)
+    rat = evals[:,1]/evals[:,0]
+    return rat
+    
+def bscov2lam2(bscov):
+    evals, evecs = np.linalg.eigh(bscov)
+    return evals[:,0]
     
 def kde(vals):
     """Return stats.gaussian_kde object from set of values."""

@@ -255,7 +255,21 @@ class Data:
         copy.__x = np.roll(copy.x, shift)
         return copy
         
-   
+    def _wrap_unsplit_rotate_back(self, fast, lag, **kwargs):
+        """
+        Window and unsplit data with wraparound in window.
+
+        Apply splitting parameters to data for bootstrapping,
+        keeps data in window with wraparound.
+
+        Data are returned in the fast/slow frame.
+        """
+        orient, _ = self.cmpangs()
+        copy = self.rotateto(fast).chop().taper(**kwargs)
+        shift = core.time2samps(lag, self._delta)
+        copy.__x = np.roll(copy.x, shift)
+        return copy.rotateto(orient)
+
 
         
     # polarisation

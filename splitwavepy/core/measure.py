@@ -126,7 +126,10 @@ class Meas(Data):
     @property
     def data(self):
         return self.__data
-
+        
+    def datacorr(self, fast, lag):
+        return self.data.unsplit(fast, lag)
+        
     #_ndegs
     @property
     def _ndegs(self):
@@ -359,18 +362,18 @@ class Meas(Data):
       rad, trans = covrot[:,:,0,0], covrot[:,:,1,1]
       return rad, trans
       
-     @property     # radial energy
-     def rad1(self):
+    @property
+    def rad1(self):
          """Radial energy."""
          return self._polenergy[0]
      
-     @property     # transverse energy
-     def rad2(self):
+    @property
+    def rad2(self):
          """Transverse energy."""
          return self.polenergy[1]
          
-     @property
-     def radrat(self):
+    @property
+    def radrat(self):
          rad1, rad2 = self._polenergy
          return rad1/rad2
          
@@ -398,6 +401,16 @@ class Meas(Data):
     
                 
     # Common methods
+    
+    def _fast_lag_maxloc(self, vals):
+        idx = core.max_idx(vals)
+        ll, dd = self._grid
+        return dd[idx], ll[idx]
+
+    def _fast_lag_minloc(self, vals):
+        idx = core.min_idx(vals)
+        ll, dd = self._grid
+        return dd[idx], ll[idx]
     
     def _guesspol(self):
         return self.sc.srcpol
@@ -464,7 +477,8 @@ class Meas(Data):
         cov = core.cov_reshape(cov)
         return cov
         
-    def _bootcov(self, fast, lag, **kwargs):
+    def _bscovnodefft(self, fast, lag, **kwargs):
+        """bootstrap covariance matrices at a node."""
         
         if self._rcvcorr is not None:
             raise NotImplementedError('Not yet implemented.')
@@ -478,7 +492,61 @@ class Meas(Data):
         x, y = bsindata.x, bsindata.y
         return core.bootcov(x, y, **kwargs)
         
+    # def _bscovnode(self, fast, lag, **kwargs):
+    #     return self._bootcov(fast, lag)
         
+    def _bslam2nodefft(self, fast, lag, **kwargs):
+        return core.bscov2lam2(self._bscovnodefft(fast, lag, **kwargs))
+        
+    def _bslamratnodefft(self, fast, lag, **kwargs):
+        return core.bscov2lamrat(self._bscovnodefft(fast, lag, **kwargs))
+        
+    def _bsrhonodefft(self, fast, lag, **kwargs):
+        return core.bscov2rho(self._bscovnodefft(fast, lag, **kwargs))
+        
+    def _bsnormpdf(self, bsvals, vals):
+        norm = core.norm(bsvals)
+        likelihood = norm.pdf(vals)
+        pdf = likelihood / np.sum(likelihood)
+        return pdf
+            
+    def _bskdepdf(self, bsvals, vals):
+        kde = core.kde(bsvals)
+        likelihood = kde.pdf(vals.flatten()).reshape((vals.shape))
+        pdf = likelihood / np.sum(likelihood)  
+        return pdf   
+     
+    def bslamratpdf(self, **kwargs):
+        vals = self.lamrat
+        fast, lag = self._fast_lag_maxloc(vals)
+        bsvals = self._bslamratnodefft(fast, lag, **kwargs)
+        return self._bsnormpdf(bsvals, vals)
+
+    def bslam2pdf(self, **kwargs):
+        vals = self.lam2
+        fast, lag = self._fast_lag_minloc(vals)
+        bsvals = self._bslam2nodefft(fast, lag, **kwargs)
+        return self._bsnormpdf(bsvals, vals)
+    
+    def bszrhopdf(self, **kwargs):
+        vals = np.arctanh(self.rho)
+        fast, lag = self._fast_lag_maxloc(vals)
+        bsvals = np.arctanh(self._bsrhonodefft(fast, lag, **kwargs))
+        return self._bsnormpdf(bsvals, vals)
+    
+    
+    def fsurf(self, pol=None):
+        vals = self.lam2
+        fast, lag = self._fast_lag_minloc(vals)
+        unsplit = self.data._wrap_unsplit_rotate_back(fast, lag)
+        pol = unsplit._estimate_pol()
+        x, y = unsplit.rotateto(pol)._chopxy()
+        ndf = core.ndf(y)
+        k = 2 
+        stat = (ndf - k)/k * (vals/vals.min() - 1)
+        f_cdf = stats.f.cdf(stat, k, ndf)
+        return f_cdf
+    
     # def _bootstrap_kdes(self, fast, lag, n=2000, **kwargs):
     #     """Estimate distributions for pearson's r, the lam1/lam2 ratio
     #     (and, if pol is not set, the source polarisation) for the data corrected
@@ -1143,88 +1211,133 @@ class Method(Meas):
 
 
     
-    @property
-    def maxloc(self):
-        return core.max_idx(self.vals)
+    # def maxloc(self, vals):
+    #     return core.max_idx(vals)
+    #
+    # def minloc(self, vals):
+    #     return core.min_idx(vals)
+    
+    def _fast_lag_maxloc(self, vals):
+        idx = core.max_idx(vals)
+        ll, dd = self.meas_grid
+        return dd[idx], ll[idx]
+
+    def _fast_lag_minloc(self, vals):
+        idx = core.min_idx(vals)
+        ll, dd = self.meas_grid
+        return dd[idx], ll[idx]
         
-    @property
-    def minloc(self):
-        return core.min_idx(self.vals)
-    
-    @property
-    def fast(self):
-        ll, dd = self.meas._grid
-        return dd[self.maxloc]
-    
-    @property
-    def lag(self):
-        ll, dd = self.meas._grid
-        return ll[self.maxloc]
+
+    # @property
+    # def fast(self):
+    #     ll, dd = self.meas._grid
+    #     return dd[self.maxloc]
+    #
+    # @property
+    # def lag(self):
+    #     ll, dd = self.meas._grid
+    #     return ll[self.maxloc]
         
     # error estimation
     
-    @property
-    def ndf(self):
-        x, y = self.srcpoldata_corr._chopxy()
-        return core.ndf(y)
-    
     # @property
-    # def dfast(self):
-    #     return 0
+    # def ndf(self):
+    #     x, y = self.srcpoldata_corr._chopxy()
+    #     return core.ndf(y)
+    #
+    # # @property
+    # # def dfast(self):
+    # #     return 0
+    # #
+    # # @property
+    # # def dlag(self):
+    # #     return 0
+    #
+    # # data views
     #
     # @property
-    # def dlag(self):
-    #     return 0
-
-    # data views
-    
-    @property
-    def data(self):
-        return self.meas.data
+    # def data(self):
+    #     return self.meas.data
+    #
+    # @property
+    # def srcpol(self):
+    #     return self.data_corr._estimate_pol()
+    #
+    # @property
+    # def data_corr(self):
+    #     data_corr = self.data
+    #     # rcv side correction
+    #     if self.py._rcvcorr is not None:
+    #         data_corr = data_corr.unsplit(*self.py._rcvcorr)
+    #     # target layer correction
+    #     data_corr = data_corr.unsplit(self.fast, self.lag)
+    #     # src side correction
+    #     if self.py._srccorr is not None:
+    #         data_corr = data_corr.unsplit(*self.py._srccorr)
+    #     return data_corr
+    #
+    #
+    #
+    # @property
+    # def srcpoldata(self):
+    #     srcpoldata = self.data.rotateto(self.srcpol)
+    #     srcpoldata._set_labels(['pol', 'trans'])
+    #     return srcpoldata
+    #
+    # @property
+    # def srcpoldata_corr(self):
+    #     srcpoldata_corr = self.data_corr.rotateto(self.srcpol)
+    #     srcpoldata_corr._set_labels(['pol', 'trans'])
+    #     return srcpoldata_corr
+    #
+    # @property
+    # def fastdata(self, fast):
+    #     """Plot fast/slow data."""
+    #     fastdata = self.data.rotateto(fast)
+    #     fastdata._set_labels(['fast', 'slow'])
+    #     return fastdata
+    #
+    # @property
+    # def fastdata_corr(self, fast):
+    #     fastdata_corr = self.data_corr().rotateto(fast)
+    #     fastdata_corr._set_labels(['fast', 'slow'])
+    #     return fastdata_corr
         
-    @property
-    def srcpol(self):
-        return self.data_corr._estimate_pol()
+    # def bscov(self, fast, lag, **kwargs):
+    #     return self.meas._bootcov(fast, lag)
+    #
+    # def bslamrat(self, **kwargs):
+    #     vals = self.meas.lamrat
+    #     fast, lag = self.meas._fast_lag_maxloc(vals)
+    #     return core.bscov2eigrat(self.bscov(fast, lag, **kwargs))
+    #
+    # def bslam2(self, **kwargs):
+    #     vals = self.meas.lam2
+    #     fast, lag = self.meas._fast_lag_minloc(vals)
+    #     return core.bscov2lam2(self.bscov(fast, lag, **kwargs))
+    #
+    # def bszrho(self, **kwargs):
+    #     vals = self.meas.zrho
+    #     fast, slow = self.meas._fast_lag_maxloc(vals)
+    #     return core.bscov2zrho(self.bscov(fast, lag, **kwargs))
+    #
+    #
+    # def bsnormpdf(self, bsvals, vals):
+    #     norm = core.norm(bsvals)
+    #     likelihood = norm.pdf(vals)
+    #     pdf = likelihood / np.sum(likelihood)
+    #     return pdf
+    #
+    # def bskdepdf(self, bsvals, vals):
+    #     kde = core.kde(bsvals)
+    #     likelihood = kde.pdf(vals.flatten()).reshape((vals.shape))
+    #     pdf = likelihood / np.sum(likelihood)
+    #     return pdf
         
-    @property
-    def data_corr(self):      
-        data_corr = self.data
-        # rcv side correction     
-        if self.py._rcvcorr is not None:
-            data_corr = data_corr.unsplit(*self.py._rcvcorr)    
-        # target layer correction
-        data_corr = data_corr.unsplit(self.fast, self.lag)  
-        # src side correction
-        if self.py._srccorr is not None:
-            data_corr = data_corr.unsplit(*self.py._srccorr)
-        return data_corr
-        
-
-
-    @property
-    def srcpoldata(self):
-        srcpoldata = self.data.rotateto(self.srcpol)
-        srcpoldata._set_labels(['pol', 'trans'])
-        return srcpoldata
-    
-    @property
-    def srcpoldata_corr(self):
-        srcpoldata_corr = self.data_corr.rotateto(self.srcpol)      
-        srcpoldata_corr._set_labels(['pol', 'trans'])
-        return srcpoldata_corr
-    
-    @property
-    def fastdata(self, fast):
-        """Plot fast/slow data."""
-        fastdata = self.data.rotateto(fast)
-        fastdata._set_labels(['fast', 'slow'])
-        return fastdata
-    
-    @property
-    def fastdata_corr(self, fast):
-        fastdata_corr = self.data_corr().rotateto(fast)
-        fastdata_corr._set_labels(['fast', 'slow'])
-        return fastdata_corr
+    # def fsurf(self):
+    #     vals = self.lam2
+    #     fast, lag = self.meas._fast_lag_minloc(vals)
+        # ndf =       
         
     # plotting
     def psurf(self, **kwargs):
@@ -1355,34 +1468,78 @@ class Method(Meas):
         else:
             plt.show()
             
-class Pdf(Method):
-    
-    def __init__(self, meth, vals, **kwargs):
-        
-        self.meth = meth
-        self.vals = vals
-     
-        # Default Settings (These can be overidden using keywords)
-        settings = {}
-        settings['vals'] = self.meth.meas.lamrat
-        settings['ftest'] = False
-        settings['bootstrap'] = True 
-        settings['alpha'] = 0.05
-        
-        
-        # supported vals
-        if self.vals not in [ self.lamrat, self.lam1, self.lam2, self.rad1, self.rad2, self.radrat]
-        # workout what function to use
-        
-        @property
-        def bootcov(self, **kwargs):
-            return self.meth.meas._bootcov()
-            
-        @property
-        def norm(self):
-            return 
-            
-        @property
-        def ftest(self, **kwargs):
-        
+# class Pdf(Method):
+#
+#     def __init__(self, meth, **kwargs):
+#
+#         self.meth = meth
+#         self.meas = meth.meas
+#
+#         # Default Settings (These can be overidden using keywords)
+#         settings = {}
+#         settings['vals'] = self.meth.meas.lamrat
+#         settings['ftest'] = False
+#         settings['bootstrap'] = True
+#         settings['alpha'] = 0.05
+#
+#
+#         # supported vals
+#         # if self.vals not in [ self.lamrat, self.lam1, self.lam2, self.rad1, self.rad2, self.radrat]
+#         # workout what function to use
+#
+#         def bscov(self, fast, lag, **kwargs):
+#             return self.meas._bootcov(fast, lag)
+#
+#         def bslamrat(self, **kwargs):
+#             vals = self.meas.lamrat
+#             fast, lag = self.meas._fast_lag_maxloc(vals)
+#             return core.bscov2eigrat(self.bscov(fast, lag, **kwargs))
+#
+#         def bslam2(self, **kwargs):
+#             vals = self.meas.lam2
+#             fast, lag = self.meas._fast_lag_minloc(vals)
+#             return core.bscov2lam2(self.bscov(fast, lag, **kwargs))
+#
+#         def bszrho(self, **kwargs):
+#             vals = self.meas.zrho
+#             fast, slow = self.meas._fast_lag_maxloc(vals)
+#             return core.bscov2zrho(self.bscov(fast, lag, **kwargs))
+#
+#
+#         def bsnormpdf(self, bsvals, vals):
+#             norm = core.norm(bsvals)
+#             likelihood = norm.pdf(vals)
+#             pdf = likelihood / np.sum(likelihood)
+#             return pdf
+#
+#         def bskdepdf(self, bsvals, vals):
+#             kde = core.kde(bsvals)
+#             likelihood = kde.pdf(vals.flatten()).reshape((vals.shape))
+#             pdf = likelihood / np.sum(likelihood)
+#             return pdf
+#
+#         def bs_pdf(self, bsvals, vals, kde=False, maxnode=True, **kwargs):
+#
+#             # vals = self.meas.lamrat
+#             # if maxnode:
+#             #     fast, slow = self.meas._fast_lag_maxloc(vals)
+#             # else:
+#             #     fast, slow = self.
+#             # bsvals = core.bscov2eigrat(self.bscov(fast, slow, **kwargs))
+#
+#             if kde:
+#                 # fit KDE
+#                 return self.bskdepdf(bsvals, vals)
+#             else:
+#                 # fit to normal distribution
+#                 return self.bsnormpdf(bsvals, vals)
+#
+#
+#         def bs_lamrat(self):
+#             vals = self.meas.lamrat
+#             bsvals = core.bscov2eigrat()
+#
+#         @property
+#         def ftest(self, **kwargs):
+#             return
     
