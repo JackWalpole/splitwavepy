@@ -477,6 +477,8 @@ class Meas(Data):
         cov = core.cov_reshape(cov)
         return cov
         
+    # Bootstrap surfaces
+        
     def _bscovnodefft(self, fast, lag, **kwargs):
         """bootstrap covariance matrices at a node."""
         
@@ -533,19 +535,55 @@ class Meas(Data):
         fast, lag = self._fast_lag_maxloc(vals)
         bsvals = np.arctanh(self._bsrhonodefft(fast, lag, **kwargs))
         return self._bsnormpdf(bsvals, vals)
-    
-    
-    def fsurf(self, pol=None):
+        
+    # F-test PDF surfaces
+        
+    def flam2pdf(self, pol=None):
         vals = self.lam2
         fast, lag = self._fast_lag_minloc(vals)
         unsplit = self.data._wrap_unsplit_rotate_back(fast, lag)
-        pol = unsplit._estimate_pol()
+        if pol == None: pol = unsplit._estimate_pol()
         x, y = unsplit.rotateto(pol)._chopxy()
         ndf = core.ndf(y)
         k = 2 
         stat = (ndf - k)/k * (vals/vals.min() - 1)
         f_cdf = stats.f.cdf(stat, k, ndf)
-        return f_cdf
+        likelihood = 1 - f_cdf
+        pdf = likelihood / np.sum(likelihood)
+        return pdf
+        
+    def flamratpdf(self, pol=None):
+        vals = self.lamrat
+        fast, lag = self._fast_lag_maxloc(vals)
+        unsplit = self.data._wrap_unsplit_rotate_back(fast, lag)
+        if pol == None: pol = unsplit._estimate_pol()
+        x, y = unsplit.rotateto(pol)._chopxy()
+        ndf = core.ndf(y)
+        k = 2
+        stat = (ndf - k)/k * (1 - vals/vals.max())
+        f_cdf = stats.f.cdf(stat, k, ndf)
+        likelihood = 1 - f_cdf
+        pdf = likelihood / np.sum(likelihood)
+        return pdf
+
+    def fzrhopdf(self, pol=None):
+        vals = np.arctanh(self.rho)
+        fast, lag = self._fast_lag_maxloc(vals)
+        unsplit = self.data._wrap_unsplit_rotate_back(fast, lag)
+        if pol == None: pol = unsplit._estimate_pol()
+        x, y = unsplit.rotateto(pol)._chopxy()
+        ndf = core.ndf(y)
+        k = 2
+        stat = (ndf - k)/k * (1- vals/vals.max())
+        f_cdf = stats.f.cdf(stat, k, ndf)
+        likelihood = 1 -f_cdf
+        pdf = likelihood / np.sum(likelihood)
+        return pdf
+
+        
+    # def fast_lag_dfast_dlag(self, pdf, alpha=0.05):
+        
+        
     
     # def _bootstrap_kdes(self, fast, lag, n=2000, **kwargs):
     #     """Estimate distributions for pearson's r, the lam1/lam2 ratio
