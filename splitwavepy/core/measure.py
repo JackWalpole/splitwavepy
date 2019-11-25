@@ -99,7 +99,7 @@ class Meas(Data):
         else : self._covmap = self.gridcov() # logic here to reduce number of lag steps
         
         
-        self.sc = self.silver_chan()
+        # self.sc = self.silver_chan()
         # self.xc = self.correlation()
         # self.q = core.q(self.sc.fast, self.sc.lag, self.xc.fast, self.xc.lag)
 
@@ -275,7 +275,8 @@ class Meas(Data):
             self.__srccorr = (deg, slag * self.data._delta)
         else: raise TypeError('srccorr not understood.')
         
-    @property
+     
+        
     def splitting_intensity(self, **kwargs):
         """
         Calculate the splitting intensity as defined by Chevrot (2000).
@@ -290,6 +291,7 @@ class Meas(Data):
         rdiff, trans = copy._chopxy()
         s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
         return s      
+        
 
     # @property
     # def silver_chan(self):
@@ -387,6 +389,8 @@ class Meas(Data):
         """Fisher transform rho."""
         return np.arctanh(self.rho)
     
+
+        
     
     # Visible methods
     
@@ -477,6 +481,45 @@ class Meas(Data):
         cov = core.cov_reshape(cov)
         return cov
         
+    # PDF
+    
+    # def likeli(vals, stat):
+    #     return stat.pdf(vals)
+    #
+    # def pdf(vals, stat):
+    #
+    #     return vals / np.sum(vals)
+        
+    def bslamratpdf(self, **kwargs):
+        vals = self.lamrat
+        fast, lag = self._fast_lag_maxloc(vals)
+        bsvals = self._bslamratnodefft(fast, lag, **kwargs)
+        return self._bsnormpdf(bsvals, vals)
+
+    def bslam2pdf(self, **kwargs):
+        vals = self.lam2
+        fast, lag = self._fast_lag_minloc(vals)
+        bsvals = self._bslam2nodefft(fast, lag, **kwargs)
+        return self._bsnormpdf(bsvals, vals)
+    
+    def bszrhopdf(self, **kwargs):
+        vals = np.arctanh(self.rho)
+        fast, lag = self._fast_lag_maxloc(vals)
+        bsvals = np.arctanh(self._bsrhonodefft(fast, lag, **kwargs))
+        return self._bsnormpdf(bsvals, vals)
+        
+    def _bsnormpdf(self, bsvals, vals):
+        norm = core.norm(bsvals)
+        likelihood = norm.pdf(vals)
+        pdf = likelihood / np.sum(likelihood)
+        return pdf
+
+    def _bskdepdf(self, bsvals, vals):
+        kde = core.kde(bsvals)
+        likelihood = kde.pdf(vals.flatten()).reshape((vals.shape))
+        pdf = likelihood / np.sum(likelihood)
+        return pdf
+        
     # Bootstrap surfaces
         
     def _bscovnodefft(self, fast, lag, **kwargs):
@@ -505,82 +548,107 @@ class Meas(Data):
         
     def _bsrhonodefft(self, fast, lag, **kwargs):
         return core.bscov2rho(self._bscovnodefft(fast, lag, **kwargs))
-        
-    def _bsnormpdf(self, bsvals, vals):
-        norm = core.norm(bsvals)
-        likelihood = norm.pdf(vals)
-        pdf = likelihood / np.sum(likelihood)
-        return pdf
-            
-    def _bskdepdf(self, bsvals, vals):
-        kde = core.kde(bsvals)
-        likelihood = kde.pdf(vals.flatten()).reshape((vals.shape))
-        pdf = likelihood / np.sum(likelihood)  
-        return pdf   
-     
-    def bslamratpdf(self, **kwargs):
-        vals = self.lamrat
-        fast, lag = self._fast_lag_maxloc(vals)
-        bsvals = self._bslamratnodefft(fast, lag, **kwargs)
-        return self._bsnormpdf(bsvals, vals)
-
-    def bslam2pdf(self, **kwargs):
-        vals = self.lam2
-        fast, lag = self._fast_lag_minloc(vals)
-        bsvals = self._bslam2nodefft(fast, lag, **kwargs)
-        return self._bsnormpdf(bsvals, vals)
     
-    def bszrhopdf(self, **kwargs):
-        vals = np.arctanh(self.rho)
-        fast, lag = self._fast_lag_maxloc(vals)
-        bsvals = np.arctanh(self._bsrhonodefft(fast, lag, **kwargs))
-        return self._bsnormpdf(bsvals, vals)
+
+    
+
+     
+
         
     # F-test PDF surfaces
+    
+    def ndf(self, fast, lag, pol=None):
+        # fast, lag = self._fast_lag_maxloc(vals)
+        unsplit = self.data._wrap_unsplit_rotate_back(fast, lag)
+        if pol == None: pol = unsplit._estimate_pol()
+        x, y = unsplit.rotateto(pol)._chopxy()
+        return core.ndf(y)
+    
+    def f_cdf_max(vals, ndf):
+        k = 2
+        stat = (ndf - k)/k * (1-vals/vals.max())
+        cdf = stats.f.cdf(stat, k, ndf)
+        return cdf
+        
+    def f_cdf_min(vals, ndf):
+        k = 2
+        stat = (ndf - k)/k * (vals/vals.min()-1)
+        cdf = stats.f.cdf(stat, k, ndf)
+        return cdf
         
     def flam2pdf(self, pol=None):
         vals = self.lam2
         fast, lag = self._fast_lag_minloc(vals)
-        unsplit = self.data._wrap_unsplit_rotate_back(fast, lag)
-        if pol == None: pol = unsplit._estimate_pol()
-        x, y = unsplit.rotateto(pol)._chopxy()
-        ndf = core.ndf(y)
-        k = 2 
-        stat = (ndf - k)/k * (vals/vals.min() - 1)
-        f_cdf = stats.f.cdf(stat, k, ndf)
-        likelihood = 1 - f_cdf
-        pdf = likelihood / np.sum(likelihood)
-        return pdf
+        ndf = self.ndf(fast, lag)
+        return self.f_cdf_min(vals, ndf)        
         
     def flamratpdf(self, pol=None):
         vals = self.lamrat
         fast, lag = self._fast_lag_maxloc(vals)
-        unsplit = self.data._wrap_unsplit_rotate_back(fast, lag)
-        if pol == None: pol = unsplit._estimate_pol()
-        x, y = unsplit.rotateto(pol)._chopxy()
-        ndf = core.ndf(y)
-        k = 2
-        stat = (ndf - k)/k * (1 - vals/vals.max())
-        f_cdf = stats.f.cdf(stat, k, ndf)
-        likelihood = 1 - f_cdf
-        pdf = likelihood / np.sum(likelihood)
-        return pdf
-
+        ndf = self.ndf(fast, lag)
+        return self.f_cdf_max(vals, ndf)
+        
     def fzrhopdf(self, pol=None):
         vals = np.arctanh(self.rho)
         fast, lag = self._fast_lag_maxloc(vals)
-        unsplit = self.data._wrap_unsplit_rotate_back(fast, lag)
-        if pol == None: pol = unsplit._estimate_pol()
-        x, y = unsplit.rotateto(pol)._chopxy()
-        ndf = core.ndf(y)
-        k = 2
-        stat = (ndf - k)/k * (1- vals/vals.max())
-        f_cdf = stats.f.cdf(stat, k, ndf)
-        likelihood = 1 -f_cdf
-        pdf = likelihood / np.sum(likelihood)
-        return pdf
+        ndf = self.ndf(fast, lag)
+        return self.f_cdf_max(vals, ndf)
+        
 
         
+    #     likelihood = 1 -f_cdf
+    #     pdf = likelihood / np.sum(likelihood)
+    #
+    # def fresult(self, alpha=0.05):
+    #     vals = self.lamrat
+    #     fast, lag = self._fast_lag_maxloc(vals)
+        
+    def ftest_min(self, vals, ndf, alpha=0.05):
+        """
+        returns value (in vals) at 100(1-alpha)% confidence interval,
+        by default alpha = 0.05, i.e. 95% confidence interval,
+        following Silver and Chan (1991).
+        """    
+        k = 2 # two parameters, phi and dt.
+        F = stats.f.ppf(1-alpha, k, ndf)
+        val_at_alpha = vals.min() * ( 1 + (k/(ndf-k)) * F)
+        return val_at_alpha
+        
+    def ftest_max(self, vals, ndf, alpha=0.05):
+        """
+        returns value (in vals) at 100(1-alpha)% confidence interval,
+        by default alpha = 0.05, i.e. 95% confidence interval,
+        following Silver and Chan (1991).
+        """    
+        k = 2 # two parameters, phi and dt.
+        F = stats.f.ppf(1-alpha, k, ndf)
+        val_at_alpha = vals.max() / ( 1 + (k/(ndf-k)) * F)
+        return val_at_alpha        
+    
+
+    
+    def ferror_min(self, vals, alpha):
+        fast, lag = self._fast_lag_minloc(vals)
+        ndf = self.ndf(fast, lag)
+        ftestalpha = self.ftest_min(vals, ndf, alpha)
+        dfast, dlag = core.contour_halfwidth(vals, ftestalpha, surftype='min')
+        return fast, dfast, lag, dlag
+        
+    def ferror_max(self, vals, alpha):
+        # CHECK THIS MATHS I JUST FILLED SOMETHING IN
+         fast, lag = self._fast_lag_maxloc(vals)
+         ndf = self.ndf(fast, lag)
+         ftestalpha = self.ftest_max(vals, ndf, alpha)
+         dfast, dlag = core.contour_halfwidth(vals, ftestalpha, surftype='max')
+         return fast, dfast, lag, dlag   
+
+    def silver_chan(self, alpha=0.05):
+         """Return splitting parameters plus error bars at alpha."""
+         return self.ferror_min(self.lam2, alpha)
+     
+    def cross_corr(self, alpha=0.05):
+         return self.ferror_max(self.zrho, alpha)   
+
     # def fast_lag_dfast_dlag(self, pdf, alpha=0.05):
         
         
@@ -653,14 +721,14 @@ class Meas(Data):
         
         
     
-    def silver_chan(self, **kwargs):
-        
-        if self._pol is None:
-            vals = self.lam2
-        else:
-            vals = self.transenergy
-
-        return Method(self, vals=vals, ftest=True)
+    # def silver_chan(self, **kwargs):
+    #
+    #     if self._pol is None:
+    #         vals = self.lam2
+    #     else:
+    #         vals = self.transenergy
+    #
+    #     return Method(self, vals=vals, ftest=True)
 
 
         
@@ -703,11 +771,11 @@ class Meas(Data):
         # sc['dlag']
         # self.__silver_chan = sc
         
-    def correlation(self, **kwargs):
-        
-        vals = np.abs(core.covmap2rho(self._covmap))
-        fvals = np.arctanh(vals)
-        return Method(self, vals=fvals)
+    # def correlation(self, **kwargs):
+    #
+    #     vals = np.abs(core.covmap2rho(self._covmap))
+    #     fvals = np.arctanh(vals)
+    #     return Method(self, vals=fvals)
         
         #
         # # if self._bootstrap:
@@ -739,26 +807,26 @@ class Meas(Data):
     #--------    
 
     
-    def srcpol(self):
-        # recover source polarisation
-        if self.data._pol is not None:
-            return self.data._pol
-        else:
-            return self.data_corr()._estimate_pol()
-        
-    def snr(self):
-        """Restivo and Helffrich (1999) signal to noise ratio"""
-        d = self.srcpoldata_corr()._chop()
-        return core.snrRH(d.x, d.y)
-                
+    # def srcpol(self):
+    #     # recover source polarisation
+    #     if self.data._pol is not None:
+    #         return self.data._pol
+    #     else:
+    #         return self.data_corr()._estimate_pol()
+    #
+    # def snr(self):
+    #     """Restivo and Helffrich (1999) signal to noise ratio"""
+    #     d = self.srcpoldata_corr()._chop()
+    #     return core.snrRH(d.x, d.y)
+    #
 
             
     # F-test utilities
     
-    def ndf(self):
-        """Number of degrees of freedom."""
-        x, y = self.srcpoldata_corr()._chopdata()
-        return core.ndf(y)
+    # def ndf(self):
+    #     """Number of degrees of freedom."""
+    #     x, y = self.srcpoldata_corr()._chopdata()
+    #     return core.ndf(y)
     
     # def get_errors(self, surftype=None):
     #     """
@@ -801,47 +869,47 @@ class Meas(Data):
     #     # return
     #     return fdfast, fdlag
         
-    def _contour_halfwidth(self, surf, critval, surftype=None):
-        """
-        Return half width of contour (dfast, dlag) for surface *surf* at value *critval*.
-        
-        Some common critical values:
-        1 sigma = 0.683
-        2 sigma = 0.954
-        3 sigma = 0.997
-        """
-
-        # search interval steps
-        lag_step = self._lags[1] - self._lags[0]
-        fast_step = self._degs[1] - self._degs[0]
-
-        # Find nodes where we fall within the 95% confidence region
-        
-        if surftype == 'max':
-            confbool = surf >= critval
-        elif surftype == 'min':
-            confbool = surf <= critval
-        else:
-            raise ValueError('surftype must be \'min\' or \'max\'')
-
-        # tlag error
-        lagbool = confbool.any(axis=1)
-        # last true value - first true value
-        truth = np.where(lagbool)[0]
-        fdlag = (truth[-1] - truth[0] + 1) * lag_step * 0.5
-
-        # fast error
-        fastbool = confbool.any(axis=0)
-        # trickier to handle due to cyclicity of angles
-        # search for the longest continuous line of False values
-        cyclic = np.hstack((fastbool, fastbool))
-        lengthFalse = np.diff(np.where(cyclic)).max() - 1
-        # shortest line that contains ALL true values is then:
-        lengthTrue = fastbool.size - lengthFalse
-        fdfast = lengthTrue * fast_step * 0.5
-
-        # return
-        return fdfast, fdlag 
+    # def _contour_halfwidth(self, surf, critval, surftype=None):
+    #     """
+    #     Return half width of contour (dfast, dlag) for surface *surf* at value *critval*.
+    #
+    #     Some common critical values:
+    #     1 sigma = 0.683
+    #     2 sigma = 0.954
+    #     3 sigma = 0.997
+    #     """
+    #
+    #     # search interval steps
+    #     lag_step = self._lags[1] - self._lags[0]
+    #     fast_step = self._degs[1] - self._degs[0]
+    #
+    #     # Find nodes where we fall within the 95% confidence region
+    #
+    #     if surftype == 'max':
+    #         confbool = surf >= critval
+    #     elif surftype == 'min':
+    #         confbool = surf <= critval
+    #     else:
+    #         raise ValueError('surftype must be \'min\' or \'max\'')
+    #
+    #     # tlag error
+    #     lagbool = confbool.any(axis=1)
+    #     # last true value - first true value
+    #     truth = np.where(lagbool)[0]
+    #     fdlag = (truth[-1] - truth[0] + 1) * lag_step * 0.5
+    #
+    #     # fast error
+    #     fastbool = confbool.any(axis=0)
+    #     # trickier to handle due to cyclicity of angles
+    #     # search for the longest continuous line of False values
+    #     cyclic = np.hstack((fastbool, fastbool))
+    #     lengthFalse = np.diff(np.where(cyclic)).max() - 1
+    #     # shortest line that contains ALL true values is then:
+    #     lengthTrue = fastbool.size - lengthFalse
+    #     fdfast = lengthTrue * fast_step * 0.5
+    #
+    #     # return
+    #     return fdfast, fdlag
         
     # bootstrap utilities
     # to do: implement block bootstrapping for time series data.
@@ -1232,38 +1300,38 @@ class Meas(Data):
         return True
         
 
-class Method(Meas):        
-    
-    def __init__(self, meas, **kwargs):
-        
-        self.meas = meas
-
-        
-        # Default Settings (These can be overidden using keywords)
-        settings = {}
-        settings['vals'] = self.meas.lamrat
-        settings['ftest'] = False
-        settings['bootstrap'] = True 
-        settings['alpha'] = 0.05
-        
-
-
-    
-    # def maxloc(self, vals):
-    #     return core.max_idx(vals)
-    #
-    # def minloc(self, vals):
-    #     return core.min_idx(vals)
-    
-    def _fast_lag_maxloc(self, vals):
-        idx = core.max_idx(vals)
-        ll, dd = self.meas_grid
-        return dd[idx], ll[idx]
-
-    def _fast_lag_minloc(self, vals):
-        idx = core.min_idx(vals)
-        ll, dd = self.meas_grid
-        return dd[idx], ll[idx]
+# class Method(Meas):
+#
+#     def __init__(self, meas, **kwargs):
+#
+#         self.meas = meas
+#
+#
+#         # Default Settings (These can be overidden using keywords)
+#         settings = {}
+#         settings['vals'] = self.meas.lamrat
+#         settings['ftest'] = False
+#         settings['bootstrap'] = True
+#         settings['alpha'] = 0.05
+#
+#
+#
+#
+#     # def maxloc(self, vals):
+#     #     return core.max_idx(vals)
+#     #
+#     # def minloc(self, vals):
+#     #     return core.min_idx(vals)
+#
+#     def _fast_lag_maxloc(self, vals):
+#         idx = core.max_idx(vals)
+#         ll, dd = self.meas_grid
+#         return dd[idx], ll[idx]
+#
+#     def _fast_lag_minloc(self, vals):
+#         idx = core.min_idx(vals)
+#         ll, dd = self.meas_grid
+#         return dd[idx], ll[idx]
         
 
     # @property
@@ -1376,135 +1444,135 @@ class Method(Meas):
     #     vals = self.lam2
     #     fast, lag = self.meas._fast_lag_minloc(vals)
         # ndf =       
-        
-    # plotting
-    def psurf(self, **kwargs):
-        fig, ax = plt.subplots(1)
-        self._psurf(ax, **kwargs)
-        plt.show()
-    
-    
-    def _psurf(self, ax, **kwargs):
-        """
-        Plot an error surface.
-    
-        **kwargs
-        - cmap = 'magma'
-        - vals = (M.lam1-M.lam2) / M.lam2Split
-        """
-    
-        if 'cmap' not in kwargs:
-            kwargs['cmap'] = 'magma'
-            
-        ll, dd = self.py._grid
-    
-            
-        # error surface
-        cax = ax.contourf(ll, dd, self.vals, 26, cmap=kwargs['cmap'])
-        cbar = plt.colorbar(cax)
-        ax.set_ylabel(r'Fast Direction ($^\circ$)')
-        ax.set_xlabel('Delay Time (' + self.py.data.units + ')')
-        
-        # confidence region
-        # if 'conf95' in kwargs and kwargs['conf95'] == True:
-        #     ax.contour(self.lagmap, self.degmap, self.errsurf, levels=[self.conf95level],
-        #             colors='r', alpha=.5, linewidths=3)
-            
-        # marker
-        if 'marker' in kwargs and kwargs['marker'] == True:
-            ax.errorbar(self.lag, self.fast, xerr=self.dlag, yerr=self.dfast)
-
-        ax.set_xlim([ll[0,0], ll[-1,0]])
-        ax.set_ylim([dd[0,0], dd[0,-1]])
-    
-        # optional title
-        if 'title' in kwargs:
-            ax.set_title(kwargs['title']) 
-            
-        # add info in text box
-        if 'info' in kwargs and kwargs['info'] == True:
-            textstr = '$\phi=%.1f\pm%.1f$\n$\delta t=%.2f\pm%.2f$'%\
-                        (self.fast, self.dfast, self.lag, self.dlag)
-            # place a text box in upper left in axes coords
-            props = dict(boxstyle='round', facecolor='white', alpha=0.5)
-            ax.text(0.6, 0.95, textstr, transform=ax.transAxes, fontsize=12,
-                    verticalalignment='top', bbox=props)
-        
-        # plot particle motions on surface
-        if 'ppm' in kwargs and kwargs['ppm'] is True:
-            sublags = self.lags[0:-1:int(self.lags.size/6)]
-            subdegs = self.degs[0:-1:int(self.degs.size/6)]
-            sublags = sublags + (self.lags[-1]-sublags[-1]) / 2
-            subdegs = subdegs + (self.degs[-1]-subdegs[-1]) / 2
-            x, y = self.SplitWave_corr()._chopdata()   
-            lagtot = self.lags[-1] - self.lags[0]
-            degtot = self.degs[-1] - self.degs[0]
-            boost = 10 * lagtot / np.max((x**2 + y**2)**.5)      
-            for fast in subdegs:
-                for lag in sublags:
-                    x, y = self.unsplit(fast, lag)._chopdata()
-                    ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
-                                        
-        return ax
-        
-    def _plot(self, **kwargs):
-    
-        # if 'vals' not in kwargs:
-        #     raise Exception('vals must be specified')
-        
-        # if kwargs['vals'] == 'pdf':
-        #     kwargs['vals'] = self.estimate_pdf()
-        #     kwargs['title'] = r'Probability Density'
-      
-        # setup figure and subplots
-        fig = plt.figure(figsize=(12,6)) 
-    
-        gs = gridspec.GridSpec(3, 3,
-                           width_ratios=[2,1,3]
-                           )
-        ax0 = plt.subplot(gs[0,0:2])                     
-        ax1 = plt.subplot(gs[1,0])
-        ax2 = plt.subplot(gs[1,1])
-        ax3 = plt.subplot(gs[2,0])
-        ax4 = plt.subplot(gs[2,1])
-        ax5 = plt.subplot(gs[:,2])
-
-        orig = self.srcpoldata.chop()
-        corr = self.srcpoldata_corr.chop()
-            
-        # get axis scaling
-        lim = np.abs(corr.data).max() * 1.1
-        ylim = [-lim, lim]
-    
-        # long window data
-        self.data._ptr(ax0, ylim=ylim, **kwargs)
-
-        # original
-        orig._ptr(ax1, ylim=ylim, **kwargs)
-        orig._ppm(ax2, lims=ylim, **kwargs)
-    
-        # corrected
-        corr._ptr(ax3, ylim=ylim, **kwargs)
-        corr._ppm(ax4, lims=ylim, **kwargs)
-    
-        # add marker and info box by default
-        if 'marker' not in kwargs: kwargs['marker'] = True
-        if 'info' not in kwargs: kwargs['info'] = True
-        if 'conf95' not in kwargs: kwargs['conf95'] = True
-        self._psurf(ax5,**kwargs)
-    
-        # title
-        if 'name' in kwargs:
-            plt.suptitle(kwargs['name'])
-                
-        # neaten
-        plt.tight_layout()
-    
-        # save or show
-        if 'file' in kwargs:
-            plt.savefig(kwargs['file'])
-        else:
-            plt.show()
+    #
+    # # plotting
+    # def psurf(self, **kwargs):
+    #     fig, ax = plt.subplots(1)
+    #     self._psurf(ax, **kwargs)
+    #     plt.show()
+    #
+    #
+    # def _psurf(self, ax, **kwargs):
+    #     """
+    #     Plot an error surface.
+    #
+    #     **kwargs
+    #     - cmap = 'magma'
+    #     - vals = (M.lam1-M.lam2) / M.lam2Split
+    #     """
+    #
+    #     if 'cmap' not in kwargs:
+    #         kwargs['cmap'] = 'magma'
+    #
+    #     ll, dd = self.py._grid
+    #
+    #
+    #     # error surface
+    #     cax = ax.contourf(ll, dd, self.vals, 26, cmap=kwargs['cmap'])
+    #     cbar = plt.colorbar(cax)
+    #     ax.set_ylabel(r'Fast Direction ($^\circ$)')
+    #     ax.set_xlabel('Delay Time (' + self.py.data.units + ')')
+    #
+    #     # confidence region
+    #     # if 'conf95' in kwargs and kwargs['conf95'] == True:
+    #     #     ax.contour(self.lagmap, self.degmap, self.errsurf, levels=[self.conf95level],
+    #     #             colors='r', alpha=.5, linewidths=3)
+    #
+    #     # marker
+    #     if 'marker' in kwargs and kwargs['marker'] == True:
+    #         ax.errorbar(self.lag, self.fast, xerr=self.dlag, yerr=self.dfast)
+    #
+    #     ax.set_xlim([ll[0,0], ll[-1,0]])
+    #     ax.set_ylim([dd[0,0], dd[0,-1]])
+    #
+    #     # optional title
+    #     if 'title' in kwargs:
+    #         ax.set_title(kwargs['title'])
+    #
+    #     # add info in text box
+    #     if 'info' in kwargs and kwargs['info'] == True:
+    #         textstr = '$\phi=%.1f\pm%.1f$\n$\delta t=%.2f\pm%.2f$'%\
+    #                     (self.fast, self.dfast, self.lag, self.dlag)
+    #         # place a text box in upper left in axes coords
+    #         props = dict(boxstyle='round', facecolor='white', alpha=0.5)
+    #         ax.text(0.6, 0.95, textstr, transform=ax.transAxes, fontsize=12,
+    #                 verticalalignment='top', bbox=props)
+    #
+    #     # plot particle motions on surface
+    #     if 'ppm' in kwargs and kwargs['ppm'] is True:
+    #         sublags = self.lags[0:-1:int(self.lags.size/6)]
+    #         subdegs = self.degs[0:-1:int(self.degs.size/6)]
+    #         sublags = sublags + (self.lags[-1]-sublags[-1]) / 2
+    #         subdegs = subdegs + (self.degs[-1]-subdegs[-1]) / 2
+    #         x, y = self.SplitWave_corr()._chopdata()
+    #         lagtot = self.lags[-1] - self.lags[0]
+    #         degtot = self.degs[-1] - self.degs[0]
+    #         boost = 10 * lagtot / np.max((x**2 + y**2)**.5)
+    #         for fast in subdegs:
+    #             for lag in sublags:
+    #                 x, y = self.unsplit(fast, lag)._chopdata()
+    #                 ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
+    #
+    #     return ax
+    #
+    # def _plot(self, **kwargs):
+    #
+    #     # if 'vals' not in kwargs:
+    #     #     raise Exception('vals must be specified')
+    #
+    #     # if kwargs['vals'] == 'pdf':
+    #     #     kwargs['vals'] = self.estimate_pdf()
+    #     #     kwargs['title'] = r'Probability Density'
+    #
+    #     # setup figure and subplots
+    #     fig = plt.figure(figsize=(12,6))
+    #
+    #     gs = gridspec.GridSpec(3, 3,
+    #                        width_ratios=[2,1,3]
+    #                        )
+    #     ax0 = plt.subplot(gs[0,0:2])
+    #     ax1 = plt.subplot(gs[1,0])
+    #     ax2 = plt.subplot(gs[1,1])
+    #     ax3 = plt.subplot(gs[2,0])
+    #     ax4 = plt.subplot(gs[2,1])
+    #     ax5 = plt.subplot(gs[:,2])
+    #
+    #     orig = self.srcpoldata.chop()
+    #     corr = self.srcpoldata_corr.chop()
+    #
+    #     # get axis scaling
+    #     lim = np.abs(corr.data).max() * 1.1
+    #     ylim = [-lim, lim]
+    #
+    #     # long window data
+    #     self.data._ptr(ax0, ylim=ylim, **kwargs)
+    #
+    #     # original
+    #     orig._ptr(ax1, ylim=ylim, **kwargs)
+    #     orig._ppm(ax2, lims=ylim, **kwargs)
+    #
+    #     # corrected
+    #     corr._ptr(ax3, ylim=ylim, **kwargs)
+    #     corr._ppm(ax4, lims=ylim, **kwargs)
+    #
+    #     # add marker and info box by default
+    #     if 'marker' not in kwargs: kwargs['marker'] = True
+    #     if 'info' not in kwargs: kwargs['info'] = True
+    #     if 'conf95' not in kwargs: kwargs['conf95'] = True
+    #     self._psurf(ax5,**kwargs)
+    #
+    #     # title
+    #     if 'name' in kwargs:
+    #         plt.suptitle(kwargs['name'])
+    #
+    #     # neaten
+    #     plt.tight_layout()
+    #
+    #     # save or show
+    #     if 'file' in kwargs:
+    #         plt.savefig(kwargs['file'])
+    #     else:
+    #         plt.show()
             
 # class Pdf(Method):
 #
