@@ -127,8 +127,31 @@ class Meas(Data):
     def data(self):
         return self.__data
         
-    def datacorr(self, fast, lag):
+    def data_corr(self, fast, lag):
         return self.data.unsplit(fast, lag)
+        
+    def srcpoldata(self, pol=None):
+        if pol == None: pol = self.data._estimate_pol()
+        srcpoldata = self.data.rotateto(pol)
+        srcpoldata._set_labels(['pol', 'trans'])
+        return srcpoldata
+
+    def srcpoldata_corr(self, fast, lag, pol=None):
+        if pol == None: pol = self.data._estimate_pol()
+        srcpoldata_corr = self.data_corr(fast, lag).rotateto(pol)
+        srcpoldata_corr._set_labels(['pol', 'trans'])
+        return srcpoldata_corr
+
+    def fastdata(self, fast):
+        """Plot fast/slow data."""
+        fastdata = self.data.rotateto(fast)
+        fastdata._set_labels(['fast', 'slow'])
+        return fastdata
+
+    def fastdata_corr(self, fast, lag):
+        fastdata_corr = self.data_corr(fast, lag).rotateto(fast)
+        fastdata_corr._set_labels(['fast', 'slow'])
+        return fastdata_corr
         
     #_ndegs
     @property
@@ -1108,12 +1131,12 @@ class Meas(Data):
     def plot(self, **kwargs):
         # error surface
         if 'vals' not in kwargs:
-           kwargs['vals'] = self.sc.vals
+           kwargs['vals'] = self.lamrat
            kwargs['title'] = r'$\lambda_1 / \lambda_2$'
         
         self._plot(**kwargs)
     
-    def _plot(self, **kwargs):
+    def _plot(self, pol=None, **kwargs):
         
         if 'vals' not in kwargs:
             raise Exception('vals must be specified')
@@ -1135,15 +1158,17 @@ class Meas(Data):
         ax4 = plt.subplot(gs[2,1])
         ax5 = plt.subplot(gs[:,2])
 
-        orig = self.sc.srcpoldata.chop()
-        corr = self.sc.srcpoldata_corr.chop()
+
+        orig = self.srcpoldata().chop()
+        fast, _, lag, _ = self.silver_chan()
+        corr = self.srcpoldata_corr(fast, lag).chop()
                 
         # get axis scaling
         lim = np.abs(corr.data).max() * 1.1
         ylim = [-lim, lim]
         
         # long window data
-        self._ptr(ax0, ylim=ylim, **kwargs)
+        self.data._ptr(ax0, ylim=ylim, **kwargs)
 
         # original
         orig._ptr(ax1, ylim=ylim, **kwargs)
@@ -1189,10 +1214,11 @@ class Meas(Data):
             raise Exception('vals must be specified')
             
         # error surface
-        cax = ax.contourf(self.lagmap, self.degmap, kwargs['vals'], 26, cmap=kwargs['cmap'])
+        laggrid, deggrid = self._grid
+        cax = ax.contourf(laggrid, deggrid, kwargs['vals'], 26, cmap=kwargs['cmap'])
         cbar = plt.colorbar(cax)
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
-        ax.set_xlabel('Delay Time (' + self.units + ')')
+        # ax.set_xlabel('Delay Time (' + self.units + ')')
         
         # confidence region
         # if 'conf95' in kwargs and kwargs['conf95'] == True:
@@ -1200,8 +1226,9 @@ class Meas(Data):
         #             colors='r', alpha=.5, linewidths=3)
             
         # marker
+        fast, dfast, lag, dlag = self.silver_chan()
         if 'marker' in kwargs and kwargs['marker'] == True:
-            ax.errorbar(self.lag, self.fast, xerr=self.dlag, yerr=self.dfast)
+            ax.errorbar(lag, fast, xerr=dlag, yerr=dfast)
 
         ax.set_xlim([laggrid[0,0], laggrid[-1,0]])
         ax.set_ylim([deggrid[0,0], deggrid[0,-1]])
@@ -1213,7 +1240,7 @@ class Meas(Data):
         # add info in text box
         if 'info' in kwargs and kwargs['info'] == True:
             textstr = '$\phi=%.1f\pm%.1f$\n$\delta t=%.2f\pm%.2f$'%\
-                        (self.fast, self.dfast, self.lag, self.dlag)
+                        (fast, dfast, lag, dlag)
             # place a text box in upper left in axes coords
             props = dict(boxstyle='round', facecolor='white', alpha=0.5)
             ax.text(0.6, 0.95, textstr, transform=ax.transAxes, fontsize=12,
@@ -1357,30 +1384,7 @@ class Meas(Data):
     #
     #
     #
-    # @property
-    # def srcpoldata(self):
-    #     srcpoldata = self.data.rotateto(self.srcpol)
-    #     srcpoldata._set_labels(['pol', 'trans'])
-    #     return srcpoldata
-    #
-    # @property
-    # def srcpoldata_corr(self):
-    #     srcpoldata_corr = self.data_corr.rotateto(self.srcpol)
-    #     srcpoldata_corr._set_labels(['pol', 'trans'])
-    #     return srcpoldata_corr
-    #
-    # @property
-    # def fastdata(self, fast):
-    #     """Plot fast/slow data."""
-    #     fastdata = self.data.rotateto(fast)
-    #     fastdata._set_labels(['fast', 'slow'])
-    #     return fastdata
-    #
-    # @property
-    # def fastdata_corr(self, fast):
-    #     fastdata_corr = self.data_corr().rotateto(fast)
-    #     fastdata_corr._set_labels(['fast', 'slow'])
-    #     return fastdata_corr
+
         
     # def bscov(self, fast, lag, **kwargs):
     #     return self.meas._bootcov(fast, lag)
