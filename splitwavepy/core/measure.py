@@ -277,61 +277,48 @@ class Meas(Data):
         
      
         
-    def splitting_intensity(self, **kwargs):
+    def splitting_intensity(self, pol=None, **kwargs):
         """
         Calculate the splitting intensity as defined by Chevrot (2000).
-        """        
-        
-        # settings      
-        if self._pol is None: pol = self.sc.srcpol
-        else: pol = self._pol 
-        
+        """                
+        # need to rotate data to source polarisation direction.
+        if pol == None: pol = self.data._estimate_pol()       
         copy = self.data.rotateto(pol)
         copy.__x = np.gradient(copy.x)
         rdiff, trans = copy._chopxy()
         s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
         return s      
-        
-
-    # @property
-    # def silver_chan(self):
-    #     return self.__silver_chan
-    #
-    # @silver_chan.setter
-    # def silver_chan(self, **kwargs):
-    #     if self._pol is None:
-    #         # use eigen analysis
-    #         lam1, lam2 = core.covmap2eigvals(self._covmap)
-    #     else:
-    #         raise NotImplementedError('Not implemented.')
-    #         #lam1, lam2 = core.covmap2polvar(self._covmap, pol)
-    #     sc = {}
-    #     sc['lam1'] = lam1
-    #     sc['lam2'] = lam2
-    #     ml = core.max_idx(lam1/lam2)
-    #     dd, ll = self._grid
-    #     sc['fast'] = dd[ml]
-    #     sc['lag']  = ll[ml]
-    #     # sc['srcpol'] = self._covmap[ml]
-    #     # sc['dfast']
-    #     # sc['dlag']
-    #     self.__silver_chan = sc
-    #
-    # @property
-    # def correlation(self):
-    #     return self.__correlation
-    #
-    # @correlation.setter
-    # def correlation(self):
-    #     xc = {}
-    #     xc['rho'] = core.covmap2rho(self._covmap)
-    #     ml = core.max_idx(rho)
-    #     dd, ll = self._grid
-    #     xc['fast'] = dd[ml]
-    #     xc['lag']  = ll[ml]
-    #     self.__correlation = xc
     
-        
+    def silver_chan(self, alpha=0.05, pol=None):
+        """Return splitting parameters plus error bars at alpha."""
+        if pol == None:
+            return self.ferror_min(self.lam2, alpha)
+        else:
+            self.pol = pol
+            return self.ferror_min(self.rad2, alpha)
+     
+    def cross_corr(self, alpha=0.05):
+         return self.ferror_max(self.zrho, alpha)
+         
+    def q(self):
+        scfast, _, sclag, _ = self.silver_chan()
+        xcfast, _, xclag, _ = self.cross_corr()
+        return core.q(scfast, sclag, xcfast, xclag)
+         
+    # Visible methods
+    
+    def report(self, **kwargs):
+        # scfast, scdfast, sclag, scdlag = self.silver_chan()
+        # xcfast, xcdfast, xclag, xcdlag = self.cross_corr()
+        print('SCfast'.rjust(10), 'SCdfast'.rjust(9), 'SClag'.rjust(9), 'SCdlag'.rjust(9),
+              'XCfast'.rjust(9), 'XCdfast'.rjust(9), 'XClag'.rjust(9), 'XCdlag'.rjust(9), 
+              'Q'.rjust(9), 'SI'.rjust(9))
+        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.2f}{6:10.2f}{7:10.2f}{8:10.2f}{9:10.5f}'.format(
+               *self.silver_chan(), 
+               *self.cross_corr(), 
+               self.q(), self.splitting_intensity(**kwargs)))
+
+
     # interrogate the covmap
         
     # eigenvalues
@@ -392,16 +379,7 @@ class Meas(Data):
 
         
     
-    # Visible methods
-    
-    def report(self, **kwargs):
-        print('SCfast'.rjust(10), 'SCdfast'.rjust(9), 'SClag'.rjust(9), 'SCdlag'.rjust(9),
-              'XCfast'.rjust(9), 'XCdfast'.rjust(9), 'XClag'.rjust(9), 'XCdlag'.rjust(9), 
-              'Q'.rjust(9), 'SI'.rjust(9))
-        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.2f}{6:10.2f}{7:10.2f}{8:10.2f}{9:10.2f}'.format(
-               self.sc.fast, self.sc.dfast, self.sc.lag, self.sc.dlag, 
-               self.xc.fast, self.xc.dfast, self.xc.lag, self.xc.dlag, 
-               self.q, self.splitting_intensity))
+
     
                 
     # Common methods
@@ -416,8 +394,8 @@ class Meas(Data):
         ll, dd = self._grid
         return dd[idx], ll[idx]
     
-    def _guesspol(self):
-        return self.sc.srcpol
+    # def _guesspol(self):
+    #     return self.sc.srcpol
             
     def _gridcov(self):       
         """
@@ -642,12 +620,7 @@ class Meas(Data):
          dfast, dlag = core.contour_halfwidth(vals, ftestalpha, surftype='max')
          return fast, dfast, lag, dlag   
 
-    def silver_chan(self, alpha=0.05):
-         """Return splitting parameters plus error bars at alpha."""
-         return self.ferror_min(self.lam2, alpha)
-     
-    def cross_corr(self, alpha=0.05):
-         return self.ferror_max(self.zrho, alpha)   
+
 
     # def fast_lag_dfast_dlag(self, pdf, alpha=0.05):
         
