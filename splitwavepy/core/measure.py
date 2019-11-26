@@ -490,19 +490,22 @@ class Meas(Data):
     # def pdf(vals, stat):
     #
     #     return vals / np.sum(vals)
-        
+    
+    @property    
     def bslamratpdf(self, **kwargs):
         vals = self.lamrat
         fast, lag = self._fast_lag_maxloc(vals)
         bsvals = self._bslamratnodefft(fast, lag, **kwargs)
         return self._bsnormpdf(bsvals, vals)
 
+    @property
     def bslam2pdf(self, **kwargs):
         vals = self.lam2
         fast, lag = self._fast_lag_minloc(vals)
         bsvals = self._bslam2nodefft(fast, lag, **kwargs)
         return self._bsnormpdf(bsvals, vals)
     
+    @property
     def bszrhopdf(self, **kwargs):
         vals = np.arctanh(self.rho)
         fast, lag = self._fast_lag_maxloc(vals)
@@ -565,30 +568,33 @@ class Meas(Data):
         x, y = unsplit.rotateto(pol)._chopxy()
         return core.ndf(y)
     
-    def f_cdf_max(vals, ndf):
+    def f_cdf_max(self, vals, ndf):
         k = 2
         stat = (ndf - k)/k * (1-vals/vals.max())
         cdf = stats.f.cdf(stat, k, ndf)
         return cdf
         
-    def f_cdf_min(vals, ndf):
+    def f_cdf_min(self, vals, ndf):
         k = 2
         stat = (ndf - k)/k * (vals/vals.min()-1)
         cdf = stats.f.cdf(stat, k, ndf)
         return cdf
-        
+    
+    @property
     def flam2pdf(self, pol=None):
         vals = self.lam2
         fast, lag = self._fast_lag_minloc(vals)
         ndf = self.ndf(fast, lag)
         return self.f_cdf_min(vals, ndf)        
-        
+    
+    @property
     def flamratpdf(self, pol=None):
         vals = self.lamrat
         fast, lag = self._fast_lag_maxloc(vals)
         ndf = self.ndf(fast, lag)
         return self.f_cdf_max(vals, ndf)
-        
+    
+    @property    
     def fzrhopdf(self, pol=None):
         vals = np.arctanh(self.rho)
         fast, lag = self._fast_lag_maxloc(vals)
