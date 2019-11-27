@@ -22,7 +22,11 @@ import matplotlib.gridspec as gridspec
 from scipy import stats
 
 
-# import os.path
+# useful values
+sig1 = 1 - 0.6827
+sig2 = 1 - 0.9545
+sig3 = 1 - 0.9973
+
 
 
 class Meas(Data):
@@ -101,9 +105,9 @@ class Meas(Data):
         else : self._covmap = self.gridcov() # logic here to reduce number of
         
         # get result
-        pdf = self.pdf
-        self.fast, self.lag = self._fast_lag_maxloc(pdf)
-        self.dfast, self.dlag = self.errorbars(pdf, alpha=1-0.6827)
+        l = self.likelihood
+        self.fast, self.lag = self._fast_lag_maxloc(l)
+        self.dfast, self.dlag = self._f_errorbars(alpha=sig1)
 
         
         # self.sc = self.silver_chan()
@@ -160,6 +164,66 @@ class Meas(Data):
         fastdata_corr._set_labels(['fast', 'slow'])
         return fastdata_corr
         
+
+
+
+    # important properties of data
+    @property
+    def _pol(self):
+        return self.__pol
+
+    @_pol.setter
+    def _pol(self, pol):
+        self.__pol = pol
+        
+    
+    def ndf(self, fast, lag, pol=None):
+        # fast, lag = self._fast_lag_maxloc(vals)
+        unsplit = self.data._wrap_unsplit_rotate_back(fast, lag)
+        if pol == None: pol = unsplit._estimate_pol()
+        x, y = unsplit.rotateto(pol)._chopxy()
+        return core.ndf(y)
+        
+    #Multi Layer 
+    @property
+    def _rcvcorr(self):
+        return self.__rcvcorr
+        
+    @_rcvcorr.setter
+    def _rcvcorr(self, rcvcorr):
+        if rcvcorr == None:
+            self.__rcvslag = None
+            self.__rcvcorr = None
+        elif isinstance(rcvcorr, tuple) and len(rcvcorr) == 2: 
+            deg, lag = rcvcorr
+            slag = core.time2samps(lag, self.data._delta, 'even')
+            self.__rcvslag = (deg, slag)
+            self.__rcvcorr = (deg, slag * self.data._delta)
+        else: raise TypeError('rcvcorr not understood.')
+                
+    #_srccorr
+    @property
+    def _srccorr(self):
+        return self.__srccorr
+        
+    @_srccorr.setter
+    def _srccorr(self, srccorr):
+        if srccorr == None:
+            self.__rcvslag = None
+            self.__srccorr = None
+        elif isinstance(srccorr, tuple) and len(srccorr) == 2: 
+            deg, lag = srccorr
+            slag = core.time2samps(lag, self.data._delta, 'even')
+            self.__rcvslag = (deg, slag)
+            self.__srccorr = (deg, slag * self.data._delta)
+        else: raise TypeError('srccorr not understood.')
+        
+                                 
+    #_grid
+    @property
+    def _grid(self):
+        return np.meshgrid(self._lags, self._degs, indexing='ij')
+        
     #_ndegs
     @property
     def _ndegs(self):
@@ -198,112 +262,8 @@ class Meas(Data):
     @property
     def _lags(self):
         return self._slags * self.data._delta
-
-
-
-    @property
-    def _pol(self):
-        return self.__pol
-
-    @_pol.setter
-    def _pol(self, pol):
-        self.__pol = pol
-        
-    # @_pol.setter
-    # def _pol(self, pol=None):
-    #     if pol is None: self.__pol = self._guesspol()
-    #     else: self.__pol = float(pol)
-        
-
-    #_degs
-    # @property
-    # def _degs(self):
-    #     return np.linspace(0, 180, settings['ndegs'],
-    #                              endpoint=False)
-
-    # @_degs.setter
-    # def _degs(self, degs):
-    #     if isinstance(degs, np.ndarray) and degs.ndim == 1:
-    #         self.__degs = degs
-    #         # self.__rads = np.radians(degs)
-    #     else: raise ValueError('degs not understood.')
-
-    # def _set_degs(self, **kwargs):
-    #     """return numpy array of degs to explore"""
-    #     settings = {}
-    #     settings['mindeg'] = -90
-    #     settings['maxdeg'] = 90
-    #     settings['ndegs']  = 90
-    #     settings.update(kwargs)
-    #     self._degs = np.linspace(settings['mindeg'],
-    #                              settings['maxdeg'],
-    #                              settings['ndegs'],
-    #                              endpoint=False)
-        
-    #_lags
-    # @property
-    # def _lags(self):
-    #     return self.__lags
-    #
-    # @_lags.setter
-    # def _lags(self, lags):
-    #     if isinstance(lags, np.ndarray) and lags.ndim == 1:
-    #         self.__slags = np.unique(core.time2samps(lags, self.data._delta, mode='even')).astype(int)
-    #         self.__lags = self.__slags * self.data._delta
-    #     else: raise ValueError('lags not understood.')
-    #
-    # def _set_lags(self, **kwargs):
-    #     """return numpy array of lags to explore"""
-    #     settings = {}
-    #     settings['minlag'] = 0
-    #     settings['maxlag'] = self.data.wwidth() / 4
-    #     settings['nlags']  = 40
-    #     settings.update(kwargs)
-    #     self._lags = np.linspace(settings['minlag'],
-    #                              settings['maxlag'],
-    #                              settings['nlags'],
-    #                              endpoint = True)
-                                 
-
-                                 
-    #_grid
-    @property
-    def _grid(self):
-        return np.meshgrid(self._lags, self._degs, indexing='ij')
                    
-    #_rcvcorr    
-    @property
-    def _rcvcorr(self):
-        return self.__rcvcorr
-        
-    @_rcvcorr.setter
-    def _rcvcorr(self, rcvcorr):
-        if rcvcorr == None:
-            self.__rcvslag = None
-            self.__rcvcorr = None
-        elif isinstance(rcvcorr, tuple) and len(rcvcorr) == 2: 
-            deg, lag = rcvcorr
-            slag = core.time2samps(lag, self.data._delta, 'even')
-            self.__rcvslag = (deg, slag)
-            self.__rcvcorr = (deg, slag * self.data._delta)
-        else: raise TypeError('rcvcorr not understood.')
-                
-    #_srccorr
-    @property
-    def _srccorr(self):
-        return self.__srccorr
-        
-    @_srccorr.setter
-    def _srccorr(self, srccorr):
-        if srccorr == None:
-            self.__rcvslag = None
-            self.__srccorr = None
-        elif isinstance(srccorr, tuple) and len(srccorr) == 2: 
-            deg, lag = srccorr
-            slag = core.time2samps(lag, self.data._delta, 'even')
-            self.__rcvslag = (deg, slag)
-            self.__srccorr = (deg, slag * self.data._delta)
-        else: raise TypeError('srccorr not understood.')
+
         
      
         
@@ -319,16 +279,22 @@ class Meas(Data):
         s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
         return s      
     
-    def silver_chan(self, alpha=0.05, pol=None):
+    def silver_chan(self, alpha=sig1, pol=None):
         """Return splitting parameters plus error bars at alpha."""
         if pol == None:
-            return self.ferror_min(self.lam2, alpha)
-        else:
-            self.pol = pol
-            return self.ferror_min(self.rad2, alpha)
+            vals = self.f_lam2
+            fast, lag = self._fast_lag_maxloc(vals)
+            dfast, dlag = self._f_errorbars(alpha)
+            return fast, dfast, lag, dlag
+        # else:
+        #     self.pol = pol
+        #     return self.ferror_min(self.rad2, alpha)
      
-    def cross_corr(self, alpha=0.05):
-         return self.ferror_max(self.zrho, alpha)
+    def cross_corr(self, alpha=sig1):
+        vals = self.f_rho
+        fast, lag = self._fast_lag_maxloc(vals)
+        dfast, dlag = self._f_errorbars(vals, alpha)
+        return fast, dfast, lag, dlag
          
     def q(self):
         scfast, _, sclag, _ = self.silver_chan()
@@ -553,38 +519,7 @@ class Meas(Data):
      
 
         
-    # F-test PDF surfaces
-    
-    def ndf(self, fast, lag, pol=None):
-        # fast, lag = self._fast_lag_maxloc(vals)
-        unsplit = self.data._wrap_unsplit_rotate_back(fast, lag)
-        if pol == None: pol = unsplit._estimate_pol()
-        x, y = unsplit.rotateto(pol)._chopxy()
-        return core.ndf(y)
-    
-    def f_cdf_max(self, vals, ndf):
-        k = 2
-        stat = (ndf - k)/k * (1-vals/vals.max())
-        cdf = stats.f.cdf(stat, k, ndf)
-        return cdf
-        
-    def f_cdf_min(self, vals, ndf):
-        k = 2
-        stat = (ndf - k)/k * (vals/vals.min()-1)
-        cdf = stats.f.cdf(stat, k, ndf)
-        return cdf
-        
-    def f_ppf_max(self, vals, ndf):
-        k = 2
-        stat = (ndf - k)/k * (1-vals/vals.max())
-        cdf = stats.f.ppf(stat, k, ndf)
-        return cdf
-        
-    def f_ppf_min(self, vals, ndf):
-        k = 2
-        stat = (ndf - k)/k * (vals/vals.min()-1)
-        cdf = stats.f.ppf(stat, k, ndf)
-        return cdf
+
         
     @property
     def f_lam1(self, pol=None):
@@ -616,7 +551,7 @@ class Meas(Data):
         
     @property
     def likelihood(self):
-        return self.f_lamrat + self.f_rho
+        return (self.f_lamrat + self.f_rho)/2
                 
     @property
     def pdf(self):
@@ -650,50 +585,63 @@ class Meas(Data):
         ll, dd = self._grid
         return dd[idx], ll[idx]
         
-    def ftest_min(self, vals, ndf, alpha=0.05):
-        """
-        returns value (in vals) at 100(1-alpha)% confidence interval,
-        by default alpha = 0.05, i.e. 95% confidence interval,
-        following Silver and Chan (1991).
-        """    
-        k = 2 # two parameters, phi and dt.
-        F = stats.f.ppf(1-alpha, k, ndf)
-        val_at_alpha = vals.min() * ( 1 + (k/(ndf-k)) * F)
-        return val_at_alpha
+  
         
-    def ftest_max(self, vals, ndf, alpha=0.05):
-        """
-        returns value (in vals) at 100(1-alpha)% confidence interval,
-        by default alpha = 0.05, i.e. 95% confidence interval,
-        following Silver and Chan (1991).
-        """    
-        k = 2 # two parameters, phi and dt.
-        F = stats.f.ppf(1-alpha, k, ndf)
-        val_at_alpha = vals.max() / ( 1 + (k/(ndf-k)) * F)
-        return val_at_alpha        
+    # def _dfast_dlag_minloc(self, likeli, alpha):
+    #     dfast, dlag = core.contour_halfwidth(likeli, alpha, surftype='min')
+    #     return dfast, dlag * self.data._delta
     
-    def ferror_min(self, vals, alpha):
-        fast, lag = self._fast_lag_minloc(vals)
-        ndf = self.ndf(fast, lag)
-        ftestalpha = self.ftest_min(vals, ndf, alpha)
-        dfast, dlag = core.contour_halfwidth(vals, ftestalpha, surftype='min')
-        return fast, dfast, lag, dlag
-        
-    def ferror_max(self, vals, alpha):
-        # CHECK THIS MATHS I JUST FILLED SOMETHING IN
-        fast, lag = self._fast_lag_maxloc(vals)
-        ndf = self.ndf(fast, lag)
-        ftestalpha = self.ftest_max(vals, ndf, alpha)
-        dfast, dlag = core.contour_halfwidth(vals, ftestalpha, surftype='max')
-        return fast, dfast, lag, dlag   
+    # def ferror_min(self, vals, alpha):
+    #     fast, lag = self._fast_lag_minloc(vals)
+    #     ndf = self.ndf(fast, lag)
+    #     ftestalpha = core.ftest_min(vals, ndf, alpha)
+    #     dfast, dlag = core.contour_halfwidth(vals, ftestalpha, surftype='min')
+    #     return fast, dfast, lag, dlag
+    #
+    # def ferror_max(self, vals, alpha):
+    #     # CHECK THIS MATHS I JUST FILLED SOMETHING IN
+    #     fast, lag = self._fast_lag_maxloc(vals)
+    #     ndf = self.ndf(fast, lag)
+    #     ftestalpha = core.ftest_max(vals, ndf, alpha)
+    #     dfast, dlag = core.contour_halfwidth(vals, ftestalpha, surftype='max')
+    #     return fast, dfast, lag, dlag
         
     # def contour(self, vals, alpha):
     #     return core.val_at_alpha(vals, alpha)
 
-    def errorbars(self, vals, alpha, surftype='max'):
-        critval = core.val_at_alpha(vals, alpha)
-        dfast, dlag = core.contour_halfwidth(vals, critval, surftype)
+    # def errorbars(self, vals, alpha, surftype='max'):
+    #     critval = core.val_at_alpha(vals, alpha)
+    #     dfast, dlag = core.contour_halfwidth(vals, critval, surftype)
+    #     return dfast, dlag * self.data._delta
+    
+    def _f_errorbars(self, alpha, surftype='max'):
+        dfast, dlag = core.contour_halfwidth(self.likelihood, alpha, surftype)
         return dfast, dlag * self.data._delta
+    
+    def f_cdf_max(self, vals, ndf):
+        k = 2
+        stat = (ndf - k)/k * (1-vals/vals.max())
+        cdf = stats.f.cdf(stat, k, ndf)
+        return cdf
+        
+    def f_cdf_min(self, vals, ndf):
+        k = 2
+        stat = (ndf - k)/k * (vals/vals.min()-1)
+        cdf = stats.f.cdf(stat, k, ndf)
+        return cdf
+        
+    # def f_ppf_max(self, vals, ndf):
+    #     k = 2
+    #     stat = (ndf - k)/k * (1-vals/vals.max())
+    #     cdf = stats.f.ppf(stat, k, ndf)
+    #     return cdf
+    #
+    # def f_ppf_min(self, vals, ndf):
+    #     k = 2
+    #     stat = (ndf - k)/k * (vals/vals.min()-1)
+    #     cdf = stats.f.ppf(stat, k, ndf)
+    #     return cdf
+        
 
     # def parameters(self, vals, alpha):
     #     fast, lag = self._fast_lag_maxloc(vals)
@@ -1186,8 +1134,8 @@ class Meas(Data):
     def plot(self, **kwargs):
         # error surface
         if 'vals' not in kwargs:
-           kwargs['vals'] = self.pdf
-           kwargs['title'] = r'PDF'
+           kwargs['vals'] = self.likelihood
+           kwargs['title'] = r'Likelihood'
         
         self._plot(**kwargs)
     
@@ -1215,8 +1163,8 @@ class Meas(Data):
 
 
         orig = self.srcpoldata().chop()
-        fast, _, lag, _ = self.silver_chan()
-        corr = self.srcpoldata_corr(fast, lag).chop()
+        # fast, _, lag, _ = self.silver_chan()
+        corr = self.srcpoldata_corr(self.fast, self.lag).chop()
                 
         # get axis scaling
         lim = np.abs(corr.data).max() * 1.1
@@ -1277,8 +1225,8 @@ class Meas(Data):
         ax.imshow(vals, cmap=kwargs['cmap'], extent=(l, r, b, t), aspect='auto')
         ax.set_xlim([l, r])
         ax.set_ylim([b, t])
-        critval = core.val_at_alpha(vals, alpha=0.05)
-        ax.contour(*self._grid, kwargs['vals'], levels=[critval], colors='white')
+        # critval = core.val_at_alpha(vals, alpha=0.05)
+        ax.contour(*self._grid, kwargs['vals'], levels=[0.05], colors='white')
         
         # cbar = plt.colorbar(cax)
         ax.set_ylabel(r'Fast Direction ($^\circ$)')

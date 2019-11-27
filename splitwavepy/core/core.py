@@ -525,7 +525,48 @@ def ftest(lam2, ndf, alpha=0.05):
     k = 2 # two parameters, phi and dt.
     F = stats.f.ppf(1-alpha, k, ndf)
     lam2alpha = lam2min * ( 1 + (k/(ndf-k)) * F)
-    return lam2alpha    
+    return lam2alpha
+    
+# def ftest(X, ndf, alpha=0.05):
+#     """
+#     returns lambda2 value at 100(1-alpha)% confidence interval
+#     by default alpha = 0.05 = 95% confidence interval
+#     following Silver and Chan (1991)
+#     """
+#
+#     # check ndf is big enough
+#     if ndf < 3:
+#         raise Exception('Number of degrees of freedom is less than 3.  \
+#         This likely indicates a problem which would lead to a spurious measurement.  \
+#         Check window length.  Check data are demeaned.  Check frequency content.')
+#
+#     lam2min = X.min()
+#     k = 2 # two parameters, phi and dt.
+#     F = stats.f.ppf(1-alpha, k, ndf)
+#     lam2alpha = lam2min * ( 1 + (k/(ndf-k)) * F)
+#     return lam2alpha  
+    
+def ftest_min(self, vals, ndf, alpha=0.05):
+    """
+    returns value (in vals) at 100(1-alpha)% confidence interval,
+    by default alpha = 0.05, i.e. 95% confidence interval,
+    following Silver and Chan (1991).
+    """    
+    k = 2 # two parameters, phi and dt.
+    F = stats.f.ppf(1-alpha, k, ndf)
+    val_at_alpha = vals.min() * ( 1 + (k/(ndf-k)) * F)
+    return val_at_alpha
+    
+def ftest_max(self, vals, ndf, alpha=0.05):
+    """
+    returns value (in vals) at 100(1-alpha)% confidence interval,
+    by default alpha = 0.05, i.e. 95% confidence interval,
+    following Silver and Chan (1991).
+    """    
+    k = 2 # two parameters, phi and dt.
+    F = stats.f.ppf(1-alpha, k, ndf)
+    val_at_alpha = vals.max() / ( 1 + (k/(ndf-k)) * F)
+    return val_at_alpha  
     
 def fsurf(vals, ndf):
     """
@@ -603,7 +644,7 @@ def contour_halfwidth(surf, critval, surftype=None):
 
     # return
     return fdfast, fdlag 
-        
+    
     
 # Bootstrapping
     
