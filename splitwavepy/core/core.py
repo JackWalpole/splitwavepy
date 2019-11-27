@@ -543,13 +543,26 @@ def fsurf(vals, ndf):
 def val_at_alpha(data, alpha):
     """ Find value of function at the alpha level """
     data = data.flatten()
-    idx = np.argsort(data) 
+    idx = np.argsort(data)
     cum = np.cumsum(data[idx])
     tot = np.max(cum)
     get_x_at_cum = interp1d(cum, np.arange(cum.size))
     get_val_at_x = interp1d(np.arange(data.size), data[idx])
     xval = get_x_at_cum(tot*alpha)
     return get_val_at_x(xval)
+
+# def val_at_alpha(data, alpha):
+#     """ Find value of function at the alpha level """
+#     data = data.flatten()
+#     idx = np.argsort(data)
+#     cum = np.cumsum(data[idx])
+#     tot = np.max(cum)
+#     npts = data.size
+#     get_x_at_cum = interp1d(cum, np.arange(npts))
+#     get_cum_at_x = interp1d(np.arange(npts), cum)
+#     xval = get_x_at_cum(tot*alpha)
+#     crit = get_cum_at_x(xval)
+#     return crit
     
 def contour_halfwidth(surf, critval, surftype=None):
     """

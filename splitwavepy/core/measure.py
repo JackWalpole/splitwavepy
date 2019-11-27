@@ -74,6 +74,7 @@ class Meas(Data):
         settings['srccorr'] = None
         settings['taper'] = 0.2
         settings['fft'] = True
+        settings['units'] = 's'
         
         # degs settings
         settings['pol'] = None
@@ -92,6 +93,7 @@ class Meas(Data):
         self._maxlag =  settings['maxlag']
         self._taper = settings['taper']
         self._bootstrap = settings['bootstrap']
+        self.units = settings['units']
             
         # Grid Search
         # self._covmap = self._gridcov()
@@ -101,7 +103,7 @@ class Meas(Data):
         # get result
         pdf = self.pdf
         self.fast, self.lag = self._fast_lag_maxloc(pdf)
-        self.dfast, self.dlag = self.errorbars(pdf, alpha=0.05)
+        self.dfast, self.dlag = self.errorbars(pdf, alpha=1-0.6827)
 
         
         # self.sc = self.silver_chan()
@@ -691,7 +693,7 @@ class Meas(Data):
     def errorbars(self, vals, alpha, surftype='max'):
         critval = core.val_at_alpha(vals, alpha)
         dfast, dlag = core.contour_halfwidth(vals, critval, surftype)
-        return dfast, dlag
+        return dfast, dlag * self.data._delta
 
     # def parameters(self, vals, alpha):
     #     fast, lag = self._fast_lag_maxloc(vals)
@@ -981,35 +983,35 @@ class Meas(Data):
     def _bootstrap_grid(self, **kwargs):
         return self.gridsearch(self._bootstrap_loop, **kwargs)
         
-    def estimate_pdf(self, polar=False, **kwargs):
-        x, y = self._bootstrap_prep()
-        vals = self._bootstrap_loop(x, y, **kwargs)
-        kde = core.kde(vals)
-        ravmap = np.ravel(self.vals())
-        pdf = kde.pdf(ravmap).reshape(self.vals().shape)
+    # def estimate_pdf(self, polar=False, **kwargs):
+    #     x, y = self._bootstrap_prep()
+    #     vals = self._bootstrap_loop(x, y, **kwargs)
+    #     kde = core.kde(vals)
+    #     ravmap = np.ravel(self.vals())
+    #     pdf = kde.pdf(ravmap).reshape(self.vals().shape)
+    #
+    #     # if polar == True:
+    #     #     # geometric correction to account for variation
+    #     #     # in sampling density if grid is converted to polar coordinates
+    #     #     # (more research needed to establish whether this is correct)
+    #     #     ###
+    #     #     # circle area is pi*r^2
+    #     #     # annulus area is pi*r1^2 - pi*r0^2
+    #     #     # cell area is annulus area / number of cells
+    #     #     # cell area is K*(r1^2-r0^2), where K is pi/number of cells.
+    #     #     # K is just a constant scaling factor that can be removed at the end.
+    #     #     aa = np.arange(self.lags.size)
+    #     #     bb = (aa+1)**2 - aa**2
+    #     #     _, cc = np.meshgrid(self.degs, bb)
+    #     #     pdf = pdf * cc
+    #
+    #     # normalise so that whole surface weighs 1
+    #     pdf = pdf / np.sum(pdf)
+    #
+    #     return pdf
         
-        # if polar == True:
-        #     # geometric correction to account for variation
-        #     # in sampling density if grid is converted to polar coordinates
-        #     # (more research needed to establish whether this is correct)
-        #     ###
-        #     # circle area is pi*r^2
-        #     # annulus area is pi*r1^2 - pi*r0^2
-        #     # cell area is annulus area / number of cells
-        #     # cell area is K*(r1^2-r0^2), where K is pi/number of cells.
-        #     # K is just a constant scaling factor that can be removed at the end.
-        #     aa = np.arange(self.lags.size)
-        #     bb = (aa+1)**2 - aa**2
-        #     _, cc = np.meshgrid(self.degs, bb)
-        #     pdf = pdf * cc
-            
-        # normalise so that whole surface weighs 1
-        pdf = pdf / np.sum(pdf)
-        
-        return pdf
-        
-    def _pdf_conf95(self, pdf):
-        return core.val_at_alpha(pdf.flatten(),0.05)
+    # def _pdf_conf95(self, pdf):
+    #     return core.val_at_alpha(pdf.flatten(),0.05)
         
     # def pdf(self, **kwargs):
     #     return self.estimate_pdf(**kwargs)
@@ -1184,8 +1186,8 @@ class Meas(Data):
     def plot(self, **kwargs):
         # error surface
         if 'vals' not in kwargs:
-           kwargs['vals'] = self.lamrat
-           kwargs['title'] = r'$\lambda_1 / \lambda_2$'
+           kwargs['vals'] = self.pdf
+           kwargs['title'] = r'PDF'
         
         self._plot(**kwargs)
     
@@ -1261,17 +1263,26 @@ class Meas(Data):
         """
     
         if 'cmap' not in kwargs:
-            kwargs['cmap'] = 'magma'
+            kwargs['cmap'] = 'viridis'
     
         if 'vals' not in kwargs:
             raise Exception('vals must be specified')
             
+        vals = np.flipud(kwargs['vals'].T)
+            
         # error surface
-        laggrid, deggrid = self._grid
-        cax = ax.contourf(laggrid, deggrid, kwargs['vals'], 26, cmap=kwargs['cmap'])
-        cbar = plt.colorbar(cax)
+        # laggrid, deggrid = self._grid
+        # cax = ax.contourf(laggrid, deggrid, kwargs['vals'], 26, cmap=kwargs['cmap'])
+        (b, t), (l, r) = self._degs[[0,-1]], self._lags[[0, -1]]
+        ax.imshow(vals, cmap=kwargs['cmap'], extent=(l, r, b, t), aspect='auto')
+        ax.set_xlim([l, r])
+        ax.set_ylim([b, t])
+        critval = core.val_at_alpha(vals, alpha=0.05)
+        ax.contour(*self._grid, kwargs['vals'], levels=[critval], colors='white')
+        
+        # cbar = plt.colorbar(cax)
         ax.set_ylabel(r'Fast Direction ($^\circ$)')
-        # ax.set_xlabel('Delay Time (' + self.units + ')')
+        ax.set_xlabel('Delay Time (' + self.units + ')')
         
         # confidence region
         # if 'conf95' in kwargs and kwargs['conf95'] == True:
@@ -1279,13 +1290,13 @@ class Meas(Data):
         #             colors='r', alpha=.5, linewidths=3)
             
         # marker
-        fast, dfast, lag, dlag = self.silver_chan()
+        fast, dfast, lag, dlag = self.fast, self.dfast, self.lag, self.dlag
         if 'marker' in kwargs and kwargs['marker'] == True:
-            ax.errorbar(lag, fast, xerr=dlag, yerr=dfast)
+            ax.errorbar(lag, fast, xerr=dlag, yerr=dfast, color='white')
+        # ax.plot(lag, fast, marker='+')
 
-        ax.set_xlim([laggrid[0,0], laggrid[-1,0]])
-        ax.set_ylim([deggrid[0,0], deggrid[0,-1]])
-    
+
+
         # optional title
         if 'title' in kwargs:
             ax.set_title(kwargs['title']) 
