@@ -127,6 +127,60 @@ class Meas(Data):
         # if 'bootstrap' == True : m.bootstrap(**kwargs)
         if settings['report'] == True : self.report(**kwargs)
         # if 'plot'      == True : m.plot(**kwargs)
+        
+        
+    def splitting_intensity(self, pol=None, **kwargs):
+        """
+        Calculate the splitting intensity as defined by Chevrot (2000).
+        """                
+        # need to rotate data to source polarisation direction.
+        if pol == None: pol = self.data._estimate_pol()       
+        copy = self.data.rotateto(pol)
+        copy.__x = np.gradient(copy.x)
+        rdiff, trans = copy._chopxy()
+        s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
+        return s      
+    
+    def silver_chan(self, alpha=sig1, pol=None):
+        """Return splitting parameters plus error bars at alpha."""
+        if pol == None:
+            vals = self.f_lam2
+            fast, lag = self._fast_lag_maxloc(vals)
+            dfast, dlag = self._f_errorbars(alpha)
+            return fast, dfast, lag, dlag
+        # else:
+        #     self.pol = pol
+        #     return self.ferror_min(self.rad2, alpha)
+     
+    def cross_corr(self, alpha=sig1):
+        vals = self.f_rho
+        fast, lag = self._fast_lag_maxloc(vals)
+        dfast, dlag = self._f_errorbars(alpha)
+        return fast, dfast, lag, dlag
+         
+    def q(self):
+        scfast, _, sclag, _ = self.silver_chan()
+        xcfast, _, xclag, _ = self.cross_corr()
+        return core.q(scfast, sclag, xcfast, xclag)
+         
+    # Visible methods
+    
+    def report(self, **kwargs):
+        print('fast'.rjust(10), 'dfast'.rjust(9), 'lag'.rjust(9), 'dlag'.rjust(9),
+              'Q'.rjust(9), 'SI'.rjust(9))
+        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.5f}'.format(
+               self.fast, self.dfast, self.lag, self.dlag,
+               self.q(), self.splitting_intensity(**kwargs)))
+
+        # print('fast'.rjust(9), 'dfast'.rjust(9), 'lag'.rjust(9), 'dlag'.rjust(9),
+        #       'SCfast'.rjust(9), 'SCdfast'.rjust(9), 'SClag'.rjust(9), 'SCdlag'.rjust(9),
+        #       'XCfast'.rjust(9), 'XCdfast'.rjust(9), 'XClag'.rjust(9), 'XCdlag'.rjust(9),
+        #       'Q'.rjust(9), 'SI'.rjust(9))
+        # print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.2f}{6:10.2f}{7:10.2f}{8:10.2f}{9:10.2f}{10:10.2f}{11:10.2f}{12:10.2f}{13:10.5f}'.format(
+        #        self.fast, self.dfast, self.lag, self.dlag,
+        #        *self.silver_chan(),
+        #        *self.cross_corr(),
+        #        self.q(), self.splitting_intensity(**kwargs)))
 
     #===================
     # Special Properties
@@ -267,52 +321,7 @@ class Meas(Data):
         
      
         
-    def splitting_intensity(self, pol=None, **kwargs):
-        """
-        Calculate the splitting intensity as defined by Chevrot (2000).
-        """                
-        # need to rotate data to source polarisation direction.
-        if pol == None: pol = self.data._estimate_pol()       
-        copy = self.data.rotateto(pol)
-        copy.__x = np.gradient(copy.x)
-        rdiff, trans = copy._chopxy()
-        s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
-        return s      
-    
-    def silver_chan(self, alpha=sig1, pol=None):
-        """Return splitting parameters plus error bars at alpha."""
-        if pol == None:
-            vals = self.f_lam2
-            fast, lag = self._fast_lag_maxloc(vals)
-            dfast, dlag = self._f_errorbars(alpha)
-            return fast, dfast, lag, dlag
-        # else:
-        #     self.pol = pol
-        #     return self.ferror_min(self.rad2, alpha)
-     
-    def cross_corr(self, alpha=sig1):
-        vals = self.f_rho
-        fast, lag = self._fast_lag_maxloc(vals)
-        dfast, dlag = self._f_errorbars(vals, alpha)
-        return fast, dfast, lag, dlag
-         
-    def q(self):
-        scfast, _, sclag, _ = self.silver_chan()
-        xcfast, _, xclag, _ = self.cross_corr()
-        return core.q(scfast, sclag, xcfast, xclag)
-         
-    # Visible methods
-    
-    def report(self, **kwargs):
-        # scfast, scdfast, sclag, scdlag = self.silver_chan()
-        # xcfast, xcdfast, xclag, xcdlag = self.cross_corr()
-        print('SCfast'.rjust(10), 'SCdfast'.rjust(9), 'SClag'.rjust(9), 'SCdlag'.rjust(9),
-              'XCfast'.rjust(9), 'XCdfast'.rjust(9), 'XClag'.rjust(9), 'XCdlag'.rjust(9), 
-              'Q'.rjust(9), 'SI'.rjust(9))
-        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.2f}{6:10.2f}{7:10.2f}{8:10.2f}{9:10.5f}'.format(
-               *self.silver_chan(), 
-               *self.cross_corr(), 
-               self.q(), self.splitting_intensity(**kwargs)))
+
 
 
     # interrogate the covmap

@@ -16,6 +16,13 @@ from .core.data import Data
 
 __all__ = ["Data"]
 
+# user layer functions
+def synth(**kwargs):
+    return Data(**kwargs).Meas(**kwargs)
+
+def stream(**kwargs):
+    # do something with ObsPy
+    pass
 
 # make a commandline tool?
 if __name__ == '__main__':
