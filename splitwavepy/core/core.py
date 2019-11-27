@@ -542,6 +542,7 @@ def fsurf(vals, ndf):
     
 def val_at_alpha(data, alpha):
     """ Find value of function at the alpha level """
+    data = data.flatten()
     idx = np.argsort(data) 
     cum = np.cumsum(data[idx])
     tot = np.max(cum)

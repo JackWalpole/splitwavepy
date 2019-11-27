@@ -96,8 +96,13 @@ class Meas(Data):
         # Grid Search
         # self._covmap = self._gridcov()
         if settings['fft']: self._covmap = self._gridcovfreq()
-        else : self._covmap = self.gridcov() # logic here to reduce number of lag steps
+        else : self._covmap = self.gridcov() # logic here to reduce number of
         
+        # get result
+        pdf = self.pdf
+        self.fast, self.lag = self._fast_lag_maxloc(pdf)
+        self.dfast, self.dlag = self.errorbars(pdf, alpha=0.05)
+
         
         # self.sc = self.silver_chan()
         # self.xc = self.correlation()
@@ -400,22 +405,9 @@ class Meas(Data):
         return np.arctanh(self.rho)
     
 
-        
-    
 
-    
                 
-    # Common methods
-    
-    def _fast_lag_maxloc(self, vals):
-        idx = core.max_idx(vals)
-        ll, dd = self._grid
-        return dd[idx], ll[idx]
 
-    def _fast_lag_minloc(self, vals):
-        idx = core.min_idx(vals)
-        ll, dd = self._grid
-        return dd[idx], ll[idx]
     
     # def _guesspol(self):
     #     return self.sc.srcpol
@@ -579,29 +571,64 @@ class Meas(Data):
         stat = (ndf - k)/k * (vals/vals.min()-1)
         cdf = stats.f.cdf(stat, k, ndf)
         return cdf
+        
+    def f_ppf_max(self, vals, ndf):
+        k = 2
+        stat = (ndf - k)/k * (1-vals/vals.max())
+        cdf = stats.f.ppf(stat, k, ndf)
+        return cdf
+        
+    def f_ppf_min(self, vals, ndf):
+        k = 2
+        stat = (ndf - k)/k * (vals/vals.min()-1)
+        cdf = stats.f.ppf(stat, k, ndf)
+        return cdf
+        
+    @property
+    def f_lam1(self, pol=None):
+        vals = self.lam1
+        fast, lag = self._fast_lag_maxloc(vals)
+        ndf = self.ndf(fast, lag)
+        return 1 - self.f_cdf_max(vals, ndf)
     
     @property
-    def flam2pdf(self, pol=None):
+    def f_lam2(self, pol=None):
         vals = self.lam2
         fast, lag = self._fast_lag_minloc(vals)
         ndf = self.ndf(fast, lag)
-        return self.f_cdf_min(vals, ndf)        
+        return 1 - self.f_cdf_min(vals, ndf)        
     
     @property
-    def flamratpdf(self, pol=None):
+    def f_lamrat(self):
         vals = self.lamrat
         fast, lag = self._fast_lag_maxloc(vals)
         ndf = self.ndf(fast, lag)
-        return self.f_cdf_max(vals, ndf)
+        return 1 - self.f_cdf_max(vals, ndf)
     
     @property    
-    def fzrhopdf(self, pol=None):
+    def f_rho(self):
         vals = np.arctanh(self.rho)
         fast, lag = self._fast_lag_maxloc(vals)
         ndf = self.ndf(fast, lag)
-        return self.f_cdf_max(vals, ndf)
+        return 1 - self.f_cdf_max(vals, ndf)
         
-
+    @property
+    def likelihood(self):
+        return self.f_lamrat + self.f_rho
+                
+    @property
+    def pdf(self):
+        l = self.likelihood
+        return l / np.sum(l)
+    
+    @property 
+    def pdf_fast(self):
+        return np.sum(self.pdf, axis=0)
+    
+    @property   
+    def pdf_lag(self, **kwargs):
+        return np.sum(self.pdf, axis=1)
+        
         
     #     likelihood = 1 -f_cdf
     #     pdf = likelihood / np.sum(likelihood)
@@ -609,6 +636,17 @@ class Meas(Data):
     # def fresult(self, alpha=0.05):
     #     vals = self.lamrat
     #     fast, lag = self._fast_lag_maxloc(vals)
+    
+    
+    def _fast_lag_maxloc(self, vals):
+        idx = core.max_idx(vals)
+        ll, dd = self._grid
+        return dd[idx], ll[idx]
+
+    def _fast_lag_minloc(self, vals):
+        idx = core.min_idx(vals)
+        ll, dd = self._grid
+        return dd[idx], ll[idx]
         
     def ftest_min(self, vals, ndf, alpha=0.05):
         """
@@ -632,8 +670,6 @@ class Meas(Data):
         val_at_alpha = vals.max() / ( 1 + (k/(ndf-k)) * F)
         return val_at_alpha        
     
-
-    
     def ferror_min(self, vals, alpha):
         fast, lag = self._fast_lag_minloc(vals)
         ndf = self.ndf(fast, lag)
@@ -643,14 +679,25 @@ class Meas(Data):
         
     def ferror_max(self, vals, alpha):
         # CHECK THIS MATHS I JUST FILLED SOMETHING IN
-         fast, lag = self._fast_lag_maxloc(vals)
-         ndf = self.ndf(fast, lag)
-         ftestalpha = self.ftest_max(vals, ndf, alpha)
-         dfast, dlag = core.contour_halfwidth(vals, ftestalpha, surftype='max')
-         return fast, dfast, lag, dlag   
+        fast, lag = self._fast_lag_maxloc(vals)
+        ndf = self.ndf(fast, lag)
+        ftestalpha = self.ftest_max(vals, ndf, alpha)
+        dfast, dlag = core.contour_halfwidth(vals, ftestalpha, surftype='max')
+        return fast, dfast, lag, dlag   
+        
+    # def contour(self, vals, alpha):
+    #     return core.val_at_alpha(vals, alpha)
 
+    def errorbars(self, vals, alpha, surftype='max'):
+        critval = core.val_at_alpha(vals, alpha)
+        dfast, dlag = core.contour_halfwidth(vals, critval, surftype)
+        return dfast, dlag
 
-
+    # def parameters(self, vals, alpha):
+    #     fast, lag = self._fast_lag_maxloc(vals)
+    #     critval = core.val_at_alpha(vals, alpha)
+    #     dfast, dlag = core.contour_halfwidth(vals, vals, surftype='max')
+    #     return fast, dfast, lag, dlag
     # def fast_lag_dfast_dlag(self, pdf, alpha=0.05):
         
         
@@ -1084,19 +1131,19 @@ class Meas(Data):
         
     # "squashed" profiles
     
-    def fastprofile(self, **kwargs):
-        if 'vals' not in kwargs:
-            raise Exception('vals must be specified')
-        surf = kwargs['vals']
-        surf = surf / surf.sum()
-        return np.sum(surf, axis=0)
-        
-    def lagprofile(self, **kwargs):
-        if 'vals' not in kwargs:
-            raise Exception('vals must be specified')
-        surf = kwargs['vals']
-        surf = surf / surf.sum()
-        return np.sum(surf, axis=1)
+    # def fastprofile(self, **kwargs):
+    #     if 'vals' not in kwargs:
+    #         raise Exception('vals must be specified')
+    #     surf = kwargs['vals']
+    #     surf = surf / surf.sum()
+    #     return np.sum(surf, axis=0)
+    #
+    # def lagprofile(self, **kwargs):
+    #     if 'vals' not in kwargs:
+    #         raise Exception('vals must be specified')
+    #     surf = kwargs['vals']
+    #     surf = surf / surf.sum()
+    #     return np.sum(surf, axis=1)
         
 
 
