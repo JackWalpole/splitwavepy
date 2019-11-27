@@ -107,7 +107,7 @@ class Meas(Data):
         # get result
         l = self.likelihood
         self.fast, self.lag = self._fast_lag_maxloc(l)
-        self.dfast, self.dlag = self._f_errorbars(alpha=sig1)
+        self.dfast, self.dlag = self._f_errorbars(l, alpha=sig1)
 
         
         # self.sc = self.silver_chan()
@@ -135,18 +135,19 @@ class Meas(Data):
         """                
         # need to rotate data to source polarisation direction.
         if pol == None: pol = self.data._estimate_pol()       
-        copy = self.data.rotateto(pol)
-        copy.__x = np.gradient(copy.x)
-        rdiff, trans = copy._chopxy()
-        s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
-        return s      
+        rad, trans = self.data.rotateto(pol)._chopxy()
+        si = core.splittingintensity(rad, trans)
+        # copy.__x = np.gradient(copy.x)
+        # rdiff, trans = copy._chopxy()
+        # s = -2 * np.trapz(trans * rdiff) / np.trapz(rdiff**2)
+        return si    
     
     def silver_chan(self, alpha=sig1, pol=None):
         """Return splitting parameters plus error bars at alpha."""
         if pol == None:
             vals = self.f_lam2
             fast, lag = self._fast_lag_maxloc(vals)
-            dfast, dlag = self._f_errorbars(alpha)
+            dfast, dlag = self._f_errorbars(vals, alpha)
             return fast, dfast, lag, dlag
         # else:
         #     self.pol = pol
@@ -155,7 +156,7 @@ class Meas(Data):
     def cross_corr(self, alpha=sig1):
         vals = self.f_rho
         fast, lag = self._fast_lag_maxloc(vals)
-        dfast, dlag = self._f_errorbars(alpha)
+        dfast, dlag = self._f_errorbars(vals, alpha)
         return fast, dfast, lag, dlag
          
     def q(self):
@@ -168,7 +169,7 @@ class Meas(Data):
     def report(self, **kwargs):
         print('fast'.rjust(10), 'dfast'.rjust(9), 'lag'.rjust(9), 'dlag'.rjust(9),
               'Q'.rjust(9), 'SI'.rjust(9))
-        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.5f}'.format(
+        print('{0:10.2f}{1:10.2f}{2:10.2f}{3:10.2f}{4:10.2f}{5:10.2f}'.format(
                self.fast, self.dfast, self.lag, self.dlag,
                self.q(), self.splitting_intensity(**kwargs)))
 
@@ -623,8 +624,8 @@ class Meas(Data):
     #     dfast, dlag = core.contour_halfwidth(vals, critval, surftype)
     #     return dfast, dlag * self.data._delta
     
-    def _f_errorbars(self, alpha, surftype='max'):
-        dfast, dlag = core.contour_halfwidth(self.likelihood, alpha, surftype)
+    def _f_errorbars(self, vals, alpha, surftype='max'):
+        dfast, dlag = core.contour_halfwidth(vals, alpha, surftype)
         return dfast, dlag * self.data._delta
     
     def f_cdf_max(self, vals, ndf):
