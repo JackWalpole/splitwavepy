@@ -6,17 +6,11 @@ from __future__ import print_function
 from .core.data import Data
 from .core.measure import Meas
 from .core.group import Group
-from .core import core
 
-# functions
-from .funcs import synth
+# user layer functions
+def synth(**kwargs):
+    return Data(**kwargs).Meas(**kwargs)
 
-__all__ = ["Data, Meas, Group, core, synth"]
-
-
-
-# make a commandline tool?
-if __name__ == '__main__':
-    # do something with commandline arguments?
+def stream(**kwargs):
+    # do something with ObsPy
     pass
-
