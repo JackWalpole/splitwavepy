@@ -817,3 +817,7 @@ def max_idx(vals):
     return indice of max value in vals grid
     """
     return np.unravel_index(np.argmax(vals), vals.shape)
+
+def check_list_same(myList):
+    """Returns True if every element in myList is the same."""
+    return all(x==myList[0] for x in myList)

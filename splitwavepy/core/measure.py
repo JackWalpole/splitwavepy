@@ -107,7 +107,7 @@ class Meas(Data):
         # get result
         l = self.likelihood
         self.fast, self.lag = self._fast_lag_maxloc(l)
-        self.dfast, self.dlag = self._f_errorbars(l, alpha=sig1)
+        self.dfast, self.dlag = self._errorbars(l, alpha=sig1)
 
         
         # self.sc = self.silver_chan()
@@ -147,7 +147,7 @@ class Meas(Data):
         if pol == None:
             vals = self.f_lam2
             fast, lag = self._fast_lag_maxloc(vals)
-            dfast, dlag = self._f_errorbars(vals, alpha)
+            dfast, dlag = self._errorbars(vals, alpha)
             return fast, dfast, lag, dlag
         # else:
         #     self.pol = pol
@@ -156,7 +156,7 @@ class Meas(Data):
     def cross_corr(self, alpha=sig1):
         vals = self.f_rho
         fast, lag = self._fast_lag_maxloc(vals)
-        dfast, dlag = self._f_errorbars(vals, alpha)
+        dfast, dlag = self._errorbars(vals, alpha)
         return fast, dfast, lag, dlag
          
     def q(self):
@@ -624,7 +624,7 @@ class Meas(Data):
     #     dfast, dlag = core.contour_halfwidth(vals, critval, surftype)
     #     return dfast, dlag * self.data._delta
     
-    def _f_errorbars(self, vals, alpha, surftype='max'):
+    def _errorbars(self, vals, alpha, surftype='max'):
         dfast, dlag = core.contour_halfwidth(vals, alpha, surftype)
         return dfast, dlag * self.data._delta
     
