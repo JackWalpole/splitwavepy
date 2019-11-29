@@ -182,7 +182,17 @@ class Meas(Data):
         #        *self.silver_chan(),
         #        *self.cross_corr(),
         #        self.q(), self.splitting_intensity(**kwargs)))
-
+        
+    def windowscan(self, w0min, w0max, w1min, w1max, nw0=10, nw1=10., **kwargs):
+        """Make multiple measurements by varying the window."""
+        from .group import Group
+        assert w0min < w0max < w1min < w1max
+        w0s = np.linspace(w0min, w0max, nw0)
+        w1s = np.linspace(w1min, w1max, nw1)
+        winlist = [ (w0, w1) for w0 in w0s for w1 in w1s ]
+        return [ self.data.set_window(*win).Meas(**kwargs) for win in winlist ]
+        
+        
     #===================
     # Special Properties
     #===================
@@ -563,18 +573,18 @@ class Meas(Data):
     def likelihood(self):
         return (self.f_lamrat + self.f_rho)/2
                 
-    @property
-    def pdf(self):
-        l = self.likelihood
-        return l / np.sum(l)
-    
-    @property 
-    def pdf_fast(self):
-        return np.sum(self.pdf, axis=0)
-    
-    @property   
-    def pdf_lag(self, **kwargs):
-        return np.sum(self.pdf, axis=1)
+    # @property
+    # def pdf(self):
+    #     l = self.likelihood
+    #     return l / np.sum(l)
+    #
+    # @property
+    # def pdf_fast(self):
+    #     return np.sum(self.pdf, axis=0)
+    #
+    # @property
+    # def pdf_lag(self, **kwargs):
+    #     return np.sum(self.pdf, axis=1)
         
         
     #     likelihood = 1 -f_cdf
