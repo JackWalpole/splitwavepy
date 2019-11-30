@@ -392,7 +392,15 @@ class Meas(Data):
         """Fisher transform rho."""
         return np.arctanh(self.rho)
     
-
+    @property
+    def surf_dict(self):
+        surf_dict = {
+            'likelihood' : self.likelihood,
+            'lam2' : self.f_lam2,
+            'lamrat' : self.f_lamrat,
+            'rho' : self.f_rho
+        }
+        return surf_dict
 
                 
 
@@ -1336,8 +1344,8 @@ class Meas(Data):
     #     prof = np.sum(vals, axis=1)
     #     ax.plot(self._lags, prof)
 
-    def plt_likeli_prof(self):
-        vals = self.likelihood
+    def psurf(self, surf='likelihood'):
+        vals = self.surf_dict[surf]
         fig = plt.figure(figsize=(8,8))
         gs = gridspec.GridSpec(3, 3)
         ax_main = plt.subplot(gs[1:3, :2])
@@ -1346,8 +1354,10 @@ class Meas(Data):
         plt.sca(ax_main); self._plt_surf(vals)
         proffast = np.sum(vals, axis=0)
         ax_y.plot(proffast, self._degs)
+        ax_y.tick_params(bottom=True, top=True, left=True, right=True)
         proflag = np.sum(vals, axis=1)
         ax_x.plot(self._lags, proflag)
+        ax_x.tick_params(bottom=True, top=True, left=True, right=True)
         plt.show()
     #
     #     ax_
