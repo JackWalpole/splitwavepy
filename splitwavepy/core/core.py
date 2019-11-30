@@ -714,6 +714,17 @@ def bscov2lam2(bscov):
     evals, evecs = np.linalg.eigh(bscov)
     return evals[:,0]
     
+def bscov2var(bscov, pol):    
+    covrot = cov_rotate(bscov, pol)
+    lam1, lam2 = covrot[:,0,0], covrot[:,1,1]
+    return lam1, lam2
+    
+# def bscov2pol(bscov, pol):
+#     rot = core._rot(pol-fast)
+#     bscov = np.matmul(rot, np.matmul(bscov, rot.T))
+#     rat = bscov[:,0,0]/bscov[:,1,1]
+    
+    
 def kde(vals):
     """Return stats.gaussian_kde object from set of values."""
     # instantiate and fit the KDE model

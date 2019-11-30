@@ -7,7 +7,7 @@ from .core.data import Data
 from .core.measure import Meas
 from .core.group import Group
 
-from obspy import read
+import obspy
 
 # user layer functions
 def synth(**kwargs):
@@ -16,11 +16,14 @@ def synth(**kwargs):
     
 def synthmany(n, **kwargs):
     """Generate n synthetic measurements."""
-    return sw.Group([ sw.synth(**kwargs) for x in range(n) ])
+    return Group([ sw.synth(**kwargs) for x in range(n) ])
     
+def fromst(st, **kwargs):
+    """Generate from obspy stream object."""    
+    delta = st[0].stats.delta
+    x, y = st[1].data, st[0].data
+    return Data(x, y, delta=delta, **kwargs).Meas(**kwargs)
 
-    
-
-def stream(**kwargs):
-    # do something with ObsPy
-    pass
+def fromsac(*args, **kwargs):
+    st = obspy.read(*args, **kwargs)
+    return fromst(st)

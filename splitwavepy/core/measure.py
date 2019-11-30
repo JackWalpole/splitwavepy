@@ -543,6 +543,7 @@ class Meas(Data):
         
     @property
     def f_lam1(self, pol=None):
+        raise NotImplementedError('This looks wrong.')
         vals = self.lam1
         fast, lag = self._fast_lag_maxloc(vals)
         ndf = self.ndf(fast, lag)
@@ -572,6 +573,11 @@ class Meas(Data):
     @property
     def likelihood(self):
         return (self.f_lamrat + self.f_rho)/2
+        
+    @property
+    def loglike(self):
+        return np.log(self.likelihood)
+        
                 
     # @property
     # def pdf(self):
@@ -1100,20 +1106,14 @@ class Meas(Data):
     #     return Bootstrap(self)
         
     # "squashed" profiles
+   
+    @property
+    def likelifast(self):
+        return np.sum(self.likelihood, axis=0)
     
-    # def fastprofile(self, **kwargs):
-    #     if 'vals' not in kwargs:
-    #         raise Exception('vals must be specified')
-    #     surf = kwargs['vals']
-    #     surf = surf / surf.sum()
-    #     return np.sum(surf, axis=0)
-    #
-    # def lagprofile(self, **kwargs):
-    #     if 'vals' not in kwargs:
-    #         raise Exception('vals must be specified')
-    #     surf = kwargs['vals']
-    #     surf = surf / surf.sum()
-    #     return np.sum(surf, axis=1)
+    @property
+    def likelilag(self):
+        return np.sum(self.likelihood, axis=1)
         
 
 
@@ -1295,25 +1295,120 @@ class Meas(Data):
                     
         return ax
         
+    # plotting the error surface
+        
+    def _plt_imshow(self, vals, **kwargs): 
+        ax = plt.gca()           
+        (b, t), (l, r) = self._degs[[0,-1]], self._lags[[0, -1]]
+        ax.imshow(np.flipud(vals.T), extent=(l, r, b, t), aspect='auto', **kwargs)
+        ax.set_xlim([l, r])
+        ax.set_ylim([b, t])
+        # return ax
+               
+    def _plt_contour(self, vals, **kwargs):
+        ax = plt.gca()
+        ax.contour(*self._grid, vals, **kwargs)
+        # return ax
+        
+    def _plt_marker(self, fast, dfast, lag, dlag):
+        ax = plt.gca()
+        ax.errorbar(lag, fast, xerr=dlag, yerr=dfast, color='white')
+        # return ax
+            
+    def _plt_surf(self, vals):
+        ax = plt.gca()
+        fast, lag = self._fast_lag_maxloc(vals)
+        dfast, dlag = self._errorbars(vals, alpha=sig1)
+        self._plt_imshow(vals)
+        self._plt_contour(vals, levels=[0.05], colors='white')
+        # self._plt_marker(fast, dfast, lag, dlag)
+        ax.set_ylabel(r'Fast Direction ($^\circ$)')
+        ax.set_xlabel('Delay Time (' + self.units + ')')
+        # return ax
+        
+    # def _plt_fast_profile(self, vals):
+    #     ax = plt.gca()
+    #     prof = np.sum(vals, axis=0)
+    #     ax.plot(self._degs, prof)
+    #
+    # def _plt_lag_profile(self, vals):
+    #     ax = plt.gca()
+    #     prof = np.sum(vals, axis=1)
+    #     ax.plot(self._lags, prof)
 
+    def plt_likeli_prof(self):
+        vals = self.likelihood
+        fig = plt.figure(figsize=(8,8))
+        gs = gridspec.GridSpec(3, 3)
+        ax_main = plt.subplot(gs[1:3, :2])
+        ax_x = plt.subplot(gs[0, :2],sharex=ax_main)
+        ax_y = plt.subplot(gs[1:3, 2],sharey=ax_main)
+        plt.sca(ax_main); self._plt_surf(vals)
+        proffast = np.sum(vals, axis=0)
+        ax_y.plot(proffast, self._degs)
+        proflag = np.sum(vals, axis=1)
+        ax_x.plot(self._lags, proflag)
+        plt.show()
+    #
+    #     ax_
+    #
+    def plot_likelihood(self):
+        fig, ax = plt.subplots(1)
+        vals = self.likelihood
+        fast, lag = self._fast_lag_maxloc(vals)
+        dfast, dlag = self._errorbars(vals, alpha=sig1)
+        self._plt_surf(vals)
+        # ax.set_title('fast {fast}±{dfast}, lag {lag}±{dlag}')
+        plt.show()
+           
+        # cbar = plt.colorbar(cax)
+
+        
+
+        #
+        # # add info in text box
+        # if 'info' in kwargs and kwargs['info'] == True:
+        #     textstr = '$\phi=%.1f\pm%.1f$\n$\delta t=%.2f\pm%.2f$'%\
+        #                 (fast, dfast, lag, dlag)
+        #     # place a text box in upper left in axes coords
+        #     props = dict(boxstyle='round', facecolor='white', alpha=0.5)
+        #     ax.text(0.6, 0.95, textstr, transform=ax.transAxes, fontsize=12,
+        #             verticalalignment='top', bbox=props)
+        #
+        # if 'ppm' in kwargs and kwargs['ppm'] is True:
+        #     sublags = self.lags[0:-1:int(self.lags.size/6)]
+        #     subdegs = self.degs[0:-1:int(self.degs.size/6)]
+        #     sublags = sublags + (self.lags[-1]-sublags[-1]) / 2
+        #     subdegs = subdegs + (self.degs[-1]-subdegs[-1]) / 2
+        #     x, y = self.SplitWave_corr()._chopdata()
+        #     lagtot = self.lags[-1] - self.lags[0]
+        #     degtot = self.degs[-1] - self.degs[0]
+        #     boost = 10 * lagtot / np.max((x**2 + y**2)**.5)
+        #     for fast in subdegs:
+        #         for lag in sublags:
+        #             x, y = self.unsplit(fast, lag)._chopdata()
+        #             ax.plot(lag + y*boost/degtot, fast + x*boost/lagtot, color='w',alpha=0.5)
+        #
+        #
+        # return ax
         
     def plot_profiles(self,**kwargs):
         # Error analysis
-        fig,ax = plt.subplots(2)
+        fig, ax = plt.subplots(2)
         ax0 = plt.subplot(121)
         ax1 = plt.subplot(122)
 
-        ax0.plot(self.degs[0,:], self.fastprofile())
-        ax0.axvline(self.fast)
-        ax0.axvline(self.fast-2*self.dfast, alpha=0.5)
-        ax0.axvline(self.fast+2*self.dfast, alpha=0.5)
+        ax0.plot(self._degs, self.likelifast)
+        # ax0.axvline(self.fast)
+        # ax0.axvline(self.fast-self.dfast, alpha=0.5)
+        # ax0.axvline(self.fast+self.dfast, alpha=0.5)
         ax0.set_title('fast direction')
 
-        ax1.plot(self.lags[:,0], self.lagprofile())
-        ax1.axvline(self.lag)
-        ax1.axvline(self.lag-2*self.dlag, alpha=0.5)
-        ax1.axvline(self.lag+2*self.dlag, alpha=0.5)
-        ax1.set_title('lag direction')
+        ax1.plot(self._lags, self.likelilag)
+        # ax1.axvline(self.lag)
+        # ax1.axvline(self.lag-self.dlag, alpha=0.5)
+        # ax1.axvline(self.lag+self.dlag, alpha=0.5)
+        ax1.set_title('lag')
 
         plt.show()
 

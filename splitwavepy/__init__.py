@@ -9,9 +9,9 @@ from .core.group import Group
 from .core import core
 
 # functions
-from .funcs import synth
+from .funcs import synth, synthmany, fromst, fromsac
 
-__all__ = ["Data, Meas, Group, core, synth"]
+__all__ = ["Data, Meas, Group, core, synth, synthmany, fromst, fromsac"]
 
 
 
