@@ -5,7 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core, io
-
+import functools
 
 import numpy as np
 import math
@@ -106,10 +106,18 @@ class Data:
         self.set_window(settings['window'])
         self._set_labels()
 
-                      
+    # decorator
+    def respawn(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            cp = self.copy()
+            func(cp, *args, **kwargs)
+            return cp
+        return wrapper
+       
 
     # USEFUL TO EXAMINE DATA  
-    
+    @respawn
     def split(self, fast, lag):
         """
         Applies splitting operator.
@@ -122,7 +130,8 @@ class Data:
         copy.__x, copy.__y = core.split(copy.x, copy.y, fast, slag)
         copy.__t0 = copy.__t0 + abs(slag/2 * self._delta)
         return copy.rotateto(orient)
-           
+    
+    @respawn       
     def unsplit(self, fast, lag):
         """
         Reverses splitting operator.
@@ -130,7 +139,8 @@ class Data:
         .. warning:: shortens trace length by *lag*.
         """
         return self.split(fast, -lag)
-       
+    
+    @respawn   
     def rotateto(self, degrees):
         """
         Rotate traces so that cmp1 lines up with *degrees*
@@ -143,6 +153,32 @@ class Data:
         newvecs = np.array([[ cang,-sang],
                             [ sang, cang]])
         return self._rotatetovecs(newvecs)
+        
+    @respawn
+    def window(self, start, end, **kwargs):
+        self.set_window(start, end)
+        
+    def set_window(self, *args, **kwargs):
+        """Changes the window used for shear wave splitting analysis.
+        
+        Usage:
+        
+        # interactively pick on plot.
+        >>> set_window()  
+        
+        # provide start and end times.
+        >>> set_window(start, end)
+        
+        # provide Window object (advanced)
+        >>> set_window(Window)."""            
+        
+        if len(args) == 0: self.plot(pick=True)            
+        elif len(args) == 1: self._window = args[0]
+        elif len(args) == 2:
+            start, end = args  
+            self._window = self._construct_window(start, end, **kwargs)
+        else:
+            raise Exception ('unexpected number of arguments') 
         
     def _rotatetovecs(self, vecs):
         """
@@ -169,29 +205,36 @@ class Data:
         copy.__x, copy.__y = core.lag(copy.x, copy.y, slag)
         copy._t0 = self._t0 + abs(slag/2) * self._delta
         return copy
-
+        
+    @respawn
     def chop(self):
         """
         Chop data to window.
         """
-        copy = self.copy()
-        copy.__x, copy.__y = self._chopxy()
-        copy._window.offset = 0
-        copy._t0 = self.wbeg()
-        return copy
+        self.__x, self.__y = self._chopxy()
+        self._window.offset = 0
+        self._t0 = self.wbeg()
 
+    @respawn
     def taper(self, taper=0.2, **kwargs):
         """
         Taper data using a Tukey window.
         alpha is the percentage of window not touched.
         """
-        copy = self.copy()
-        copy.__x = core.taper(copy.x, alpha=taper)
-        copy.__y = core.taper(copy.y, alpha=taper)
-        return copy
+        self.__x = core.taper(self.x, alpha=taper)
+        self.__y = core.taper(self.y, alpha=taper)
+
         
 
         
+
+        
+    @respawn
+    def duplicate(self):
+        # do nothing
+        pass
+        
+
         
     # Utility 
     
@@ -436,27 +479,7 @@ class Data:
             raise ValueError('window must be a Window')
         self.__window = window
         
-    def set_window(self, *args, **kwargs):
-        """Changes the window used for shear wave splitting analysis.
-        
-        Usage:
-        
-        # interactively pick on plot.
-        >>> set_window()  
-        
-        # provide start and end times.
-        >>> set_window(start, end)
-        
-        # provide Window object (advanced)
-        >>> set_window(Window)."""            
-        
-        if len(args) == 0: self.plot(pick=True)            
-        elif len(args) == 1: self._window = args[0]
-        elif len(args) == 2:
-            start, end = args  
-            self._window = self._construct_window(start, end, **kwargs)
-        else:
-            raise Exception ('unexpected number of arguments')    
+   
     
     # vecs
     @property

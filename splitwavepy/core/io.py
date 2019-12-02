@@ -31,7 +31,13 @@ def load(filename):
 # Copying
 
 copy = copy.deepcopy
-
+#
+# # Decorator
+# def respawn(func):
+#     print('Here')
+#     def wrapper(self, **kwargs):
+#         return func(copy(self), **kwargs)
+#     return wrapper
 
 # Would be good to incorporte this info in files:
 # version tracking ... e.g..

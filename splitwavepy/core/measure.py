@@ -73,9 +73,10 @@ class Meas(Data):
         settings = {}
         settings['plot'] = False
         settings['report'] = False
-        settings['bootstrap'] = True 
+        settings['bootstrap'] = False
         settings['rcvcorr'] = None
         settings['srccorr'] = None
+        settings['win'] = None
         settings['taper'] = 0.2
         settings['fft'] = True
         settings['units'] = 's'
@@ -91,6 +92,7 @@ class Meas(Data):
         # self._set_degs(**settings)
         # self._set_lags(**settings)
         self._pol = settings['pol']
+        self._win = settings['win']
         self._rcvcorr = settings['rcvcorr']
         self._srccorr = settings['srccorr']
         self._ndegs = settings['ndegs']
@@ -105,28 +107,18 @@ class Meas(Data):
         else : self._covmap = self.gridcov() # logic here to reduce number of
         
         # get result
-        l = self.likelihood
-        self.fast, self.lag = self._fast_lag_maxloc(l)
-        self.dfast, self.dlag = self._errorbars(l, alpha=sig1)
-
-        
-        # self.sc = self.silver_chan()
-        # self.xc = self.correlation()
-        # self.q = core.q(self.sc.fast, self.sc.lag, self.xc.fast, self.xc.lag)
-
-        # # Splitting Intensity
-        # self.splintensity = self._splitting_intensity()
-        #
-        # # Name
-        # self.name = 'Untitled'
-        # if 'name' in kwargs: self.name = kwargs['name']
-            
-        # print(self.sc.srcpol)
+        if not self._bootstrap:
+            l = self.likelihood
+            self.fast, self.lag = self._fast_lag_maxloc(l)
+            self.dfast, self.dlag = self._errorbars(l, alpha=sig1)
+        else:
+            raise NotImplementedError
 
         # Implement Settings
         # if 'bootstrap' == True : m.bootstrap(**kwargs)
-        if settings['report'] == True : self.report(**kwargs)
-        # if 'plot'      == True : m.plot(**kwargs)
+        if settings['report']: self.report(**kwargs)
+        if settings['plot']: self.plot(**kwargs)
+        # if settings['win'] not None: self.__data = self.data.set_window(settings['win'])
         
         
     def splitting_intensity(self, pol=None, **kwargs):
