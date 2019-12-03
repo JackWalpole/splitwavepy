@@ -8,6 +8,7 @@ from __future__ import division
 from __future__ import print_function
 
 from . import core, io
+from ..core.core import respawn
 from .data import Data
 # from .bootstrap import Bootstrap
 
@@ -101,7 +102,6 @@ class Meas(Data):
         self._bootstrap = settings['bootstrap']
         self.units = settings['units']
             
-        # Grid Search
         # self._covmap = self._gridcov()
         if settings['fft']: self._covmap = self._gridcovfreq()
         else : self._covmap = self.gridcov() # logic here to reduce number of
@@ -184,8 +184,13 @@ class Meas(Data):
         winlist = [ (w0, w1) for w0 in w0s for w1 in w1s ]
         return [ self.data.set_window(*win).Meas(**kwargs) for win in winlist ]
     
-    # @respawn
-    # def window(self, start, end,)
+    @respawn
+    def window(self, *args, **kwargs):
+        self.__data = self.data.window(*args, **kwargs)
+        self._covmap = self._gridcovfreq()
+        # l = self.likelihood
+        # self.fast, self.lag = self._fast_lag_maxloc(l)
+        # self.dfast, self.dlag = self._errorbars(l, alpha=sig1)
         
         
     #===================
@@ -224,7 +229,17 @@ class Meas(Data):
         fastdata_corr._set_labels(['fast', 'slow'])
         return fastdata_corr
         
+    @property
+    def x(self):
+        return self.data.x
 
+    @property
+    def y(self):
+        return self.data.y
+        
+    @property
+    def _chopxy(self):
+        return self.data._chopxy
 
 
     # important properties of data

@@ -5,8 +5,8 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core, io
-# from core import respawn
-import functools
+from ..core.core import respawn
+
 
 import numpy as np
 import math
@@ -110,14 +110,7 @@ class Data:
         self._set_window(settings['window'])
         self._set_labels()
 
-    # decorator
-    def respawn(func):
-        @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
-            cp = self.copy()
-            func(cp, *args, **kwargs)
-            return cp
-        return wrapper
+
        
 
     # USEFUL TO EXAMINE DATA  

@@ -17,6 +17,18 @@ import numpy as np
 from scipy import signal, stats
 from scipy.interpolate import interp1d 
 import math
+import functools
+
+# decorators
+
+# decorator
+def respawn(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        cp = self.copy()
+        func(cp, *args, **kwargs)
+        return cp
+    return wrapper
 
 ##############
 
