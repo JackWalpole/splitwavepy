@@ -183,6 +183,9 @@ class Meas(Data):
         w1s = np.linspace(w1min, w1max, nw1)
         winlist = [ (w0, w1) for w0 in w0s for w1 in w1s ]
         return [ self.data.set_window(*win).Meas(**kwargs) for win in winlist ]
+    
+    # @respawn
+    # def window(self, start, end,)
         
         
     #===================

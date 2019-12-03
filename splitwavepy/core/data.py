@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 from ..core import core, io
+# from core import respawn
 import functools
 
 import numpy as np
@@ -84,6 +85,9 @@ class Data:
             raise Exception('Unexpected number of arguments')
         
         self._sanity_checks()
+        
+        # default window
+        
 
         # Settings
         settings = {}
@@ -103,7 +107,7 @@ class Data:
         self._vecs = settings['vecs']
         self._geom = settings['geom']
         self.units = settings['units']
-        self.set_window(settings['window'])
+        self._set_window(settings['window'])
         self._set_labels()
 
     # decorator
@@ -140,71 +144,67 @@ class Data:
         """
         return self.split(fast, -lag)
     
+    # @respawn
+    # def rotateto(self, degrees):
+    #     """
+    #     Rotate traces so that cmp1 lines up with *degrees*
+    #     """
+    #     # find appropriate rotation matrix
+    #     ang = math.radians(degrees)
+    #     cang = math.cos(ang)
+    #     sang = math.sin(ang)
+    #     # define the new vecs
+    #     newvecs = np.array([[ cang,-sang],
+    #                         [ sang, cang]])
+    #     return self._rotatetovecs(newvecs)
+        
     @respawn   
     def rotateto(self, degrees):
         """
         Rotate traces so that cmp1 lines up with *degrees*
         """
         # find appropriate rotation matrix
-        ang = math.radians(degrees)
-        cang = math.cos(ang)
-        sang = math.sin(ang)
-        # define the new vecs
-        newvecs = np.array([[ cang,-sang],
-                            [ sang, cang]])
-        return self._rotatetovecs(newvecs)
+        newvecs = core._rot(degrees).T
+        self._rotatetovecs(newvecs)
         
     @respawn
-    def window(self, start, end, **kwargs):
-        self.set_window(start, end)
+    def window(self, *args, **kwargs):
+        self._set_window(*args, **kwargs)
         
-    def set_window(self, *args, **kwargs):
-        """Changes the window used for shear wave splitting analysis.
-        
-        Usage:
-        
-        # interactively pick on plot.
-        >>> set_window()  
-        
-        # provide start and end times.
-        >>> set_window(start, end)
-        
-        # provide Window object (advanced)
-        >>> set_window(Window)."""            
-        
-        if len(args) == 0: self.plot(pick=True)            
-        elif len(args) == 1: self._window = args[0]
-        elif len(args) == 2:
-            start, end = args  
-            self._window = self._construct_window(start, end, **kwargs)
-        else:
-            raise Exception ('unexpected number of arguments') 
-        
-    def _rotatetovecs(self, vecs):
-        """
-        Rotate traces so that cmp1 lines up with column1 of matrix of vectors
-        """
-        # generate copy
-        copy = self.copy()
-        # define the new vecs
-        oldvecs = self._vecs
-        copy._vecs = vecs
-        # rotate data
-        rot = np.dot(vecs.T, oldvecs)
-        xy = np.dot(rot, self.data)
-        copy.__x, copy.__y = xy[0], xy[1]
-        copy._set_labels()
-        return copy
-        
+    # def set_window(self, *args, **kwargs):
+    #     """Changes the window used for shear wave splitting analysis.
+    #
+    #     Usage:
+    #
+    #     # interactively pick on plot.
+    #     >>> set_window()
+    #
+    #     # provide start and end times.
+    #     >>> set_window(start, end)
+    #
+    #     # provide Window object (advanced)
+    #     >>> set_window(Window)."""
+    #
+    #     if len(args) == 0: self.plot(pick=True)
+    #     elif len(args) == 1: self._window = args[0]
+    #     elif len(args) == 2:
+    #         start, end = args
+    #         self._window = self._construct_window(start, end, **kwargs)
+    #     else:
+    #         raise Exception ('unexpected number of arguments')
+    
+
+
+                
+    # respawn functions
+    @respawn
     def shift(self, lag):
         """
         Apply time shift between traces.
         """
         slag = core.time2samps(lag, self._delta, mode='even')
-        copy = self.copy()
-        copy.__x, copy.__y = core.lag(copy.x, copy.y, slag)
-        copy._t0 = self._t0 + abs(slag/2) * self._delta
-        return copy
+        self.__x, self.__y = core.lag(self.x, self.y, slag)
+        self._t0 = self._t0 + abs(slag/2) * self._delta   
         
     @respawn
     def chop(self):
@@ -223,21 +223,33 @@ class Data:
         """
         self.__x = core.taper(self.x, alpha=taper)
         self.__y = core.taper(self.y, alpha=taper)
-
-        
-
-        
-
         
     @respawn
     def duplicate(self):
         # do nothing
         pass
         
+    #
+        
 
         
-    # Utility 
+    # Hidden
     
+    def _rotatetovecs(self, vecs):
+        """
+        Rotate traces so that cmp1 lines up with column1 of matrix of vectors
+        """
+        # rotate data
+        rot = np.dot(vecs.T, self._vecs)
+        xy = np.dot(rot, self.data)
+        self.__x, self.__y = xy[0], xy[1]
+        self._vecs = vecs
+        
+    def _set_window(self, *args, **kwargs):
+        if len(args) == 1: self._window = args[0]
+        elif len(args) == 2: self._window = self._construct_window(*args, **kwargs)
+        else: raise Exception
+        
     def _sanity_checks(self):
         # some sanity checks
         if self.__x.shape != self.__y.shape:
