@@ -49,7 +49,7 @@ class Group:
         self._grid = m._grid
         self.units = m.units
         # get result
-        l = np.exp(self.mean())
+        l = np.exp(np.sum(np.log(self.stack), axis=0))
         l = l / l.max() # normalise assuming we know the answer!
         self.likelihood = l
         self.fast, self.lag = m._fast_lag_maxloc(l)
@@ -106,7 +106,8 @@ class Group:
         
     @property
     def stack(self):
-        stack = np.stack([ np.log(a.likelihood) for a in self.listM])
+        nlags = min([ m._nlags for m in self.listM ])
+        stack = np.stack([ m.likelihood[:nlags,:] for m in self.listM])
         return stack
         
     # slower functions
@@ -155,6 +156,8 @@ class Group:
     def _degscheck(self):
         if not core.check_list_same([ m._degs for m in self.listM ]):
             raise Exception('Grids not all the same.')
+            
+        
             
     def plot(self, **kwargs):            
         fig, ax = plt.subplots()

@@ -182,15 +182,11 @@ class Meas(Data):
         w0s = np.linspace(w0min, w0max, nw0)
         w1s = np.linspace(w1min, w1max, nw1)
         winlist = [ (w0, w1) for w0 in w0s for w1 in w1s ]
-        return [ self.data.set_window(*win).Meas(**kwargs) for win in winlist ]
+        return Group([ self.window(*win) for win in winlist ])
     
     @respawn
     def window(self, *args, **kwargs):
-        self.__data = self.data.window(*args, **kwargs)
-        self._covmap = self._gridcovfreq()
-        # l = self.likelihood
-        # self.fast, self.lag = self._fast_lag_maxloc(l)
-        # self.dfast, self.dlag = self._errorbars(l, alpha=sig1)
+        self.__init__(self.data.window(*args, **kwargs), **kwargs)
         
         
     #===================
