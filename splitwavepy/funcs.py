@@ -24,6 +24,18 @@ def fromst(st, **kwargs):
     x, y = st[1].data, st[0].data
     return Data(x, y, delta=delta, **kwargs).Meas(**kwargs)
 
-def fromsac(*args, **kwargs):
+def read(*args, **kwargs):
+    """Reads using obspyread"""
     st = obspy.read(*args, **kwargs)
     return fromst(st)
+    
+def fromsac(*args, **kwargs):
+    st = obspy.read(*args, **kwargs) 
+    data = fromst(st)
+    sac = st[0].stats.sac 
+    data.evla = sac['evla']
+    data.evlo = sac['evlo']
+    data.evdp = sac['evdp'] 
+    data.stla = sac['stla']
+    data.stlo = sac['stlo']
+    return data

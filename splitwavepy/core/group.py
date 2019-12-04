@@ -43,11 +43,19 @@ class Group:
             
         # get info
         self.listM = listM
-        m = self.listM[0]
+        
+        # checks
+        self._deltacheck()
+        self._degscheck()
+        
+        # smallest lags
+        idx = np.argmin([ m._nlags for m in self.listM ])
+        m = self.listM[idx]
         self._degs = m._degs
         self._lags = m._lags
         self._grid = m._grid
         self.units = m.units
+            
         # get result
         l = np.exp(np.sum(np.log(self.stack), axis=0))
         l = l / l.max() # normalise assuming we know the answer!
@@ -106,25 +114,26 @@ class Group:
         
     @property
     def stack(self):
-        nlags = min([ m._nlags for m in self.listM ])
+        nlags = self._lags.size
         stack = np.stack([ m.likelihood[:nlags,:] for m in self.listM])
         return stack
-        
-    # slower functions
     
+    @property
     def sum(self):
         return np.sum(self.stack, axis=0)
-       
+    
+    @property
     def mean(self):
         return np.mean(self.stack, axis=0)
         
+    @property
     def std(self):
         return np.std(self.stack, axis=0)
-        
+    
     def pddf(self):
         """Pandas DataFrame Textual Results."""
         pass
-        
+    
     def animate(self):
         """video of surfaces."""
         pass
@@ -134,31 +143,36 @@ class Group:
             
     def cluster(self):
         pass
+        
+    # Hidden
     
     def _checktype(self):
         return all(x==type(Meas) for x in self.listM)
-    
-
-    def _gridcheck(self):
-        if not core.core.check_list_same([ m._grid for m in self.listM ]):
-            raise Exception('Grids not all the same.')
-        else:
-            return True
             
     def _deltacheck(self):
         if not core.check_list_same([ m.data._delta for m in self.listM ]):
             raise Exception('Grids not all the same.')
             
     def _lagscheck(self):
-        if not core.check_list_same([ m._lags for m in self.listM ]):
+        if not core.check_listnp_same([ m._lags for m in self.listM ]):
             raise Exception('Grids not all the same.')
             
     def _degscheck(self):
-        if not core.check_list_same([ m._degs for m in self.listM ]):
+        if not core.check_listnp_same([ m._degs for m in self.listM ]):
             raise Exception('Grids not all the same.')
             
-        
+    def _gridcheck(self):
+        if not core.core.check_listnp_same([ m._grid for m in self.listM ]):
+            raise Exception('Grids not all the same.')
             
+    # def _set_common_grid(self):
+    #     idx = np.argmin([ m._nlags for m in self.listM ])
+    #     self._degs = self.listM[idx]._degs
+    #     self._lags = self.listM[idx]._lags
+    
+        
+    
+    
     def plot(self, **kwargs):            
         fig, ax = plt.subplots()
         vals = np.flipud(self.likelihood.T)
