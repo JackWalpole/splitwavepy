@@ -17,7 +17,7 @@ sig3 = 1 - 0.9973
 
 class Group:
 
-    def __init__(self, listM, **kwargs):
+    def __init__(self, listM, same=False, **kwargs):
         """
         A collection of measurements (or data).
         
@@ -43,6 +43,7 @@ class Group:
             
         # get info
         self.listM = listM
+        self.same = same
         
         # checks
         self._deltacheck()
@@ -55,10 +56,13 @@ class Group:
         self._lags = m._lags
         self._grid = m._grid
         self.units = m.units
-            
-        # get result
-        l = np.exp(np.sum(np.log(self.stack), axis=0))
-        l = l / l.max() # normalise assuming we know the answer!
+        
+        # if same data measured multiple times e.g. window scan, or bootstrap
+        if self.same:
+            l = np.sum(self.stack, axis=0)
+        else: # independent measurements
+            l = np.exp(np.sum(np.log(self.stack), axis=0))
+        l = l / l.max() # normalise
         self.likelihood = l
         self.fast, self.lag = m._fast_lag_maxloc(l)
         self.dfast, self.dlag = m._errorbars(l, alpha=sig1)

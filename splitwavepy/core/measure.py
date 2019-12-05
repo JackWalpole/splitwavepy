@@ -175,14 +175,14 @@ class Meas(Data):
         #        *self.cross_corr(),
         #        self.q(), self.splitting_intensity(**kwargs)))
         
-    def windowscan(self, w0min, w0max, w1min, w1max, nw0=10, nw1=10., **kwargs):
+    def scanwindow(self, w0min, w0max, w1min, w1max, nw0=10, nw1=10., **kwargs):
         """Make multiple measurements by varying the window."""
         from .group import Group
         assert w0min < w0max < w1min < w1max
         w0s = np.linspace(w0min, w0max, nw0)
         w1s = np.linspace(w1min, w1max, nw1)
         winlist = [ (w0, w1) for w0 in w0s for w1 in w1s ]
-        return Group([ self.window(*win) for win in winlist ])
+        return Group([ self.window(*win) for win in winlist ], same=True)
     
     @respawn
     def window(self, *args, **kwargs):
