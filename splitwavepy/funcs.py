@@ -22,6 +22,7 @@ def fromst(st, **kwargs):
     """Generate from obspy stream object."""    
     delta = st[0].stats.delta
     x, y = st[1].data, st[0].data
+    # starttime = st[0].stats.starttime
     return Data(x, y, delta=delta, **kwargs).Meas(**kwargs)
 
 def read(*args, **kwargs):

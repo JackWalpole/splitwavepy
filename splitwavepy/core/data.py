@@ -219,7 +219,7 @@ class Data:
         
     @respawn
     def duplicate(self):
-        # do nothing
+        # everything handled by the replicate decorator
         pass
         
     #
