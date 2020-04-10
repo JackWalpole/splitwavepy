@@ -16,7 +16,7 @@ def synth(**kwargs):
     
 def synthmany(n, **kwargs):
     """Generate n synthetic measurements."""
-    return Group([ sw.synth(**kwargs) for x in range(n) ])
+    return Group([ synth(**kwargs) for x in range(n) ])
     
 def fromst(st, **kwargs):
     """Generate from obspy stream object."""    
