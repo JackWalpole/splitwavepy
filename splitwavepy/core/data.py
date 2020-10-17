@@ -114,7 +114,7 @@ class Data:
        
 
     # USEFUL TO EXAMINE DATA  
-    @respawn
+    # @respawn
     def split(self, fast, lag):
         """
         Applies splitting operator.
@@ -128,7 +128,7 @@ class Data:
         copy.__t0 = copy.__t0 + abs(slag/2 * self._delta)
         return copy.rotateto(orient)
     
-    @respawn       
+    # @respawn
     def unsplit(self, fast, lag):
         """
         Reverses splitting operator.
